@@ -1,0 +1,35 @@
+{
+  "name": "finagent",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"node server/index.js\" --names \"vite,server\" --prefix-colors \"cyan,yellow\"",
+    "dev:ui": "vite",
+    "dev:server": "node server/index.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "firebase": "^12.19.0",
+    "lucide-react": "^0.447.0",
+    "mixpanel-browser": "^2.83.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "recharts": "^2.13.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "concurrently": "^10.0.5",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "vite": "^5.4.8"
+  }
+}

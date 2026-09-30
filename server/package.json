@@ -1,0 +1,25 @@
+{
+  "name": "finagent-server",
+  "version": "1.0.0",
+  "description": "FinAgent AI backend proxy server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "multer": "^2.4.0",
+    "node-fetch": "^2.7.0",
+    "pdf-lib": "^1.17.1",
+    "razorpay": "^2.9.8",
+    "resend": "^6.28.1",
+    "stripe": "^22.6.2",
+    "twilio": "^6.1.1",
+    "yahoo-finance2": "^4.0.2"
+  }
+}

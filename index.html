@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="FinAgent — India's First AI Wealth Intelligence Super-App. Unified portfolio aggregation, AI-powered advisory, and goal-based financial planning." />
+    <title>FinAgent — AI Wealth Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Captured Error:', e.error || e.message);
+        var el = document.createElement('div');
+        el.id = 'captured-js-error';
+        el.style.cssText = 'color:red;background:#fff0f0;padding:20px;font-family:monospace;white-space:pre-wrap;border:2px solid red;margin:20px;';
+        el.textContent = 'JS Crash: ' + (e.error ? (e.error.stack || e.error.message) : e.message);
+        document.body.appendChild(el);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('Captured Promise Rejection:', e.reason);
+        var el = document.createElement('div');
+        el.id = 'captured-promise-error';
+        el.style.cssText = 'color:red;background:#fff0f0;padding:20px;font-family:monospace;white-space:pre-wrap;border:2px solid red;margin:20px;';
+        el.textContent = 'Promise Rejection: ' + (e.reason ? (e.reason.stack || e.reason.message) : e.reason);
+        document.body.appendChild(el);
+      });
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
