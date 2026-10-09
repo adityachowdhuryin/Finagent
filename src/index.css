@@ -243,7 +243,56 @@ h1, h2, h3, .heading { font-family: 'Space Grotesk', sans-serif; }
 }
 
 @media (max-width: 768px) {
-  .main-content { margin-left: 0; padding-top: var(--topbar-height); }
+  .main-content { margin-left: 0; padding-top: var(--topbar-height); padding-bottom: 72px; }
+}
+
+/* ======================== MOBILE BOTTOM NAVIGATION ======================== */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--surface-raised);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    z-index: 85;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    height: 100%;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    transition: var(--transition);
+  }
+
+  .mobile-nav-item:hover,
+  .mobile-nav-item.active {
+    color: var(--primary);
+  }
+
+  .mobile-nav-item.active svg {
+    color: var(--primary);
+  }
 }
 
 /* ======================== GLASS CARDS ======================== */
@@ -428,8 +477,26 @@ textarea.input { resize: vertical; min-height: 80px; }
 @media (max-width: 768px) { .topbar { left: 0; } }
 .topbar-left { display: flex; align-items: center; gap: 1rem; }
 .topbar-breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
-.topbar-breadcrumb-sep { color: var(--text-muted); }
 .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+.topbar-desktop-controls { display: flex; align-items: center; gap: 0.75rem; }
+.topbar-mobile-controls-trigger { display: none; }
+
+@media (max-width: 1024px) {
+  .topbar-desktop-controls { display: none !important; }
+  .topbar-mobile-controls-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    padding: 0.25rem 0.6rem;
+    background: var(--surface-raised);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
 
 /* ======================== KPI TILES ======================== */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
@@ -462,6 +529,12 @@ textarea.input { resize: vertical; min-height: 80px; }
 .delta.neutral { color: var(--text-secondary); }
 
 /* ======================== TABLE ======================== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 0.5rem;
+}
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th {
   text-align: left; padding: 0.75rem 1rem;

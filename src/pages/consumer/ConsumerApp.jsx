@@ -10,6 +10,7 @@ import { usePageTracking } from '../../hooks/usePageTracking';
 import ErrorBoundary from '../../components/ui/ErrorBoundary';
 import AICopilotSidecar from '../../components/ai/AICopilotSidecar';
 import SentinelBanner from '../../components/common/SentinelBanner';
+import MobileBottomNav from '../../components/layout/MobileBottomNav';
 
 export default function ConsumerApp() {
   usePageTracking();
@@ -63,6 +64,10 @@ export default function ConsumerApp() {
       <ErrorBoundary>
         <AICopilotSidecar isOpen={copilotOpen} onToggle={() => setCopilotOpen(prev => !prev)} />
       </ErrorBoundary>
+      <MobileBottomNav
+        onToggleCopilot={() => setCopilotOpen(prev => !prev)}
+        onOpenMenu={() => setSidebarOpen(true)}
+      />
     </div>
   );
 }

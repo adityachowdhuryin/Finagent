@@ -194,7 +194,7 @@ export default function LiveMultimodalBanker() {
               position: 'relative',
               height: 480,
               overflow: 'hidden',
-              background: '#07080E',
+              background: 'var(--surface-raised)',
               border: '1px solid rgba(99, 102, 241, 0.3)',
               display: 'flex',
               alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -48,8 +48,13 @@ export default function OnboardingWizard() {
   };
 
 
+  useEffect(() => {
+    if (userProfile?.onboardingComplete) {
+      navigate('/app/dashboard');
+    }
+  }, [userProfile?.onboardingComplete, navigate]);
+
   if (userProfile?.onboardingComplete) {
-    navigate('/app/dashboard');
     return null;
   }
 

@@ -120,9 +120,11 @@ function Checkbox({ value, onChange }) {
 import { doc, setDoc, collection, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export default function PortalSettings() {
   const { user, userProfile } = useAuth();
+  const { toast } = useToast();
   const uid = user?.uid;
   const [advisorCode, setAdvisorCode] = useState('');
   const [pendingLinks, setPendingLinks] = useState([]);
@@ -131,10 +133,18 @@ export default function PortalSettings() {
   const [dispatchProgress, setDispatchProgress] = useState(0);
   const [dispatchDone, setDispatchDone] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState('welcome');
-  const [toast, setToast] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
   const [expandedClient, setExpandedClient] = useState(null);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+    if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
+      toast.error(msg);
+    } else {
+      toast.success(msg);
+    }
+  };
 
   const updateClient = (id, updater) => setClients(clients.map(c => c.id === id ? updater(c) : c));
 

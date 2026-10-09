@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../../context/ToastContext';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Search, Bell, Trash2, TrendingUp, TrendingDown, Plus } from 'lucide-react';
@@ -34,6 +35,7 @@ function loadSignals() {
 export default function Watchlist() {
   const { user } = useAuth();
   const { state } = useApp();
+  const { toast } = useToast();
   const uid = user?.uid;
   const [activeTab, setActiveTab] = useState('stocks');
   const [watchlist, setWatchlist] = useState([]);
@@ -42,7 +44,7 @@ export default function Watchlist() {
   const [searching, setSearching] = useState(false);
   const [quotes, setQuotes] = useState({});
   const [mfData, setMfData] = useState({});
-  const [toast, setToast] = useState('');
+  const [localToast, setLocalToast] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const searchTimeout = useRef(null);
 
@@ -54,10 +56,17 @@ export default function Watchlist() {
   const [aiSignals, setAiSignals] = useState(loadSignals);
   const [loadingSignal, setLoadingSignal] = useState({});
 
-  const showToast = (msg) => {
-    setToast(msg);
+  const showToast = (msg, type) => {
+    setLocalToast(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 5000);
+    if (type === 'error' || msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
+      toast.error(msg);
+    } else if (msg.toLowerCase().includes('already')) {
+      toast.warning(msg);
+    } else {
+      toast.success(msg);
+    }
   };
 
   useEffect(() => {
@@ -456,7 +465,7 @@ Return ONLY JSON.`;
         <div style={{ background: 'var(--primary)', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
           <Bell size={16} />
         </div>
-        <div>{toast}</div>
+        <div>{localToast}</div>
       </div>
     </div>
   );

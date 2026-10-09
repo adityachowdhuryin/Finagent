@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { formatLakh, formatPct, formatCurrency } from '../../utils/formatters';
-import { X, ExternalLink, Sparkles, FileDown } from 'lucide-react';
+import { X, ExternalLink, Sparkles, FileDown, Plus, Upload } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import ReportGenerator from './ReportGenerator';
 import AddHoldingForm from '../onboarding/AddHoldingForm';
@@ -415,6 +415,7 @@ function CryptoSection({ crypto, isUSMarket }) {
 
 export default function Portfolio() {
   const { state } = useApp();
+  const navigate = useNavigate();
   const isUSMarket = state.activeMarket === 'US';
   const { holdings } = state.consumer;
   const filters = isUSMarket ? US_FILTERS : IN_FILTERS;
@@ -432,6 +433,17 @@ export default function Portfolio() {
   const totalEquityPnL = (holdings.equities || []).reduce((s, h) => s + (h.pnl || 0), 0);
   const totalMFValue = (holdings.mutualFunds || []).reduce((s, f) => s + (f.value || 0), 0);
   const totalMFPnL = (holdings.mutualFunds || []).reduce((s, f) => s + (f.pnl || 0), 0);
+
+  const hasAnyHoldings = 
+    (holdings.equities || []).length > 0 ||
+    (holdings.mutualFunds || []).length > 0 ||
+    (holdings.fixedDeposits || []).length > 0 ||
+    !!holdings.epf ||
+    (holdings.retirement401k || []).length > 0 ||
+    (holdings.cashHysa || []).length > 0 ||
+    (holdings.crypto || []).length > 0 ||
+    (holdings.realEstate || []).length > 0 ||
+    (holdings.gold || []).length > 0;
 
   function handleSelect(item, type) { setSelectedItem(item); setSelectedType(type); }
   function handleClose() { setSelectedItem(null); setSelectedType(null); }
@@ -476,18 +488,6 @@ export default function Portfolio() {
         </>
       )}
 
-      <button onClick={() => setShowAddForm(true)} style={{
-        position: 'fixed', bottom: '2rem', right: '2rem',
-        width: 56, height: 56, borderRadius: '50%',
-        background: 'var(--primary)', color: '#fff',
-        border: 'none', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
-        fontSize: '1.5rem', zIndex: 100,
-      }} title="Add Holding">
-        +
-      </button>
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 className="text-h1">Portfolio</h1>
@@ -496,12 +496,61 @@ export default function Portfolio() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setReportOpen(true)} style={{ marginRight: '0.5rem' }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Plus size={14} /> Add Holding
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setReportOpen(true)}>
             <FileDown size={14} style={{ marginRight: 4 }}/> Report
           </button>
           {filters.map(f => <button key={f} className={`chip ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>)}
         </div>
       </div>
+
+      {!hasAnyHoldings && (
+        <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', margin: '0.5rem 0' }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))',
+            border: '1px solid var(--glass-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2rem', margin: '0 auto 1.25rem'
+          }}>
+            💼
+          </div>
+          <h2 className="text-h2" style={{ marginBottom: '0.5rem' }}>No Holdings Added Yet</h2>
+          <p className="text-secondary" style={{ maxWidth: 500, margin: '0 auto 1.75rem', fontSize: '0.9rem', lineHeight: 1.5 }}>
+            {isUSMarket
+              ? 'Connect your brokerage via Plaid or add your US stocks, ETFs, and 401(k) accounts to track real-time portfolio performance.'
+              : 'Import your consolidated statement or add your Indian stocks, mutual funds, FDs, and gold to track your complete net worth in one cockpit.'}
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAddForm(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Plus size={16} /> Add First Asset
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => navigate(isUSMarket ? '/app/plaid-sync' : '/app/import')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Upload size={16} /> {isUSMarket ? 'Connect via Plaid' : 'Import Statement'}
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                localStorage.setItem('finagent_demo_preview', 'true');
+                window.location.reload();
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Sparkles size={16} /> View Demo Data
+            </button>
+          </div>
+        </div>
+      )}
 
       {(activeFilter === 'All' || activeFilter === 'Equity') && (holdings.equities || []).length > 0 && (
         <div className="card">

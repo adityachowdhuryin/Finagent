@@ -2,20 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { Search, Link as LinkIcon, CheckCircle, XCircle } from 'lucide-react';
 
 export default function LinkAdvisor() {
   const { user, userProfile } = useAuth();
+  const { toast } = useToast();
   const uid = user?.uid;
   const [activeTab, setActiveTab] = useState('code'); // code, search, invite
   const [code, setCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
   const [linkedAdvisor, setLinkedAdvisor] = useState(null);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+    if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail')) {
+      toast.error(msg);
+    } else if (msg.toLowerCase().includes('no ')) {
+      toast.warning(msg);
+    } else {
+      toast.success(msg);
+    }
+  };
 
   useEffect(() => {
     // Check URL for invite code

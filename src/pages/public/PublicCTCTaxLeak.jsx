@@ -201,15 +201,15 @@ export default function PublicCTCTaxLeak() {
             </div>
 
             {/* Visual Social Card Preview */}
-            <div style={{ background: '#0F172A', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ background: 'var(--surface-raised)', border: '1px dashed var(--glass-border)', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #ef4444, #f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>💸</div>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>₹{annualTaxSaved.toLocaleString('en-IN')} Annual Salary Tax Leak Detected</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>FinAgent CTC Tax Optimizer · Free Instant Audit</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>FinAgent CTC Tax Optimizer · Free Instant Audit</div>
                 </div>
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600 }}>finagent.in/tools/ctc-tax-leak</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>finagent.in/tools/ctc-tax-leak</div>
             </div>
           </div>
 

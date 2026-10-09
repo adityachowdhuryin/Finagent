@@ -365,8 +365,8 @@ export default function TaxEFilingHub() {
                 </button>
               </div>
 
-              <div style={{ flex: 1, background: '#090A10', borderRadius: 'var(--radius)', padding: '1rem', border: '1px solid var(--glass-border)', overflow: 'auto', maxHeight: 420 }}>
-                <pre style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: '#A5B4FC', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+              <div style={{ flex: 1, background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: '1rem', border: '1px solid var(--glass-border)', overflow: 'auto', maxHeight: 420 }}>
+                <pre style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--primary-light)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
                   {schemaData?.payload || '// Compiling statutory schema...'}
                 </pre>
               </div>

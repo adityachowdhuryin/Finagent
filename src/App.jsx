@@ -5,6 +5,7 @@ import { AppProvider } from './context/AppContext';
 import { ChatProvider } from './context/ChatContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
+import { ToastProvider } from './context/ToastContext';
 import FeatureGate from './components/ui/FeatureGate';
 
 // Auth pages
@@ -343,7 +344,9 @@ export default function App() {
         <AppProvider>
           <SubscriptionProvider>
             <ChatProvider>
-              <AppRoutes />
+              <ToastProvider>
+                <AppRoutes />
+              </ToastProvider>
             </ChatProvider>
           </SubscriptionProvider>
         </AppProvider>

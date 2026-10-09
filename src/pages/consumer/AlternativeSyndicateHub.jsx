@@ -335,7 +335,7 @@ export default function AlternativeSyndicateHub() {
       {/* KYC / Accreditation Modal */}
       {showKYCModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="card" style={{ maxWidth: 480, width: '100%', padding: '1.5rem', background: '#0F101A' }}>
+          <div className="card" style={{ maxWidth: 480, width: '100%', padding: '1.5rem', background: 'var(--surface-raised)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
               <ShieldCheck size={24} color="var(--primary)" />
               <h3 style={{ margin: 0, fontWeight: 800 }}>Accredited Investor Verification</h3>
@@ -379,7 +379,7 @@ export default function AlternativeSyndicateHub() {
       {/* Subscription Commitment Modal */}
       {selectedDeal && accreditedStatus && !commitResult && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="card" style={{ maxWidth: 520, width: '100%', padding: '1.75rem', background: '#0F101A' }}>
+          <div className="card" style={{ maxWidth: 520, width: '100%', padding: '1.75rem', background: 'var(--surface-raised)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
               <div>
                 <span className="badge badge-primary" style={{ fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.35rem' }}>
@@ -441,7 +441,7 @@ export default function AlternativeSyndicateHub() {
       {/* Confirmation Success Modal */}
       {commitResult && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="card" style={{ maxWidth: 480, width: '100%', padding: '1.75rem', background: '#0F101A', border: '1px solid var(--green)' }}>
+          <div className="card" style={{ maxWidth: 480, width: '100%', padding: '1.75rem', background: 'var(--surface-raised)', border: '1px solid var(--green)' }}>
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <CheckCircle2 size={36} color="var(--green)" style={{ margin: '0 auto 0.5rem' }} />
               <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.2rem' }}>Syndicate Allocation Confirmed!</h3>

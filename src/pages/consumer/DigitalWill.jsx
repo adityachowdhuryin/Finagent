@@ -452,11 +452,11 @@ export default function DigitalWill() {
               </div>
             </div>
 
-            <div style={{ background: '#0F172A', border: '1px solid var(--glass-border)', borderRadius: 12, padding: '1.5rem', fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: 1.6, maxHeight: 400, overflowY: 'auto', whiteSpace: 'pre-wrap', color: '#e2e8f0', marginBottom: '1rem' }}>
+            <div style={{ background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 12, padding: '1.5rem', fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: 1.6, maxHeight: 400, overflowY: 'auto', whiteSpace: 'pre-wrap', color: 'var(--text-primary)', marginBottom: '1rem' }}>
               {generatedWill?.legalDraftText || 'Draft loading...'}
             </div>
 
-            <div style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 10, padding: '1rem', fontSize: '0.8rem', color: '#86efac' }}>
+            <div style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 10, padding: '1rem', fontSize: '0.8rem', color: 'var(--green)' }}>
               <strong>Next Steps to Make It Binding:</strong> Print this document on plain A4 paper, sign in ink in the presence of both witnesses, and store a signed copy in your <strong>FinAgent Family Emergency Vault</strong>. Registration at your local Sub-Registrar is optional but recommended.
             </div>
           </div>

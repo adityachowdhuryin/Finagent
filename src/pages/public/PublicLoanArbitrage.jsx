@@ -184,12 +184,12 @@ export default function PublicLoanArbitrage() {
             </div>
 
             {/* Visual Social Card Preview */}
-            <div style={{ background: '#0F172A', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ background: 'var(--surface-raised)', border: '1px dashed var(--glass-border)', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>🏦</div>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>₹{(totalInterestSaved / 100000).toFixed(1)} Lakhs Excess Home Loan Interest Detected</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>FinAgent Loan Arbitrage Auditor · Overcharging {spreadDiff.toFixed(2)}% Spread</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>FinAgent Loan Arbitrage Auditor · Overcharging {spreadDiff.toFixed(2)}% Spread</div>
                 </div>
               </div>
               <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600 }}>finagent.in/tools/loan-arbitrage</div>
