@@ -6,6 +6,7 @@ import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Search, Bell, Trash2, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import ApiErrorCard from '../../components/ui/ApiErrorCard';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { analyze } from '../../services/geminiService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -80,10 +81,12 @@ export default function Watchlist() {
   }, [uid]);
 
   const [error, setError] = useState(false);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
 
   const fetchQuotes = async () => {
     const symbols = watchlist.map(w => w.symbol).join(',');
     if (!symbols) return;
+    if (Object.keys(quotes).length === 0) setLoadingQuotes(true);
     try {
       const res = await fetch(`${API_BASE}/api/market/quote?symbols=${symbols}`);
       if (!res.ok) throw new Error('Failed to fetch');
@@ -99,6 +102,8 @@ export default function Watchlist() {
     } catch (e) {
       console.error(e);
       setError(true);
+    } finally {
+      setLoadingQuotes(false);
     }
   };
 
@@ -353,11 +358,20 @@ Return ONLY JSON.`;
                     <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
                       <Sparkline color={color} />
                       <div style={{ textAlign: 'right', minWidth: 100 }}>
-                        <div style={styles.price}>₹{q.price?.toFixed(2) || '---'}</div>
-                        <div style={styles.change(q.changePct)}>
-                          {q.changePct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                          {Math.abs(q.changePct || 0).toFixed(2)}%
-                        </div>
+                        {!quotes[item.symbol] && loadingQuotes ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <Skeleton width="72px" height="1.25rem" />
+                            <Skeleton width="48px" height="0.875rem" />
+                          </div>
+                        ) : (
+                          <>
+                            <div style={styles.price}>₹{q.price?.toFixed(2) || '---'}</div>
+                            <div style={styles.change(q.changePct)}>
+                              {q.changePct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                              {Math.abs(q.changePct || 0).toFixed(2)}%
+                            </div>
+                          </>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         {/* Alert bell icon — uses new modal */}

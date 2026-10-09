@@ -439,44 +439,46 @@ export default function ITRAssistant() {
           <div style={styles.section}>
             <div style={styles.sectionTitle}>📈 Capital Gains Summary — {fy}</div>
             <div style={styles.card}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    {['Asset', 'Purchase Date', 'Sale Date', 'Cost', 'Sale Price', 'Gain / Loss', 'Type', 'Tax Rate'].map(h => (
-                      <th key={h} style={styles.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {capitalGains.map((row, i) => (
-                    <tr key={i}>
-                      <td style={styles.td}><strong>{row.asset}</strong></td>
-                      <td style={styles.td}>{row.purchaseDate}</td>
-                      <td style={styles.td}>{row.saleDate}</td>
-                      <td style={styles.td}>{fmt(row.purchasePrice)}</td>
-                      <td style={styles.td}>{fmt(row.salePrice)}</td>
-                      <td style={{ ...styles.td, ...(row.gainLoss >= 0 ? styles.green : styles.red), fontWeight: 700 }}>
-                        {row.gainLoss >= 0 ? '+' : '-'}{fmt(row.gainLoss)}
-                      </td>
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.badge,
-                          background: row.type === 'LTCG' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
-                          color: row.type === 'LTCG' ? 'var(--gold)' : 'var(--red)',
-                        }}>{row.type}</span>
-                      </td>
-                      <td style={styles.td}>{row.taxRate}</td>
+              <div className="table-responsive">
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      {['Asset', 'Purchase Date', 'Sale Date', 'Cost', 'Sale Price', 'Gain / Loss', 'Type', 'Tax Rate'].map(h => (
+                        <th key={h} style={styles.th}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr style={{ background: 'var(--surface-raised)' }}>
-                    <td colSpan={5} style={{ ...styles.td, fontWeight: 700 }}>Total</td>
-                    <td style={{ ...styles.td, color: 'var(--green)', fontWeight: 700 }}>+{fmt(totalLTCG + totalSTCG)}</td>
-                    <td colSpan={2} style={styles.td}></td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {capitalGains.map((row, i) => (
+                      <tr key={i}>
+                        <td style={styles.td}><strong>{row.asset}</strong></td>
+                        <td style={styles.td}>{row.purchaseDate}</td>
+                        <td style={styles.td}>{row.saleDate}</td>
+                        <td style={styles.td}>{fmt(row.purchasePrice)}</td>
+                        <td style={styles.td}>{fmt(row.salePrice)}</td>
+                        <td style={{ ...styles.td, ...(row.gainLoss >= 0 ? styles.green : styles.red), fontWeight: 700 }}>
+                          {row.gainLoss >= 0 ? '+' : '-'}{fmt(row.gainLoss)}
+                        </td>
+                        <td style={styles.td}>
+                          <span style={{
+                            ...styles.badge,
+                            background: row.type === 'LTCG' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                            color: row.type === 'LTCG' ? 'var(--gold)' : 'var(--red)',
+                          }}>{row.type}</span>
+                        </td>
+                        <td style={styles.td}>{row.taxRate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: 'var(--surface-raised)' }}>
+                      <td colSpan={5} style={{ ...styles.td, fontWeight: 700 }}>Total</td>
+                      <td style={{ ...styles.td, color: 'var(--green)', fontWeight: 700 }}>+{fmt(totalLTCG + totalSTCG)}</td>
+                      <td colSpan={2} style={styles.td}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
               {taxableLTCG > 0 && (
                 <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.25)' }}>
                   <span style={{ color: 'var(--red)', fontWeight: 600, fontSize: 13 }}>
@@ -667,7 +669,7 @@ export default function ITRAssistant() {
                   }}>Clear All</button>
                 </div>
               </div>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-responsive">
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
@@ -780,7 +782,7 @@ export default function ITRAssistant() {
             )}
 
             {!loadingLots && lots && lots.length > 0 && (
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-responsive">
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
@@ -901,34 +903,36 @@ export default function ITRAssistant() {
                   <div style={{ background: 'rgba(99,102,241,0.12)', padding: '0.6rem 1rem', fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)' }}>
                     Schedule CG — Capital Gains (Equity / Equity MF) — AY {userInfo.ay}
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                    <tbody>
-                      {[
-                        ['A. Short-Term Capital Gains (STCG)', '', true],
-                        ['  A1. Full value of consideration (Sale proceeds)', fmt(lotSummary.stcgGross), false],
-                        ['  A2. Cost of acquisition', fmt(lotSummary.stcgGross - lotSummary.netSTCG), false],
-                        ['  A3. Net STCG (A1 − A2)', fmt(lotSummary.netSTCG), false],
-                        ['  A4. STCG losses set off', fmt(lotSummary.stcgLosses), false],
-                        ['  A5. Taxable STCG @ 20%', fmt(lotSummary.netSTCG), false],
-                        ['  A6. Tax on STCG', fmt(lotSummary.stcgTax), false],
-                        ['B. Long-Term Capital Gains (LTCG)', '', true],
-                        ['  B1. Gross LTCG', fmt(lotSummary.ltcgGross), false],
-                        ['  B2. LTCG losses set off', fmt(lotSummary.ltcgLosses), false],
-                        ['  B3. Net LTCG', fmt(lotSummary.netLTCG), false],
-                        ['  B4. Exemption u/s 112A (₹1,25,000)', fmt(lotSummary.ltcgExemptionUsed), false],
-                        ['  B5. Taxable LTCG @ 12.5%', fmt(lotSummary.taxableLTCG), false],
-                        ['  B6. Tax on LTCG', fmt(lotSummary.ltcgTax), false],
-                        ['C. Total Capital Gains Tax', fmt((lotSummary.ltcgTax || 0) + (lotSummary.stcgTax || 0)), true],
-                        ['D. Health & Education Cess @ 4%', fmt(lotSummary.cess), false],
-                        ['E. Total Tax Payable on Capital Gains', fmt(lotSummary.totalTax), true],
-                      ].map(([label, value, isHeader], i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid color-mix(in srgb, var(--glass-border) 40%, transparent)', background: isHeader ? 'rgba(99,102,241,0.05)' : 'transparent' }}>
-                          <td style={{ padding: '0.55rem 1rem', color: isHeader ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isHeader ? 700 : 400, fontSize: isHeader ? 13 : 13 }}>{label}</td>
-                          <td style={{ padding: '0.55rem 1rem', textAlign: 'right', fontWeight: isHeader ? 700 : 500, color: isHeader ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: value ? 'Space Grotesk' : 'inherit' }}>{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="table-responsive" style={{ marginBottom: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                      <tbody>
+                        {[
+                          ['A. Short-Term Capital Gains (STCG)', '', true],
+                          ['  A1. Full value of consideration (Sale proceeds)', fmt(lotSummary.stcgGross), false],
+                          ['  A2. Cost of acquisition', fmt(lotSummary.stcgGross - lotSummary.netSTCG), false],
+                          ['  A3. Net STCG (A1 − A2)', fmt(lotSummary.netSTCG), false],
+                          ['  A4. STCG losses set off', fmt(lotSummary.stcgLosses), false],
+                          ['  A5. Taxable STCG @ 20%', fmt(lotSummary.netSTCG), false],
+                          ['  A6. Tax on STCG', fmt(lotSummary.stcgTax), false],
+                          ['B. Long-Term Capital Gains (LTCG)', '', true],
+                          ['  B1. Gross LTCG', fmt(lotSummary.ltcgGross), false],
+                          ['  B2. LTCG losses set off', fmt(lotSummary.ltcgLosses), false],
+                          ['  B3. Net LTCG', fmt(lotSummary.netLTCG), false],
+                          ['  B4. Exemption u/s 112A (₹1,25,000)', fmt(lotSummary.ltcgExemptionUsed), false],
+                          ['  B5. Taxable LTCG @ 12.5%', fmt(lotSummary.taxableLTCG), false],
+                          ['  B6. Tax on LTCG', fmt(lotSummary.ltcgTax), false],
+                          ['C. Total Capital Gains Tax', fmt((lotSummary.ltcgTax || 0) + (lotSummary.stcgTax || 0)), true],
+                          ['D. Health & Education Cess @ 4%', fmt(lotSummary.cess), false],
+                          ['E. Total Tax Payable on Capital Gains', fmt(lotSummary.totalTax), true],
+                        ].map(([label, value, isHeader], i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid color-mix(in srgb, var(--glass-border) 40%, transparent)', background: isHeader ? 'rgba(99,102,241,0.05)' : 'transparent' }}>
+                            <td style={{ padding: '0.55rem 1rem', color: isHeader ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isHeader ? 700 : 400, fontSize: isHeader ? 13 : 13 }}>{label}</td>
+                            <td style={{ padding: '0.55rem 1rem', textAlign: 'right', fontWeight: isHeader ? 700 : 500, color: isHeader ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: value ? 'Space Grotesk' : 'inherit' }}>{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Exemption remaining */}

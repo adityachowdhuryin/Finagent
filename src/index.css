@@ -25,8 +25,8 @@ body {
   --surface-raised: #1A1D27;
   --surface-hover: #20242f;
   --glass: rgba(255,255,255,0.04);
-  --glass-border: rgba(255,255,255,0.07);
-  --glass-hover: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.11);
+  --glass-hover: rgba(255,255,255,0.12);
 
   --primary: #6366F1;
   --primary-light: #818CF8;
@@ -46,8 +46,8 @@ body {
 
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
-  --text-muted: #475569;
-  --border: rgba(255,255,255,0.06);
+  --text-muted: #64748B;
+  --border: rgba(255,255,255,0.08);
   --border-active: rgba(99,102,241,0.4);
 
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
@@ -692,6 +692,14 @@ textarea.input { resize: vertical; min-height: 80px; }
 @keyframes count-up { from { opacity: 0; } to { opacity: 1; } }
 @keyframes theme-spin { from { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(0.7); } to { transform: rotate(360deg) scale(1); } }
 @keyframes pulse-orb { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4), 0 0 20px rgba(239,68,68,0.2); } 50% { box-shadow: 0 0 0 12px rgba(239,68,68,0), 0 0 40px rgba(239,68,68,0.4); } }
+@keyframes skeleton-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
+
+.skeleton {
+  background: var(--surface-raised);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  display: inline-block;
+}
 
 .animate-fade-in { animation: fade-in 0.4s ease; }
 .animate-fade-in-up { animation: fade-in-up 0.4s ease; }

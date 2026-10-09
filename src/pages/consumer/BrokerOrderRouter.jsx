@@ -405,7 +405,7 @@ export default function BrokerOrderRouter() {
       {activeTab === 'orders' && (
         <div className="card">
           <h3 className="text-h3" style={{ marginBottom: '1rem' }}>Smart Order Routing (SOR) Execution Log</h3>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--glass-border)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>

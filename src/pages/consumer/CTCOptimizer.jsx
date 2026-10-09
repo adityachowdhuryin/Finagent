@@ -226,28 +226,30 @@ ${state.consumer?.user?.name || 'Employee'}
                 <h3 className="text-h3">Current Corporate Default</h3>
                 <span className="badge badge-surface">Unoptimized</span>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                <tbody>
-                  {[
-                    ['Basic Salary (40%)', formatINR(result.current.basic)],
-                    ['House Rent Allowance (HRA)', formatINR(result.current.hra)],
-                    ['Employer PF (12%)', formatINR(result.current.employerPF)],
-                    ['Corporate NPS 80CCD(2)', '₹0 (Missed Opportunity)'],
-                    ['Flexi Perks (Phone/Food/Books)', '₹0 (Taxed at 30%)'],
-                    ['Taxable Special Allowance', formatINR(result.current.specialAllowance)],
-                    ['---', '---'],
-                    ['Total Annual Income Tax (TDS)', formatINR(result.current.annualTax)],
-                    ['Monthly In-Hand Take Home', formatINR(result.current.monthlyInHand)],
-                  ].map(([label, val], idx) => label === '---' ? (
-                    <tr key={idx}><td colSpan={2} style={{ borderBottom: '1px solid var(--glass-border)', padding: '0.25rem 0' }} /></tr>
-                  ) : (
-                    <tr key={idx} style={{ borderBottom: '1px solid var(--glass-border)22' }}>
-                      <td style={{ padding: '0.5rem 0', color: idx >= 7 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: idx >= 7 ? 700 : 400 }}>{label}</td>
-                      <td style={{ padding: '0.5rem 0', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: idx >= 7 ? 800 : 600, color: idx === 7 ? 'var(--red)' : 'var(--text-primary)' }}>{val}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-responsive">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                  <tbody>
+                    {[
+                      ['Basic Salary (40%)', formatINR(result.current.basic)],
+                      ['House Rent Allowance (HRA)', formatINR(result.current.hra)],
+                      ['Employer PF (12%)', formatINR(result.current.employerPF)],
+                      ['Corporate NPS 80CCD(2)', '₹0 (Missed Opportunity)'],
+                      ['Flexi Perks (Phone/Food/Books)', '₹0 (Taxed at 30%)'],
+                      ['Taxable Special Allowance', formatINR(result.current.specialAllowance)],
+                      ['---', '---'],
+                      ['Total Annual Income Tax (TDS)', formatINR(result.current.annualTax)],
+                      ['Monthly In-Hand Take Home', formatINR(result.current.monthlyInHand)],
+                    ].map(([label, val], idx) => label === '---' ? (
+                      <tr key={idx}><td colSpan={2} style={{ borderBottom: '1px solid var(--glass-border)', padding: '0.25rem 0' }} /></tr>
+                    ) : (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--glass-border)22' }}>
+                        <td style={{ padding: '0.5rem 0', color: idx >= 7 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: idx >= 7 ? 700 : 400 }}>{label}</td>
+                        <td style={{ padding: '0.5rem 0', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: idx >= 7 ? 800 : 600, color: idx === 7 ? 'var(--red)' : 'var(--text-primary)' }}>{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* AI Re-Structured Plan */}
@@ -256,28 +258,30 @@ ${state.consumer?.user?.name || 'Employee'}
                 <h3 className="text-h3" style={{ color: 'var(--green)' }}>AI Re-Structured Structure</h3>
                 <span className="badge badge-green">Zero Tax Waste</span>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                <tbody>
-                  {[
-                    ['Basic Salary (40%)', formatINR(result.optimized.basic)],
-                    ['House Rent Allowance (HRA)', formatINR(result.optimized.hra)],
-                    ['Employer PF (12%)', formatINR(result.optimized.employerPF)],
-                    ['Corporate NPS 80CCD(2)', formatINR(result.optimized.corporateNPS)],
-                    ['Flexi Perks (Phone/Food/Books)', formatINR(result.optimized.flexiAllowances)],
-                    ['Adjusted Special Allowance', formatINR(result.optimized.specialAllowance)],
-                    ['---', '---'],
-                    ['Total Annual Income Tax (TDS)', formatINR(result.optimized.annualTax)],
-                    ['Monthly In-Hand Take Home', formatINR(result.optimized.monthlyInHand)],
-                  ].map(([label, val], idx) => label === '---' ? (
-                    <tr key={idx}><td colSpan={2} style={{ borderBottom: '1px solid var(--glass-border)', padding: '0.25rem 0' }} /></tr>
-                  ) : (
-                    <tr key={idx} style={{ borderBottom: '1px solid var(--glass-border)22' }}>
-                      <td style={{ padding: '0.5rem 0', color: idx >= 7 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: idx >= 7 ? 700 : 400 }}>{label}</td>
-                      <td style={{ padding: '0.5rem 0', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: idx >= 7 ? 800 : 600, color: idx >= 7 ? 'var(--green)' : 'var(--text-primary)' }}>{val}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-responsive">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                  <tbody>
+                    {[
+                      ['Basic Salary (40%)', formatINR(result.optimized.basic)],
+                      ['House Rent Allowance (HRA)', formatINR(result.optimized.hra)],
+                      ['Employer PF (12%)', formatINR(result.optimized.employerPF)],
+                      ['Corporate NPS 80CCD(2)', formatINR(result.optimized.corporateNPS)],
+                      ['Flexi Perks (Phone/Food/Books)', formatINR(result.optimized.flexiAllowances)],
+                      ['Adjusted Special Allowance', formatINR(result.optimized.specialAllowance)],
+                      ['---', '---'],
+                      ['Total Annual Income Tax (TDS)', formatINR(result.optimized.annualTax)],
+                      ['Monthly In-Hand Take Home', formatINR(result.optimized.monthlyInHand)],
+                    ].map(([label, val], idx) => label === '---' ? (
+                      <tr key={idx}><td colSpan={2} style={{ borderBottom: '1px solid var(--glass-border)', padding: '0.25rem 0' }} /></tr>
+                    ) : (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--glass-border)22' }}>
+                        <td style={{ padding: '0.5rem 0', color: idx >= 7 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: idx >= 7 ? 700 : 400 }}>{label}</td>
+                        <td style={{ padding: '0.5rem 0', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: idx >= 7 ? 800 : 600, color: idx >= 7 ? 'var(--green)' : 'var(--text-primary)' }}>{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 

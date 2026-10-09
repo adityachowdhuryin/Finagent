@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, BarChart2, Info, Trophy, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { absoluteReturn, cagr, formatReturn, returnColor } from '../../utils/returns';
 
 // ── Category benchmark baselines ─────────────────────────────────────────────
@@ -246,9 +247,10 @@ export default function PerformanceAnalytics() {
         </div>
       </div>
 
-      <div style={{ background: 'var(--surface)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem', overflowX: 'auto' }}>
+      <div style={{ background: 'var(--surface)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
         <h3 style={{ margin: '0 0 1.5rem 0' }}>Holding-Level Returns</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
               <th style={{ padding: '1rem' }}>Name</th>
@@ -287,6 +289,7 @@ export default function PerformanceAnalytics() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── Fund vs Category Benchmark ──────────────────────────────────────── */}
@@ -296,7 +299,7 @@ export default function PerformanceAnalytics() {
             <h2 className="text-h2">Mutual Fund vs Category Benchmark</h2>
             {loadingBenchmarks && <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Fetching live data...</span>}
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
@@ -327,6 +330,8 @@ export default function PerformanceAnalytics() {
                       <td style={{ fontFamily: 'Space Grotesk' }}>
                         {liveReturn != null ? (
                           <span style={{ color: liveReturn >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{liveReturn.toFixed(1)}%</span>
+                        ) : loadingBenchmarks ? (
+                          <Skeleton width="48px" height="1rem" />
                         ) : '—'}
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{categoryAvg?.toFixed(1)}%</td>
@@ -335,6 +340,8 @@ export default function PerformanceAnalytics() {
                           <span style={{ fontWeight: 700, color: delta >= 0 ? 'var(--green)' : 'var(--red)' }}>
                             {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
                           </span>
+                        ) : loadingBenchmarks ? (
+                          <Skeleton width="48px" height="1rem" />
                         ) : '—'}
                       </td>
                     </tr>
