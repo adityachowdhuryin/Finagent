@@ -176,6 +176,40 @@ export default function ESOPRSUAnalyzer() {
         </div>
       </div>
 
+      {/* Non-Recourse ESOP Financing & Cashback Banner (Engine 3) */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)',
+        border: '1px solid rgba(99,102,241,0.3)',
+        borderRadius: 12,
+        padding: '1rem 1.25rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        marginBottom: '1.25rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <DollarSign size={20} color="var(--green)" />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+              Need Liquidity to Exercise Private ESOPs or Cover TDS / AMT?
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Access Non-Recourse Exercise Loans through institutional partners. Zero personal liability + up to ₹7,500 / $300 client cashback.
+            </div>
+          </div>
+        </div>
+        <a
+          href="/app/bounties"
+          className="btn btn-primary btn-sm"
+          style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+        >
+          <span>Explore ESOP Financing</span>
+          <ArrowRight size={14} />
+        </a>
+      </div>
+
       {/* Black Money Act Warning Banner */}
       <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 12, padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem' }}>
         <ShieldAlert size={24} color="#f87171" style={{ flexShrink: 0 }} />

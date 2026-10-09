@@ -73,7 +73,11 @@ router.post('/webhook', (req, res) => {
         date: new Date().toISOString().split('T')[0],
         customerName,
         customerEmail: email,
-        planName: grossAmountINR > 1000 ? 'FinAgent Pro (Annual)' : 'FinAgent Pro (Monthly)',
+        planName: grossAmountINR >= 100000
+          ? 'FinAgent Black — Sovereign Virtual Family Office (Annual)'
+          : grossAmountINR > 1000
+          ? 'FinAgent Pro (Annual)'
+          : 'FinAgent Pro (Monthly)',
         grossAmountINR,
         baseAmountINR,
         gstAmountINR,

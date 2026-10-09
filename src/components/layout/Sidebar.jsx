@@ -14,68 +14,64 @@ import { useSubscription, TIERS } from '../../context/SubscriptionContext';
 
 // ── Nav definitions ───────────────────────────────────────────────────────────
 
-function getConsumerNav(isUSMarket) {
-  if (isUSMarket) {
-    return [
-      {
-        to: '/app/dashboard',
-        label: 'Home',
-        icon: LayoutDashboard,
-        matchPrefixes: ['/app/dashboard', '/app/health-score', '/app/dna', '/app/peers', '/app/cohorts'],
-      },
-      {
-        to: '/app/execution',
-        label: '1-Click Execution',
-        icon: Zap,
-        matchPrefixes: ['/app/execution', '/app/broker-router', '/app/roundups', '/app/payroll'],
-      },
-      {
-        to: '/app/portfolio',
-        label: 'Investments',
-        icon: PieChart,
-        matchPrefixes: ['/app/portfolio', '/app/private-equity', '/app/performance', '/app/xray', '/app/stress-test', '/app/rebalancing', '/app/sip-optimizer', '/app/watchlist', '/app/news'],
-      },
-      {
-        to: '/app/wash-sale',
-        label: 'Tax & Alpha',
-        icon: DollarSign,
-        matchPrefixes: [
-          '/app/wash-sale', '/app/w2-optimizer', '/app/equity-os', '/app/us-cards', '/app/cross-border',
-          '/app/commission-hunter', '/app/ctc-optimizer', '/app/forensic-audit', '/app/esop-rsu',
-          '/app/card-optimizer', '/app/tax', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
-          '/app/credit', '/app/offers', '/app/residency-arbitrage'
-        ],
-      },
-      {
-        to: '/app/living-trust',
-        label: 'Family & Wealth',
-        icon: Users,
-        matchPrefixes: [
-          '/app/living-trust', '/app/mortgage-refi', '/app/fee-hunter',
-          '/app/family-hub', '/app/emergency-vault', '/app/digital-will', '/app/goals', '/app/fire',
-          '/app/loan', '/app/insurance', '/app/govt-schemes', '/app/household', '/app/succession',
-          '/app/real-estate-avm', '/app/prenup', '/app/zk-vault'
-        ],
-      },
-      {
-        to: '/app/ai-advisor',
-        label: 'Advisory & AI',
-        icon: MessageSquare,
-        matchPrefixes: ['/app/ai-advisor', '/app/voice-banker', '/app/life-twin', '/app/doctor', '/app/life-events', '/app/marketplace', '/app/whatsapp', '/app/documents', '/app/link-advisor'],
-      },
-      {
-        to: '/app/plaid-sync',
-        label: 'Sync & Reports',
-        icon: Download,
-        matchPrefixes: ['/app/plaid-sync', '/app/report-settings', '/app/reports', '/app/invoices'],
-      },
-      { divider: true, label: 'Enterprise & Practice' },
-      { to: '/cpa',  label: 'CPA Tax Portal', icon: FileText, matchPrefixes: ['/cpa'] },
-      { to: '/work', label: 'FinAgent for Work', icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
-    ];
-  }
-
-  return [
+function getConsumerNav(isUSMarket, experienceMode = 'pro') {
+  const base = isUSMarket ? [
+    {
+      to: '/app/dashboard',
+      label: 'Home',
+      icon: LayoutDashboard,
+      matchPrefixes: ['/app/dashboard', '/app/health-score', '/app/dna', '/app/peers', '/app/cohorts'],
+    },
+    {
+      to: '/app/execution',
+      label: '1-Click Execution',
+      icon: Zap,
+      matchPrefixes: ['/app/execution', '/app/broker-router', '/app/roundups', '/app/payroll'],
+    },
+    {
+      to: '/app/portfolio',
+      label: 'Investments',
+      icon: PieChart,
+      matchPrefixes: ['/app/portfolio', '/app/private-equity', '/app/performance', '/app/xray', '/app/stress-test', '/app/rebalancing', '/app/sip-optimizer', '/app/watchlist', '/app/news'],
+    },
+    {
+      to: '/app/wash-sale',
+      label: 'Tax & Alpha',
+      icon: DollarSign,
+      matchPrefixes: [
+        '/app/wash-sale', '/app/w2-optimizer', '/app/equity-os', '/app/us-cards', '/app/cross-border',
+        '/app/commission-hunter', '/app/ctc-optimizer', '/app/forensic-audit', '/app/esop-rsu',
+        '/app/card-optimizer', '/app/tax', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
+        '/app/credit', '/app/offers', '/app/residency-arbitrage'
+      ],
+    },
+    {
+      to: '/app/living-trust',
+      label: 'Family & Wealth',
+      icon: Users,
+      matchPrefixes: [
+        '/app/living-trust', '/app/mortgage-refi', '/app/fee-hunter',
+        '/app/family-hub', '/app/emergency-vault', '/app/digital-will', '/app/goals', '/app/fire',
+        '/app/loan', '/app/insurance', '/app/govt-schemes', '/app/household', '/app/succession',
+        '/app/real-estate-avm', '/app/prenup', '/app/zk-vault'
+      ],
+    },
+    {
+      to: '/app/ai-advisor',
+      label: 'Advisory & AI',
+      icon: MessageSquare,
+      matchPrefixes: ['/app/ai-advisor', '/app/voice-banker', '/app/life-twin', '/app/doctor', '/app/life-events', '/app/marketplace', '/app/whatsapp', '/app/documents', '/app/link-advisor'],
+    },
+    {
+      to: '/app/plaid-sync',
+      label: 'Sync & Reports',
+      icon: Download,
+      matchPrefixes: ['/app/plaid-sync', '/app/report-settings', '/app/reports', '/app/invoices'],
+    },
+    { divider: true, label: 'Enterprise & Practice' },
+    { to: '/cpa',  label: 'CPA Tax Portal', icon: FileText, matchPrefixes: ['/cpa'] },
+    { to: '/work', label: 'FinAgent for Work', icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
+  ] : [
     {
       to: '/app/dashboard',
       label: 'Home',
@@ -130,6 +126,12 @@ function getConsumerNav(isUSMarket) {
     { to: '/cpa',  label: 'CA Tax Portal', icon: FileText, matchPrefixes: ['/cpa'] },
     { to: '/work', label: 'FinAgent for Work', icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
   ];
+
+  if (experienceMode === 'essential') {
+    return base.filter(item => item.to !== '/cpa' && item.to !== '/work' && !item.divider);
+  }
+
+  return base;
 }
 
 const advisorNav = [
@@ -174,7 +176,8 @@ export default function Sidebar({ open, onClose }) {
   const location = useLocation();
 
   const isAdvisor = userRole === 'advisor' || state.activeRole === 'advisor';
-  const nav = isAdvisor ? advisorNav : getConsumerNav(isUSMarket);
+  const experienceMode = state?.experienceMode || 'pro';
+  const nav = isAdvisor ? advisorNav : getConsumerNav(isUSMarket, experienceMode);
 
   const displayName = isAdvisor
     ? (userProfile?.name || currentUser?.displayName || state.advisor?.profile?.name || 'Advisor')

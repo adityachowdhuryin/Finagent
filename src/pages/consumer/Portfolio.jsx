@@ -6,6 +6,7 @@ import { X, ExternalLink, Sparkles, FileDown } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import ReportGenerator from './ReportGenerator';
 import AddHoldingForm from '../onboarding/AddHoldingForm';
+import BehavioralCircuitBreakerModal from '../../components/ui/BehavioralCircuitBreakerModal';
 
 const IN_FILTERS = ['All', 'Equity', 'Mutual Funds', 'Fixed Deposits', 'EPF', 'Real Estate', 'Gold'];
 const US_FILTERS = ['All', 'Equity', '401(k) & Retirement', 'Real Estate', 'Cash & HYSA', 'Crypto'];
@@ -22,7 +23,7 @@ function genSparkline(base, pnlPct) {
   return points;
 }
 
-function HoldingDetailPanel({ item, type, onClose, isUSMarket }) {
+function HoldingDetailPanel({ item, type, onClose, isUSMarket, onExitPosition }) {
   const navigate = useNavigate();
   if (!item) return null;
   const isEquity = type === 'equity';
@@ -157,6 +158,14 @@ function HoldingDetailPanel({ item, type, onClose, isUSMarket }) {
             <ExternalLink size={13} /> Open in {isUSMarket ? 'Schwab / Fidelity' : 'Zerodha'}
           </button>
         </div>
+
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => onExitPosition?.(item)}
+          style={{ width: '100%', borderColor: 'rgba(239,68,68,0.3)', color: 'var(--red)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginTop: '0.25rem' }}
+        >
+          ⚠️ Liquidate / Exit Position
+        </button>
       </div>
     </div>
   );
@@ -417,6 +426,7 @@ export default function Portfolio() {
   const [selectedType, setSelectedType] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [circuitBreakerHolding, setCircuitBreakerHolding] = useState(null);
 
   const totalEquityValue = (holdings.equities || []).reduce((s, h) => s + (h.value || 0), 0);
   const totalEquityPnL = (holdings.equities || []).reduce((s, h) => s + (h.pnl || 0), 0);
@@ -428,8 +438,30 @@ export default function Portfolio() {
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {selectedItem && (<><Backdrop onClick={handleClose} /><HoldingDetailPanel item={selectedItem} type={selectedType} onClose={handleClose} isUSMarket={isUSMarket} /></>)}
+      {selectedItem && (
+        <>
+          <Backdrop onClick={handleClose} />
+          <HoldingDetailPanel
+            item={selectedItem}
+            type={selectedType}
+            onClose={handleClose}
+            isUSMarket={isUSMarket}
+            onExitPosition={(holding) => setCircuitBreakerHolding(holding)}
+          />
+        </>
+      )}
       {reportOpen && <ReportGenerator onClose={() => setReportOpen(false)} />}
+
+      <BehavioralCircuitBreakerModal
+        isOpen={!!circuitBreakerHolding}
+        holding={circuitBreakerHolding}
+        onClose={() => setCircuitBreakerHolding(null)}
+        onProceedAnyway={(h) => {
+          alert(`Order routed: Liquidated ${h.symbol || h.name}.`);
+          handleClose();
+        }}
+        market={isUSMarket ? 'US' : 'IN'}
+      />
       
       {showAddForm && (
         <>

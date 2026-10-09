@@ -8,52 +8,59 @@ const SubscriptionContext = createContext(null);
 
 // ─── Tier definitions ──────────────────────────────────────────────────────────
 export const TIERS = {
-  free:    { label: 'Free',    price: 0,   color: '#6B7280' },
-  pro:     { label: 'Pro',     price: 299, color: '#6366F1' },
-  advisor: { label: 'Advisor', price: 999, color: '#F59E0B' },
+  free:    { label: 'Free',           price: 0,      priceUSD: 0,    color: '#6B7280' },
+  pro:     { label: 'Pro',            price: 299,    priceUSD: 19,   color: '#6366F1' },
+  advisor: { label: 'Advisor',        price: 999,    priceUSD: 99,   color: '#F59E0B' },
+  black:   { label: 'FinAgent Black', price: 150000, priceUSD: 2400, color: '#D4AF37' },
 };
 
 // ─── Feature access map ────────────────────────────────────────────────────────
 const ACCESS = {
-  dashboard:       ['free', 'pro', 'advisor'],
-  portfolio:       ['free', 'pro', 'advisor'],
-  news:            ['free', 'pro', 'advisor'],
-  health_score:    ['free', 'pro', 'advisor'],
-  fire_calc:       ['free', 'pro', 'advisor'],
-  performance:     ['free', 'pro', 'advisor'],
-  goals_view:      ['free', 'pro', 'advisor'],
-  goals_edit:      ['pro', 'advisor'],
-  goals_autopilot: ['pro', 'advisor'],
-  ai_chat:         ['free', 'pro', 'advisor'], // limited per month for free
-  itr_assistant:   ['pro', 'advisor'],
-  tax_harvester:   ['pro', 'advisor'],
-  pdf_reports:     ['pro', 'advisor'],
-  rebalancing:     ['pro', 'advisor'],
-  insurance:       ['pro', 'advisor'],
-  loan_analyzer:   ['pro', 'advisor'],
-  cashflow:        ['pro', 'advisor'],
-  documents:       ['pro', 'advisor'],
-  watchlist:       ['pro', 'advisor'],
-  govt_schemes:    ['pro', 'advisor'],
-  import_portfolio:['pro', 'advisor'],
-  peers:           ['pro', 'advisor'],
-  dna:             ['pro', 'advisor'],
+  dashboard:       ['free', 'pro', 'advisor', 'black'],
+  portfolio:       ['free', 'pro', 'advisor', 'black'],
+  news:            ['free', 'pro', 'advisor', 'black'],
+  health_score:    ['free', 'pro', 'advisor', 'black'],
+  fire_calc:       ['free', 'pro', 'advisor', 'black'],
+  performance:     ['free', 'pro', 'advisor', 'black'],
+  goals_view:      ['free', 'pro', 'advisor', 'black'],
+  goals_edit:      ['pro', 'advisor', 'black'],
+  goals_autopilot: ['pro', 'advisor', 'black'],
+  ai_chat:         ['free', 'pro', 'advisor', 'black'], // limited per month for free
+  itr_assistant:   ['pro', 'advisor', 'black'],
+  tax_harvester:   ['pro', 'advisor', 'black'],
+  pdf_reports:     ['pro', 'advisor', 'black'],
+  rebalancing:     ['pro', 'advisor', 'black'],
+  insurance:       ['pro', 'advisor', 'black'],
+  loan_analyzer:   ['pro', 'advisor', 'black'],
+  cashflow:        ['pro', 'advisor', 'black'],
+  documents:       ['pro', 'advisor', 'black'],
+  watchlist:       ['pro', 'advisor', 'black'],
+  govt_schemes:    ['pro', 'advisor', 'black'],
+  import_portfolio:['pro', 'advisor', 'black'],
+  peers:           ['pro', 'advisor', 'black'],
+  dna:             ['pro', 'advisor', 'black'],
+  // FinAgent Black Sovereign Family Office Perks
+  black_concierge:      ['black'],
+  cpa_human_signoff:    ['black'],
+  trust_legal_review:   ['black'],
+  zero_carry_spv:       ['black'],
+  multimodal_unlimited: ['pro', 'advisor', 'black'],
   // Advisor-only
-  advisor_tools:   ['advisor'],
-  client_book:     ['advisor'],
-  aum_dashboard:   ['advisor'],
-  model_portfolios:['advisor'],
-  portal_settings: ['advisor'],
-  onboarding:      ['advisor'],
-  compliance:      ['advisor'],
-  meeting_prep:    ['advisor'],
-  report_cards:    ['advisor'],
-  recommendations: ['advisor'],
-  audit_log:       ['advisor'],
-  insights:        ['advisor'],
+  advisor_tools:   ['advisor', 'black'],
+  client_book:     ['advisor', 'black'],
+  aum_dashboard:   ['advisor', 'black'],
+  model_portfolios:['advisor', 'black'],
+  portal_settings: ['advisor', 'black'],
+  onboarding:      ['advisor', 'black'],
+  compliance:      ['advisor', 'black'],
+  meeting_prep:    ['advisor', 'black'],
+  report_cards:    ['advisor', 'black'],
+  recommendations: ['advisor', 'black'],
+  audit_log:       ['advisor', 'black'],
+  insights:        ['advisor', 'black'],
 };
 
-export const AI_LIMITS = { free: 5, pro: Infinity, advisor: Infinity };
+export const AI_LIMITS = { free: 5, pro: Infinity, advisor: Infinity, black: Infinity };
 
 export function SubscriptionProvider({ children }) {
   const { currentUser, userRole } = useAuth();

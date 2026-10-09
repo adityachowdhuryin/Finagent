@@ -28,6 +28,7 @@ const ALL_TOOLS = [
 
   // Tax & Alpha
   { title: 'Commission Hunter (Direct vs Regular)', category: 'Tax & Alpha', to: '/app/commission-hunter', icon: DollarSign, keywords: 'regular direct commission distributor switch mf central' },
+  { title: 'Autonomous Fee & Loan Negotiator', category: 'Tax & Alpha', to: '/app/negotiator', icon: FileText, keywords: 'negotiator dispute bank fee repo rate reset loan apr cfpb rbi letter email' },
   { title: 'AI CTC & Salary Tax Optimizer', category: 'Tax & Alpha', to: '/app/ctc-optimizer', icon: Briefcase, keywords: 'ctc salary slip 80ccd2 corporate nps flexi benefits tax restructuring hr declaration' },
   { title: 'Tech ESOP & US Stock (RSU) Tax Engine', category: 'Tax & Alpha', to: '/app/esop-rsu', icon: Globe, keywords: 'esop rsu us stocks foreign assets schedule fa form 67 google msft' },
   { title: 'Credit Card Reward Maximizer & Spend Router', category: 'Tax & Alpha', to: '/app/card-optimizer', icon: CreditCard, keywords: 'credit card infinia atlas cashback reward points smartbuy spend router' },
@@ -48,6 +49,8 @@ const ALL_TOOLS = [
   { title: 'Government Schemes Tracker', category: 'Family & Wealth', to: '/app/govt-schemes', icon: Landmark, keywords: 'ppf ssy scss nps sovereign gold' },
 
   // Advisory & AI
+  { title: 'Family Office Council (3-Agent Debate)', category: 'Advisory & AI', to: '/app/council', icon: Users, keywords: 'council alpha citadel tax debate multi agent memo family office' },
+  { title: 'Dynamic Natural Language Chart Studio', category: 'Advisory & AI', to: '/app/chart-studio', icon: BarChart2, keywords: 'chart studio prompt recharts graph net worth projection png visualize' },
   { title: 'AI Copilot Advisor', category: 'Advisory & AI', to: '/app/ai-advisor', icon: MessageSquare, keywords: 'chat gemini financial advice' },
   { title: 'Portfolio Doctor', category: 'Advisory & AI', to: '/app/doctor', icon: Activity, keywords: 'diagnostic health prescription checkup' },
   { title: 'Life Events Re-Architect', category: 'Advisory & AI', to: '/app/life-events', icon: Zap, keywords: 'marriage baby home job switch' },
@@ -101,7 +104,17 @@ const ALL_TOOLS = [
   { title: 'Couple Financial Pre-Nup & Expense Splitter', category: 'Family', to: '/app/prenup', icon: Heart, keywords: 'couple prenup money compatibility income proportional split expenses' },
   { title: 'Zero-Knowledge Client Encryption Vault', category: 'Security', to: '/app/zk-vault', icon: Lock, keywords: 'zero knowledge client encryption aes 256 webcrypto mnemonic recovery touchid faceid' },
   { title: 'Multi-State & Cross-Border Residency Tax Arbitrage', category: 'Tax & Alpha', to: '/app/residency-arbitrage', icon: Globe, keywords: 'state tax relocation california texas rnor returnee india tax holiday 183 days' },
+
+
+  // Frontier Venture-Scale Expansion Suite (The 5 Highest-Impact Vectors)
+  { title: 'Direct Indexing Terminal & Tax-Alpha Harvester', category: 'Investments', to: '/app/direct-indexing', icon: Zap, keywords: 'direct indexing custom beta sp500 nifty50 tax loss harvesting tracking error exclusions alpha' },
+  { title: 'Direct Government Tax E-Filing Rails', category: 'Tax & Alpha', to: '/app/e-file', icon: FileText, keywords: 'e file irs mef xml cbdt itr json transmission din receipt 1040 8949 statutory' },
+  { title: 'Remote Online Notary (RON) & FinCEN FBAR', category: 'Family & Wealth', to: '/app/notary', icon: FileText, keywords: 'notary ron remote online notarization seal fbar fincen 114 witness trust will' },
+  { title: 'Non-Recourse ESOP Exercise Funding Marketplace', category: 'Enterprise', to: '/app/esop-financing', icon: Briefcase, keywords: 'esop financing funding non recourse options exercise term sheet liquidity private credit' },
+  { title: 'Pre-IPO Unicorn Secondaries & Private Credit Deal Room', category: 'Investments', to: '/app/syndicates', icon: Briefcase, keywords: 'syndicate secondaries pre ipo spacex stripe openai anthropic databricks private credit spv' },
+  { title: 'Gemini Live Multimodal Vision Banker', category: 'Advisory & AI', to: '/app/live-banker', icon: Mic, keywords: 'live banker multimodal vision webrtc camera webcam ocr trap inspection neural voice' },
 ];
+
 
 export default function CommandPalette({ isOpen, onClose }) {
   const [query, setQuery] = useState('');

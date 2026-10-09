@@ -360,6 +360,15 @@ function appReducer(state, action) {
       };
     }
 
+    case 'SET_EXPERIENCE_MODE': {
+      const newMode = action.payload; // 'essential' | 'pro' | 'sovereign'
+      try { localStorage.setItem('finagent_experience_mode', newMode); } catch {}
+      return {
+        ...state,
+        experienceMode: newMode,
+      };
+    }
+
     case 'UPDATE_HEALTH_SCORE':
       return { ...state, consumer: { ...state.consumer, healthScore: action.payload } };
 
@@ -379,10 +388,15 @@ export function AppProvider({ children }) {
     try { return localStorage.getItem('finagent_market') || 'US'; } catch { return 'US'; }
   })();
 
+  const savedExperienceMode = (() => {
+    try { return localStorage.getItem('finagent_experience_mode') || 'pro'; } catch { return 'pro'; }
+  })();
+
   // Derive initial state from auth context
   const initialState = {
     activeRole: userRole || null,
     activeMarket: savedMarket,
+    experienceMode: savedExperienceMode,
     _rawProfile: userRole === 'investor' ? userProfile : null,
     _isDemo: isDemo || userRole !== 'investor',
     consumer: savedMarket === 'US'
@@ -400,9 +414,11 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (userRole === null) return;
     const currentMarket = state.activeMarket || savedMarket;
+    const currentExpMode = state.experienceMode || savedExperienceMode;
     const newState = {
       activeRole: userRole,
       activeMarket: currentMarket,
+      experienceMode: currentExpMode,
       _rawProfile: userRole === 'investor' ? userProfile : null,
       _isDemo: isDemo || userRole !== 'investor',
       consumer: currentMarket === 'US'
@@ -446,17 +462,25 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_MARKET', payload: market });
   }
 
+  function setExperienceMode(mode) {
+    dispatch({ type: 'SET_EXPERIENCE_MODE', payload: mode });
+  }
+
+  const contextValue = React.useMemo(() => ({
+    state,
+    dispatch,
+    activeMarket: state.activeMarket || 'US',
+    isUSMarket: (state.activeMarket || 'US') === 'US',
+    experienceMode: state.experienceMode || 'pro',
+    setExperienceMode,
+    switchMarket,
+    persistGoals,
+    persistHoldings,
+    recomputeHealthScore
+  }), [state, state.activeMarket, state.experienceMode]);
+
   return (
-    <AppContext.Provider value={{
-      state,
-      dispatch,
-      activeMarket: state.activeMarket || 'US',
-      isUSMarket: (state.activeMarket || 'US') === 'US',
-      switchMarket,
-      persistGoals,
-      persistHoldings,
-      recomputeHealthScore
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
@@ -466,4 +490,14 @@ export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
+}
+
+export function useExperienceMode() {
+  const { experienceMode, setExperienceMode } = useApp();
+  return { experienceMode, setExperienceMode };
+}
+
+export function useActiveMarket() {
+  const { activeMarket, isUSMarket, switchMarket } = useApp();
+  return { activeMarket, isUSMarket, switchMarket };
 }

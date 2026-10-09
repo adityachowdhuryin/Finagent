@@ -11,13 +11,24 @@ export default function PlaidSync() {
   const [syncing, setSyncing] = useState(false);
   const [csvUploaded, setCsvUploaded] = useState(false);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
   useEffect(() => {
     fetchPlaidAccounts();
+
+    // Dynamically inject Plaid Link Web SDK
+    if (!document.getElementById('plaid-link-script')) {
+      const script = document.createElement('script');
+      script.id = 'plaid-link-script';
+      script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   async function fetchPlaidAccounts() {
     try {
-      const res = await fetch('http://localhost:3001/api/plaid/accounts');
+      const res = await fetch(`${API_BASE}/api/plaid/accounts`);
       const data = await res.json();
       if (data.success) {
         setPlaidData(data);
@@ -31,11 +42,39 @@ export default function PlaidSync() {
   async function handleConnectPlaid() {
     setConnecting(true);
     try {
-      const linkRes = await fetch('http://localhost:3001/api/plaid/create-link-token', { method: 'POST' });
+      const linkRes = await fetch(`${API_BASE}/api/plaid/create-link-token`, { method: 'POST' });
       const linkData = await linkRes.json();
 
-      // Simulate Plaid Link popup completion:
-      const exchangeRes = await fetch('http://localhost:3001/api/plaid/exchange-public-token', {
+      if (window.Plaid && linkData.linkToken) {
+        const handler = window.Plaid.create({
+          token: linkData.linkToken,
+          onSuccess: async (publicToken, metadata) => {
+            const institutionName = metadata?.institution?.name || 'Chase Bank';
+            const exchangeRes = await fetch(`${API_BASE}/api/plaid/exchange-public-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ publicToken, institutionName }),
+            });
+            const exchangeData = await exchangeRes.json();
+            if (exchangeData.success) {
+              setConnected(true);
+              fetchPlaidAccounts();
+            }
+            setConnecting(false);
+          },
+          onExit: (err, metadata) => {
+            setConnecting(false);
+          },
+          onEvent: (eventName, metadata) => {
+            // Optional event analytics
+          }
+        });
+        handler.open();
+        return;
+      }
+
+      // Fallback sandbox simulation if Plaid CDN script is blocked:
+      const exchangeRes = await fetch(`${API_BASE}/api/plaid/exchange-public-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicToken: 'public-sandbox-token', institutionName: 'Chase & Fidelity' }),

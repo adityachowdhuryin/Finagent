@@ -35,3 +35,4 @@ server/.env.*
 # Temporary test / scratch files
 scratch
 *.tmp
+server/data/

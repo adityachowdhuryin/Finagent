@@ -18,6 +18,12 @@ const STRIPE_PLANS = {
     interval: 'month',
     stripePriceId: process.env.STRIPE_ADVISOR_PRICE_ID || 'price_us_adv_monthly_99',
   },
+  black: {
+    name: 'FinAgent Black — Sovereign Virtual Family Office (Annual)',
+    amountUSD: 2400,
+    interval: 'year',
+    stripePriceId: process.env.STRIPE_BLACK_PRICE_ID || 'price_us_black_annual_2400',
+  },
 };
 
 // Mock invoice database for US users
@@ -51,10 +57,9 @@ async function createCheckoutSession(req, res) {
     const plan = STRIPE_PLANS[tier] || STRIPE_PLANS.pro;
 
     if (stripe) {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
+      const lineItem = plan.stripePriceId && plan.stripePriceId.startsWith('price_1')
+        ? { price: plan.stripePriceId, quantity: 1 }
+        : {
             price_data: {
               currency: 'usd',
               product_data: {
@@ -65,8 +70,11 @@ async function createCheckoutSession(req, res) {
               recurring: { interval: plan.interval },
             },
             quantity: 1,
-          },
-        ],
+          };
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [lineItem],
         mode: 'subscription',
         success_url: successUrl || 'http://localhost:5173/app/invoices?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: cancelUrl || 'http://localhost:5173/app/invoices?canceled=true',
@@ -82,6 +90,10 @@ async function createCheckoutSession(req, res) {
       success: true,
       url: successUrl ? `${successUrl}?session_id=${simulatedSessionId}` : 'http://localhost:5173/app/invoices?mock_upgraded=true',
       sessionId: simulatedSessionId,
+      plan: plan.name,
+      amountUSD: plan.amountUSD,
+      amount: plan.amountUSD * 100,
+      interval: plan.interval,
       message: 'Running in Stripe Sandbox Mode. Click redirect to complete upgrade.',
     });
   } catch (err) {

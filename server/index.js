@@ -13,6 +13,9 @@ const { analyzeCashflow } = require('./routes/cashflow');
 
 const { analyzePortfolio, sendDailyDigest } = require('./routes/doctor');
 const { getMarketData, getSIPRecommendations } = require('./routes/sipOptimizer');
+const { debateCouncil } = require('./routes/council');
+const { generateLetter, dispatchEmail, preAuthorizeAgreement, settleSavings } = require('./routes/negotiators');
+const { generateChart } = require('./routes/reportStudio');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,10 +29,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o)) || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true);
     }
   }
 }));
@@ -55,6 +58,17 @@ app.use('/api/news', newsRoutes);
 app.use('/api/sebi', sebiRoutes);
 app.post('/api/cams/parse-pdf', camsRoutes.parsePdf);
 app.post('/api/cashflow/analyze', analyzeCashflow);
+
+// Agentic AI Systems
+app.post('/api/council/debate', debateCouncil);
+app.post('/api/negotiator/generate-letter', generateLetter);
+app.post('/api/negotiator/dispatch-email', dispatchEmail);
+app.post('/api/negotiator/pre-authorize', preAuthorizeAgreement);
+app.post('/api/negotiate/pre-authorize', preAuthorizeAgreement);
+app.post('/api/negotiator/settle-savings', settleSavings);
+app.post('/api/negotiate/settle-savings', settleSavings);
+app.post('/api/negotiate/settle', settleSavings);
+app.post('/api/chart-studio/generate', generateChart);
 
 
 // Market routes (handlers exported individually)
@@ -292,23 +306,64 @@ app.post('/api/escrow/heartbeat', recordHeartbeat);
 app.post('/api/escrow/challenge-nominee', challengeNominee);
 
 // ── High-Bounty Marketplace & B2B "FinAgent for Work" ─────────────────────────
-const { getMarketplaceOffers, claimOffer } = require('./routes/marketplaceAffiliation');
+const { getMarketplaceOffers, claimOffer, getBountyLedger, claimCashback } = require('./routes/marketplaceAffiliation');
 app.get('/api/marketplace/offers', getMarketplaceOffers);
 app.post('/api/marketplace/claim-offer', claimOffer);
+app.get('/api/affiliation/bounty-ledger', getBountyLedger);
+app.post('/api/affiliation/claim-cashback', claimCashback);
 
-const { getWorkplaceOverview, updateSeats, updateMatchPolicy } = require('./routes/enterpriseWork');
+const {
+  getWorkplaceOverview,
+  updateSeats,
+  updateMatchPolicy,
+  setupCorporatePlan,
+  syncCensus,
+  getComplianceAudit,
+} = require('./routes/enterpriseWork');
 app.get('/api/work/overview', getWorkplaceOverview);
+app.get('/api/workplace/overview', getWorkplaceOverview);
 app.post('/api/work/seats', updateSeats);
 app.post('/api/work/policy', updateMatchPolicy);
+app.post('/api/work/corporate-plan/setup', setupCorporatePlan);
+app.post('/api/workplace/setup', setupCorporatePlan);
+app.post('/api/work/corporate-plan/sync-census', syncCensus);
+app.get('/api/work/corporate-plan/compliance', getComplianceAudit);
 
 // ── Wave 2: Autonomous Execution, Multimodal AI & Venture-Scale Engines ───────
 
 // 1. Autonomous Broker Order Routing (Alpaca & Zerodha Kite Connect)
-const { getBrokerRouterStatus, updateBrokerConfig, placeOrder, triggerSmartAllocation } = require('./routes/brokerOrderRouter');
+const { getBrokerRouterStatus, updateBrokerConfig, updateBrokerCredentials, placeOrder, triggerSmartAllocation } = require('./routes/brokerOrderRouter');
 app.get('/api/broker-router/status', getBrokerRouterStatus);
 app.post('/api/broker-router/config', updateBrokerConfig);
+app.post('/api/broker-router/credentials', updateBrokerCredentials);
 app.post('/api/broker-router/place-order', placeOrder);
 app.post('/api/broker-router/smart-allocation', triggerSmartAllocation);
+
+// ── Vector 1: Direct Indexing & Tax-Alpha Harvester ───────────────────────────
+const { getDirectIndexModels, rebalanceDirectIndex, enrollWrapFee, getCashSweepYield } = require('./routes/directIndexing');
+app.get('/api/direct-indexing/models', getDirectIndexModels);
+app.post('/api/direct-indexing/rebalance', rebalanceDirectIndex);
+app.post('/api/direct-indexing/enroll-wrap', enrollWrapFee);
+app.get('/api/direct-indexing/cash-sweep-yield', getCashSweepYield);
+
+// ── Vector 2: Direct Government Tax & Statutory Legal E-Filing Rails ──────────
+const { generateTaxSchema, lintTaxFiling, transmitEFile, notarizeDocument, generateFBAR } = require('./routes/taxEFiling');
+app.post('/api/e-file/generate-schema', generateTaxSchema);
+app.post('/api/e-file/lint', lintTaxFiling);
+app.post('/api/e-file/transmit', transmitEFile);
+app.post('/api/efile/transmit', transmitEFile);
+app.post('/api/e-file/notarize', notarizeDocument);
+app.post('/api/e-file/fbar', generateFBAR);
+
+// ── Vector 4: Alternative Investments & Pre-IPO Secondary Marketplace ─────────
+const { getSyndicateDeals, commitToSyndicate } = require('./routes/syndicates');
+app.get('/api/syndicates/deals', getSyndicateDeals);
+app.post('/api/syndicates/commit', commitToSyndicate);
+
+// ── Vector 5: Gemini Live Multimodal WebRTC Vision Banker ─────────────────────
+const { analyzeFrame } = require('./routes/liveMultimodal');
+app.post('/api/live-multimodal/analyze-frame', analyzeFrame);
+
 
 // 2. Conversational Voice AI Banker & 10,000-Run Monte Carlo Life Twin
 const { respondToVoice } = require('./routes/voiceAdvisor');
@@ -346,6 +401,7 @@ app.post('/api/residency/day-counter', trackPhysicalPresence);
 
 
 // ── Start ─────────────────────────────────────────────────────────────────────
+if (require.main === module || !process.env.VERCEL) {
 app.listen(PORT, () => {
   console.log(`\n🚀 FinAgent Backend running on http://localhost:${PORT}`);
   console.log(`   Gemini API key:  ${process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Missing — add to server/.env'}`);
@@ -355,3 +411,6 @@ app.listen(PORT, () => {
   console.log(`   WhatsApp token:  ${process.env.WHATSAPP_TOKEN ? '✅ Set' : '⚪ Not set — add when ready'}`);
   console.log('');
 });
+}
+
+module.exports = app;

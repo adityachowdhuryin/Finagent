@@ -118,8 +118,24 @@ import ZeroKnowledgeVault from './pages/consumer/ZeroKnowledgeVault';
 import ResidencyArbitrageHub from './pages/consumer/ResidencyArbitrageHub';
 import PublicViralDiagnostic from './pages/public/PublicViralDiagnostic';
 
+// Wave 3: Institutional-Grade Agentic AI Operating System
+import CouncilHub from './pages/consumer/CouncilHub';
+import BillLoanNegotiator from './pages/consumer/BillLoanNegotiator';
+import AIReportStudio from './pages/consumer/AIReportStudio';
+
+// Frontier Venture-Scale Expansion Suite (The 5 Highest-Impact Vectors)
+import DirectIndexingHub from './pages/consumer/DirectIndexingHub';
+import TaxEFilingHub from './pages/consumer/TaxEFilingHub';
+import EstateNotaryHub from './pages/consumer/EstateNotaryHub';
+import ESOPFinancingMarketplace from './pages/work/ESOPFinancingMarketplace';
+import AlternativeSyndicateHub from './pages/consumer/AlternativeSyndicateHub';
+import LiveMultimodalBanker from './pages/consumer/LiveMultimodalBanker';
+import MarketplaceBounties from './pages/consumer/MarketplaceBounties';
+import FinAgentBlack from './pages/consumer/FinAgentBlack';
+
 // Advisor Pages
 import ClientBook from './pages/advisor/ClientBook';
+
 import ClientProfile from './pages/advisor/ClientProfile';
 import RecoQueue from './pages/advisor/RecoQueue';
 import AuditLog from './pages/advisor/AuditLog';
@@ -269,7 +285,23 @@ function AppRoutes() {
         <Route path="prenup" element={<CouplePreNup />} />
         <Route path="zk-vault" element={<ZeroKnowledgeVault />} />
         <Route path="residency-arbitrage" element={<ResidencyArbitrageHub />} />
+
+        {/* Wave 3: Institutional-Grade Agentic AI Operating System */}
+        <Route path="council" element={<CouncilHub />} />
+        <Route path="negotiator" element={<BillLoanNegotiator />} />
+        <Route path="chart-studio" element={<AIReportStudio />} />
+
+        {/* Frontier Venture-Scale Expansion Routes */}
+        <Route path="direct-indexing" element={<DirectIndexingHub />} />
+        <Route path="e-file" element={<TaxEFilingHub />} />
+        <Route path="notary" element={<EstateNotaryHub />} />
+        <Route path="esop-financing" element={<ESOPFinancingMarketplace />} />
+        <Route path="syndicates" element={<AlternativeSyndicateHub />} />
+        <Route path="live-banker" element={<LiveMultimodalBanker />} />
+        <Route path="bounties" element={<MarketplaceBounties />} />
+        <Route path="black" element={<FinAgentBlack />} />
       </Route>
+
 
       {/* Standalone Portals: CPA & FinAgent for Work */}
       <Route path="/cpa" element={<CPAPortal />} />

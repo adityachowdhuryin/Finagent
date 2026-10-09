@@ -7,7 +7,7 @@ import NotificationBell from '../notifications/NotificationBell';
 import NotificationPanel from '../notifications/NotificationPanel';
 import PrivacyLock from '../common/PrivacyLock';
 import DailyPulseNotification from '../common/DailyPulseNotification';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const breadcrumbs = {
   // Hub 1: Home
@@ -16,8 +16,17 @@ const breadcrumbs = {
   '/app/dna': ['FinAgent', 'Home', 'Financial DNA'],
   '/app/peers': ['FinAgent', 'Home', 'Peer Benchmark'],
 
+  // Frontier Venture-Scale Expansion Routes
+  '/app/direct-indexing': ['FinAgent', 'Execution', 'Direct Indexing Terminal'],
+  '/app/e-file': ['FinAgent', 'Tax & Alpha', 'Government E-Filing'],
+  '/app/notary': ['FinAgent', 'Family & Wealth', 'Remote Online Notary'],
+  '/app/esop-financing': ['FinAgent', 'Enterprise', 'ESOP Liquidity Marketplace'],
+  '/app/syndicates': ['FinAgent', 'Family & Wealth', 'Alternative Syndicates'],
+  '/app/live-banker': ['FinAgent', 'Advisory', 'Live Multimodal Banker'],
+
   // Autonomous Execution & Wealth Engines
   '/app/execution': ['FinAgent', 'Execution', '1-Click Execution Hub'],
+
   '/app/credit': ['FinAgent', 'Credit', 'Bureau Health & Simulator'],
   '/app/payroll': ['FinAgent', 'Payroll', 'Direct Deposit Splitter'],
   '/app/roundups': ['FinAgent', 'Micro-Investing', 'Round-Up Jar & Dip Radar'],
@@ -91,15 +100,24 @@ const breadcrumbs = {
   '/advisor/meeting-prep': ['Advisor Portal', 'Meeting Prep'],
   '/advisor/report-cards': ['Advisor Portal', 'Report Cards'],
   '/advisor/compliance': ['Advisor Portal', 'Compliance Watch'],
+
+  // High-Impact Monetization Suites
+  '/app/bounties': ['FinAgent', 'Marketplace', 'Partner Bounties & Carry'],
+  '/app/black': ['FinAgent', 'VIP Concierge', 'FinAgent Black'],
 };
 
 export default function TopBar({ onMenuClick, onSearchClick }) {
-  const { state, switchMarket } = useApp();
+  const { state, switchMarket, experienceMode, setExperienceMode } = useApp();
+  const activeMode = experienceMode || state?.experienceMode || 'pro';
+  const currentMarket = state?.activeMarket || 'US';
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
+  const isWorkPortal = location.pathname.startsWith('/work');
   const crumbs = breadcrumbs[location.pathname] || ['FinAgent'];
-  const isAdvisor = state.activeRole === 'advisor';
+  const isAdvisor = state?.activeRole === 'advisor';
   const isDark = theme === 'dark';
+
 
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -174,6 +192,127 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
           {/* Daily Financial Pulse Briefing Pill */}
           {!isAdvisor && <DailyPulseNotification />}
 
+          {/* Multi-Tenant Role Switcher Pill (Personal ⇋ FinAgent for Work) */}
+          {!isAdvisor && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 20,
+              padding: '2px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+            }}>
+              <button
+                onClick={() => navigate('/app/dashboard')}
+                style={{
+                  border: 'none',
+                  background: !isWorkPortal ? 'var(--primary)' : 'transparent',
+                  color: !isWorkPortal ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.55rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Switch to Personal Wealth Cockpit"
+              >
+                <span>👤</span> Personal
+              </button>
+              <button
+                onClick={() => navigate('/work')}
+                style={{
+                  border: 'none',
+                  background: isWorkPortal ? 'var(--primary)' : 'transparent',
+                  color: isWorkPortal ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.55rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Switch to FinAgent for Work (Enterprise Admin & Equity)"
+              >
+                <span>🏢</span> Work
+              </button>
+            </div>
+          )}
+
+          {/* Experience Mode Depth Switcher (Essential ⇋ Pro ⇋ Sovereign) */}
+          {!isAdvisor && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 20,
+              padding: '2px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+            }}>
+              <button
+                onClick={() => setExperienceMode?.('essential')}
+                style={{
+                  border: 'none',
+                  background: activeMode === 'essential' ? 'var(--green)' : 'transparent',
+                  color: activeMode === 'essential' ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Essential Mode: Streamlined view for everyday personal finance, budget, and tax"
+              >
+                <span>🌱</span> Essential
+              </button>
+              <button
+                onClick={() => setExperienceMode?.('pro')}
+                style={{
+                  border: 'none',
+                  background: activeMode === 'pro' ? 'var(--primary)' : 'transparent',
+                  color: activeMode === 'pro' ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Pro Wealth Mode: Unlocks Direct Indexing, Tax-Loss Harvester, Family Council, and Sentinels"
+              >
+                <span>⚡</span> Pro
+              </button>
+              <button
+                onClick={() => setExperienceMode?.('sovereign')}
+                style={{
+                  border: 'none',
+                  background: activeMode === 'sovereign' ? 'linear-gradient(135deg, #D4AF37, #996515)' : 'transparent',
+                  color: activeMode === 'sovereign' ? '#000' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  fontWeight: activeMode === 'sovereign' ? 800 : 700,
+                }}
+                title="Sovereign Mode: Full institutional cockpit (Pre-IPO SPVs, Carry Ledger, B2B 401k/NPS, Living Trust, Black Room)"
+              >
+                <span>👑</span> Sovereign
+              </button>
+            </div>
+          )}
+
           {/* Market Switcher Pill (US ⇋ IN) */}
           <div style={{
             display: 'inline-flex',
@@ -186,11 +325,11 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
             fontWeight: 700,
           }}>
             <button
-              onClick={() => switchMarket('US')}
+              onClick={() => switchMarket?.('US')}
               style={{
                 border: 'none',
-                background: (state.activeMarket || 'US') === 'US' ? 'var(--primary)' : 'transparent',
-                color: (state.activeMarket || 'US') === 'US' ? '#fff' : 'var(--text-muted)',
+                background: currentMarket === 'US' ? 'var(--primary)' : 'transparent',
+                color: currentMarket === 'US' ? '#fff' : 'var(--text-muted)',
                 borderRadius: 16,
                 padding: '0.2rem 0.55rem',
                 cursor: 'pointer',
@@ -204,11 +343,11 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
               <span>🇺🇸</span> US
             </button>
             <button
-              onClick={() => switchMarket('IN')}
+              onClick={() => switchMarket?.('IN')}
               style={{
                 border: 'none',
-                background: (state.activeMarket || 'US') === 'IN' ? 'var(--primary)' : 'transparent',
-                color: (state.activeMarket || 'US') === 'IN' ? '#fff' : 'var(--text-muted)',
+                background: currentMarket === 'IN' ? 'var(--primary)' : 'transparent',
+                color: currentMarket === 'IN' ? '#fff' : 'var(--text-muted)',
                 borderRadius: 16,
                 padding: '0.2rem 0.55rem',
                 cursor: 'pointer',
@@ -222,6 +361,28 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
               <span>🇮🇳</span> IN
             </button>
           </div>
+
+          {/* FinAgent Black VIP Shortcut */}
+          <button
+            onClick={() => navigate('/app/black')}
+            style={{
+              border: '1px solid rgba(212, 175, 55, 0.6)',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(0, 0, 0, 0.4))',
+              color: '#D4AF37',
+              borderRadius: 20,
+              padding: '0.25rem 0.65rem',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              transition: 'all 0.2s',
+            }}
+            title="FinAgent Black Sovereign Virtual Family Office"
+          >
+            <span>👑</span> Black
+          </button>
 
           {/* Live sync status (consumer only) */}
           {!isAdvisor && (

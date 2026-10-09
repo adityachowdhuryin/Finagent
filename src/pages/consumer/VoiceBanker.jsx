@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Mic, MicOff, Volume2, Sparkles, Activity, PieChart,
-  TrendingDown, TrendingUp, AlertTriangle, ShieldCheck, RefreshCw
+  TrendingDown, TrendingUp, AlertTriangle, ShieldCheck, RefreshCw,
+  Users, FileText, BarChart2, ArrowRight
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function VoiceBanker() {
+  const navigate = useNavigate();
   const { state } = useApp();
   const market = state.market || 'US';
 
@@ -95,6 +98,54 @@ export default function VoiceBanker() {
 
     setVoiceHistory(prev => [...prev, { sender: 'user', text: queryText }]);
     setIsThinking(true);
+
+    const lower = queryText.toLowerCase();
+
+    // Direct Voice Navigation & Agentic Triggers
+    if (lower.includes('council') || lower.includes('family office') || lower.includes('debate')) {
+      const speech = "Convening the Family Office Council. The Alpha, Citadel, and Tax agents are assembling now.";
+      setVoiceHistory(prev => [...prev, { sender: 'ai', text: speech, action: 'NAVIGATE_COUNCIL' }]);
+      speakText(speech);
+      setIsThinking(false);
+      setTimeout(() => navigate('/app/council'), 1500);
+      return;
+    }
+
+    if (lower.includes('negotiat') || lower.includes('dispute') || lower.includes('fee') || lower.includes('rate reset')) {
+      const speech = "Opening the Autonomous Negotiator to audit bank charges and prepare official dispute letters.";
+      setVoiceHistory(prev => [...prev, { sender: 'ai', text: speech, action: 'NAVIGATE_NEGOTIATOR' }]);
+      speakText(speech);
+      setIsThinking(false);
+      setTimeout(() => navigate('/app/negotiator'), 1500);
+      return;
+    }
+
+    if (lower.includes('chart') || lower.includes('dynamic chart') || lower.includes('studio') || lower.includes('draw')) {
+      const speech = "Opening the Dynamic Chart Studio to generate customized financial visualizations.";
+      setVoiceHistory(prev => [...prev, { sender: 'ai', text: speech, action: 'NAVIGATE_CHART_STUDIO' }]);
+      speakText(speech);
+      setIsThinking(false);
+      setTimeout(() => navigate('/app/chart-studio'), 1500);
+      return;
+    }
+
+    if (lower.includes('harvest') || lower.includes('wash sale')) {
+      const speech = "Navigating to Tax Harvester to review tax-loss harvesting lots and potential offsets.";
+      setVoiceHistory(prev => [...prev, { sender: 'ai', text: speech, action: 'NAVIGATE_TAX' }]);
+      speakText(speech);
+      setIsThinking(false);
+      setTimeout(() => navigate('/app/tax'), 1500);
+      return;
+    }
+
+    if (lower.includes('rebalanc')) {
+      const speech = "Opening Portfolio Rebalancing to inspect asset allocation drift against your target model.";
+      setVoiceHistory(prev => [...prev, { sender: 'ai', text: speech, action: 'NAVIGATE_REBALANCE' }]);
+      speakText(speech);
+      setIsThinking(false);
+      setTimeout(() => navigate('/app/rebalancing'), 1500);
+      return;
+    }
 
     try {
       const res = await fetch('/api/voice-advisor/respond', {
@@ -192,16 +243,18 @@ export default function VoiceBanker() {
           {/* Quick Preset Buttons */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center', marginTop: '1rem' }}>
             {[
+              'Open Family Office Council',
+              'Open Fee Negotiator',
+              'Open Dynamic Chart Studio',
               'Check tech exposure',
               'Detect market dips',
-              'Tax harvest status',
-              'Total net worth'
+              'Tax harvest status'
             ].map(promptText => (
               <button
                 key={promptText}
                 className="btn btn-ghost btn-xs"
                 onClick={() => handleVoiceQuery(promptText)}
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
               >
                 "{promptText}"
               </button>
