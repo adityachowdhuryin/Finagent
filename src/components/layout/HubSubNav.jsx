@@ -411,14 +411,12 @@ export default function HubSubNav() {
         marginBottom: '1rem',
         zIndex: 40,
         gap: '0.75rem',
-        flexWrap: 'nowrap',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-        WebkitOverflowScrolling: 'touch',
+        flexWrap: 'wrap',
+        overflow: 'visible',
       }}
     >
       {/* Left: Hub Title & Active Pillar Dropdowns */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div
           style={{
             display: 'flex',
@@ -436,7 +434,7 @@ export default function HubSubNav() {
         </div>
 
         {/* Grouped Pillar Dropdown Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {currentHub.pillars.map((pillar) => {
             const hasActiveTab = pillar.tabs.some(t => location.pathname === t.to);
             const activeSubTab = pillar.tabs.find(t => location.pathname === t.to);

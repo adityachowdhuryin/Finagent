@@ -178,6 +178,7 @@ body {
   cursor: pointer; transition: var(--transition); font-size: 1rem;
   position: relative; overflow: hidden;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 .theme-toggle:hover {
   background: var(--surface-hover);
@@ -481,7 +482,7 @@ textarea.input { resize: vertical; min-height: 80px; }
 .topbar-desktop-controls { display: flex; align-items: center; gap: 0.75rem; }
 .topbar-mobile-controls-trigger { display: none; }
 
-@media (max-width: 1024px) {
+@media (max-width: 1400px) {
   .topbar-desktop-controls { display: none !important; }
   .topbar-mobile-controls-trigger {
     display: inline-flex !important;

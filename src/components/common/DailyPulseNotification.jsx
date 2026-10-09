@@ -38,6 +38,15 @@ export default function DailyPulseNotification() {
     fetchPulse(timeOfDay);
   }, [isUSMarket, timeOfDay]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   return (
     <>
       {/* Top Banner / Pill Button */}
@@ -71,13 +80,25 @@ export default function DailyPulseNotification() {
 
       {/* Briefing Modal */}
       {isOpen && pulseData && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-          <div className="card" style={{ maxWidth: 560, width: '100%', padding: '1.75rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <div
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+          }}
+        >
+          <div
+            className="card"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 560, width: '100%', padding: '1.75rem', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+          >
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              marginBottom: '1rem', position: 'sticky', top: 0,
+              background: 'var(--surface)', zIndex: 10, padding: '0.5rem 0',
+              borderBottom: '1px solid var(--glass-border)'
+            }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span className="badge badge-primary">{pulseData.edition}</span>
@@ -90,7 +111,8 @@ export default function DailyPulseNotification() {
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => setIsOpen(false)}
-                style={{ padding: '0.25rem 0.5rem' }}
+                style={{ padding: '0.35rem 0.65rem' }}
+                title="Close (Esc)"
               >
                 <X size={18} />
               </button>
@@ -201,7 +223,14 @@ export default function DailyPulseNotification() {
               <strong>Macro Pulse:</strong> {pulseData.macro}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setIsOpen(false)}
+              >
+                Close
+              </button>
               <button
                 className="btn btn-primary"
                 onClick={() => {

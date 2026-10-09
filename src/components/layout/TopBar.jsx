@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, RefreshCw, Search, Lock, Eye, EyeOff, SlidersHorizontal, X } from 'lucide-react';
+import { Menu, RefreshCw, Search, Lock, Eye, EyeOff, SlidersHorizontal, X, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -140,6 +140,30 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
           <button className="btn btn-ghost btn-icon mobile-menu-btn" onClick={onMenuClick}>
             <Menu size={20} />
           </button>
+
+          {/* History Navigation (Back / Forward) */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginRight: '0.25rem' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              onClick={() => navigate(-1)}
+              title="Back"
+              aria-label="Back"
+              style={{ width: 32, height: 32, padding: 0 }}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              onClick={() => navigate(1)}
+              title="Forward"
+              aria-label="Forward"
+              style={{ width: 32, height: 32, padding: 0 }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
           <nav className="topbar-breadcrumb">
             {crumbs.map((crumb, i) => (
               <React.Fragment key={i}>
@@ -531,6 +555,29 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                       </div>
                     </div>
 
+                    {/* Appearance (Light / Dark Mode) */}
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>APPEARANCE</div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${!isDark ? 'btn-primary' : 'btn-ghost'}`}
+                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                          onClick={() => { if (isDark) toggleTheme(); setControlsOpen(false); }}
+                        >
+                          <Sun size={14} /> Light
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${isDark ? 'btn-primary' : 'btn-ghost'}`}
+                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                          onClick={() => { if (!isDark) toggleTheme(); setControlsOpen(false); }}
+                        >
+                          <Moon size={14} /> Dark
+                        </button>
+                      </div>
+                    </div>
+
                     {/* VIP and PIN Lock */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
                       <button
@@ -566,9 +613,22 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
             </div>
           )}
 
-          {/* Theme Toggle */}
-          <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label="Toggle theme">
-            <span className="theme-toggle-icon">{isDark ? '☀️' : '🌙'}</span>
+          {/* Theme Toggle (Permanent, flexShrink: 0) */}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            style={{ flexShrink: 0 }}
+          >
+            <span className="theme-toggle-icon">
+              {isDark ? (
+                <Sun size={17} style={{ color: 'var(--gold)' }} />
+              ) : (
+                <Moon size={17} style={{ color: 'var(--primary)' }} />
+              )}
+            </span>
           </button>
 
           {/* AI Notifications Bell (consumer only) */}
