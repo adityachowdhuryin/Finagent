@@ -413,6 +413,8 @@ export default function HubSubNav() {
         gap: '0.75rem',
         flexWrap: 'wrap',
         overflow: 'visible',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
       }}
     >
       {/* Left: Hub Title & Active Pillar Dropdowns */}

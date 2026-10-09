@@ -136,13 +136,13 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
   return (
     <>
       <header className="topbar">
-        <div className="topbar-left" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', minWidth: 0, flexShrink: 1, overflow: 'hidden' }}>
           <button className="btn btn-ghost btn-icon mobile-menu-btn" onClick={onMenuClick}>
             <Menu size={20} />
           </button>
 
           {/* History Navigation (Back / Forward) */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginRight: '0.25rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginRight: '0.25rem', flexShrink: 0 }}>
             <button
               type="button"
               className="btn btn-ghost btn-icon"
@@ -191,7 +191,8 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                 color: 'var(--text-muted)',
                 fontSize: '0.8rem',
                 cursor: 'pointer',
-                marginLeft: '1rem',
+                marginLeft: '0.5rem',
+                flexShrink: 0,
                 transition: 'all 0.15s ease',
               }}
               title="Search all tools (Cmd + K)"
@@ -217,7 +218,57 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
           {/* Daily Financial Pulse Briefing Pill */}
           {!isAdvisor && <DailyPulseNotification />}
 
-          {/* Desktop Controls (hidden on <=1024px) */}
+          {/* Market Switcher Pill (US ⇋ IN) */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'var(--surface-raised)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 20,
+            padding: '2px',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => switchMarket?.('US')}
+              style={{
+                border: 'none',
+                background: currentMarket === 'US' ? 'var(--primary)' : 'transparent',
+                color: currentMarket === 'US' ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="Switch to US Financial Market ($ USD, 401k, IRS 1040, Wash-Sale)"
+            >
+              <span>🇺🇸</span> US
+            </button>
+            <button
+              onClick={() => switchMarket?.('IN')}
+              style={{
+                border: 'none',
+                background: currentMarket === 'IN' ? 'var(--primary)' : 'transparent',
+                color: currentMarket === 'IN' ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="Switch to Indian Financial Market (₹ INR, EPF, ITR, MF)"
+            >
+              <span>🇮🇳</span> IN
+            </button>
+          </div>
+
+          {/* Desktop Controls (visible only on ultra-wide screens >=1720px) */}
           <div className="topbar-desktop-controls">
             {/* Multi-Tenant Role Switcher Pill (Personal ⇋ FinAgent for Work) */}
             {!isAdvisor && (
@@ -339,55 +390,6 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                 </button>
               </div>
             )}
-
-            {/* Market Switcher Pill (US ⇋ IN) */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: 'var(--surface-raised)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: 20,
-              padding: '2px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-            }}>
-              <button
-                onClick={() => switchMarket?.('US')}
-                style={{
-                  border: 'none',
-                  background: currentMarket === 'US' ? 'var(--primary)' : 'transparent',
-                  color: currentMarket === 'US' ? '#fff' : 'var(--text-muted)',
-                  borderRadius: 16,
-                  padding: '0.2rem 0.55rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                }}
-                title="Switch to US Financial Market ($ USD, 401k, IRS 1040, Wash-Sale)"
-              >
-                <span>🇺🇸</span> US
-              </button>
-              <button
-                onClick={() => switchMarket?.('IN')}
-                style={{
-                  border: 'none',
-                  background: currentMarket === 'IN' ? 'var(--primary)' : 'transparent',
-                  color: currentMarket === 'IN' ? '#fff' : 'var(--text-muted)',
-                  borderRadius: 16,
-                  padding: '0.2rem 0.55rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                }}
-                title="Switch to Indian Financial Market (₹ INR, EPF, ITR, MF)"
-              >
-                <span>🇮🇳</span> IN
-              </button>
-            </div>
 
             {/* FinAgent Black VIP Shortcut */}
             <button

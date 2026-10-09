@@ -51,6 +51,8 @@ export default function DailyPulseNotification() {
     <>
       {/* Top Banner / Pill Button */}
       <button
+        type="button"
+        className="daily-pulse-pill"
         onClick={() => setIsOpen(true)}
         style={{
           display: 'inline-flex',
@@ -72,7 +74,7 @@ export default function DailyPulseNotification() {
       >
         <span style={{ fontSize: '0.85rem' }}>☀️</span>
         <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Pulse:</span>
-        <span style={{ color: 'var(--green)', fontWeight: 700, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ color: 'var(--green)', fontWeight: 700, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {pulseData?.netWorthDelta || '+0.42% Today'}
         </span>
         <span className="badge badge-surface" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>Digest</span>
