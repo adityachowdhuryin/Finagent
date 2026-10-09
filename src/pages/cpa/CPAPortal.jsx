@@ -2,14 +2,18 @@
 // CPA & Chartered Accountant Portal (/cpa) with 1-Click Tax Dossier Export
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText, Download, CheckCircle2, ShieldCheck, Users,
-  ExternalLink, Building, Clock, ArrowRight, Printer, Sparkles
+  ExternalLink, Building, Clock, ArrowRight, ArrowLeft, Home, Printer, Sparkles, Sun, Moon
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function CPAPortal() {
-  const { state, isUSMarket } = useApp();
+  const navigate = useNavigate();
+  const { state, isUSMarket, switchMarket } = useApp();
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [cpaData, setCpaData] = useState(null);
   const [selectedClientId, setSelectedClientId] = useState('cli_01');
@@ -79,6 +83,131 @@ export default function CPAPortal() {
           <span>{toastMsg}</span>
         </div>
       )}
+
+      {/* Top Navigation Bar with Back button and Quick Exit */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.75rem 1.25rem',
+        background: 'var(--surface-raised)',
+        border: '1px solid var(--glass-border)',
+        borderRadius: 12,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        gap: '1rem',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => navigate(-1)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              padding: '0.4rem 0.85rem',
+              background: 'var(--surface)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 8,
+              color: 'var(--text-primary)',
+            }}
+            title="Go Back"
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+
+          <div style={{ width: 1, height: 22, background: 'var(--glass-border)' }} />
+
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => navigate('/app/dashboard')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8125rem',
+              padding: '0.35rem 0.65rem',
+            }}
+            title="Return to Personal Wealth Cockpit"
+          >
+            <Home size={15} />
+            <span>Personal Dashboard</span>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Market Switcher Pill (US ⇋ IN) */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'var(--surface)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 20,
+            padding: '2px',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+          }}>
+            <button
+              type="button"
+              onClick={() => switchMarket?.('US')}
+              style={{
+                border: 'none',
+                background: isUSMarket ? 'var(--primary)' : 'transparent',
+                color: isUSMarket ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="US CPA Context"
+            >
+              <span>🇺🇸</span> US
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMarket?.('IN')}
+              style={{
+                border: 'none',
+                background: !isUSMarket ? 'var(--primary)' : 'transparent',
+                color: !isUSMarket ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="Indian CA Context"
+            >
+              <span>🇮🇳</span> IN
+            </button>
+          </div>
+
+          {/* Theme Toggle Button */}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            style={{ width: 34, height: 34, flexShrink: 0 }}
+          >
+            <span className="theme-toggle-icon">
+              {theme === 'dark' ? <Sun size={16} style={{ color: 'var(--gold)' }} /> : <Moon size={16} style={{ color: 'var(--primary)' }} />}
+            </span>
+          </button>
+        </div>
+      </div>
 
       {/* Header Banner */}
       <div className="card" style={{

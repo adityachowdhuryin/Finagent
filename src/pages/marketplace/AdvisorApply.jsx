@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle, AlertCircle, ShieldCheck, Loader, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, AlertCircle, ShieldCheck, Loader, ChevronDown, ChevronUp, ArrowLeft, Home } from 'lucide-react';
 
 const SPECIALIZATIONS = [
   'Tax Planning', 'Retirement', 'Equity', 'FIRE Planning',
@@ -78,6 +79,7 @@ function FaqItem({ q, a }) {
 }
 
 export default function AdvisorApply() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '', email: '', city: '', sebiReg: '',
     bio: '', fee30: '', fee60: '',
@@ -155,10 +157,32 @@ export default function AdvisorApply() {
   }
 
   return (
-    <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '3rem', maxWidth: 760, margin: '0 auto', padding: '1.5rem' }}>
+    <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: 760, margin: '0 auto', padding: '1.5rem' }}>
+
+      {/* Top Navigation Bar with Back button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid var(--glass-border)' }}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => navigate(-1)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+        >
+          <ArrowLeft size={16} />
+          <span>Back</span>
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => navigate('/app/dashboard')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)' }}
+        >
+          <Home size={15} />
+          <span>Dashboard</span>
+        </button>
+      </div>
 
       {/* ── Hero ── */}
-      <section style={{ textAlign: 'center', padding: '2rem 0 1rem' }}>
+      <section style={{ textAlign: 'center', padding: '1rem 0' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎓</div>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '1rem' }}>
           List your practice on FinAgent
