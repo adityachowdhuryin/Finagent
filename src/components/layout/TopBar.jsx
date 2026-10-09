@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, RefreshCw, Search, Lock, Eye, EyeOff, SlidersHorizontal, X, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Menu, RefreshCw, Search, Lock, Eye, EyeOff, SlidersHorizontal, X, ChevronLeft, ChevronRight, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationBell from '../notifications/NotificationBell';
@@ -108,6 +109,7 @@ const breadcrumbs = {
 
 export default function TopBar({ onMenuClick, onSearchClick }) {
   const { state, switchMarket, experienceMode, setExperienceMode } = useApp();
+  const { userRole, switchRole } = useAuth();
   const activeMode = experienceMode || state?.experienceMode || 'pro';
   const currentMarket = state?.activeMarket || 'US';
   const { theme, toggleTheme } = useTheme();
@@ -115,12 +117,13 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
   const navigate = useNavigate();
   const isWorkPortal = location.pathname.startsWith('/work');
   const crumbs = breadcrumbs[location.pathname] || ['FinAgent'];
-  const isAdvisor = state?.activeRole === 'advisor';
+  const isAdvisor = state?.activeRole === 'advisor' || userRole === 'advisor';
   const isDark = theme === 'dark';
 
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
   // Pass portfolio context for AI-generated alerts
   const portfolioData = !isAdvisor ? {
@@ -270,56 +273,90 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
 
           {/* Desktop Controls (visible only on ultra-wide screens >=1720px) */}
           <div className="topbar-desktop-controls">
-            {/* Multi-Tenant Role Switcher Pill (Personal ⇋ FinAgent for Work) */}
-            {!isAdvisor && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                background: 'var(--surface-raised)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: 20,
-                padding: '2px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-              }}>
-                <button
-                  onClick={() => navigate('/app/dashboard')}
-                  style={{
-                    border: 'none',
-                    background: !isWorkPortal ? 'var(--primary)' : 'transparent',
-                    color: !isWorkPortal ? '#fff' : 'var(--text-muted)',
-                    borderRadius: 16,
-                    padding: '0.2rem 0.55rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 3,
-                  }}
-                  title="Switch to Personal Wealth Cockpit"
-                >
-                  <span>👤</span> Personal
-                </button>
-                <button
-                  onClick={() => navigate('/work')}
-                  style={{
-                    border: 'none',
-                    background: isWorkPortal ? 'var(--primary)' : 'transparent',
-                    color: isWorkPortal ? '#fff' : 'var(--text-muted)',
-                    borderRadius: 16,
-                    padding: '0.2rem 0.55rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 3,
-                  }}
-                  title="Switch to FinAgent for Work (Enterprise Admin & Equity)"
-                >
-                  <span>🏢</span> Work
-                </button>
-              </div>
-            )}
+            {/* Multi-Tenant Role Switcher Pill (Investor ⇋ Advisor ⇋ CPA ⇋ Work) */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 20,
+              padding: '2px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+            }}>
+              <button
+                onClick={() => { switchRole?.('investor'); navigate('/app/dashboard'); }}
+                style={{
+                  border: 'none',
+                  background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'var(--primary)' : 'transparent',
+                  color: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Investor Cockpit: Personal wealth, portfolio & tax"
+              >
+                <span>👤</span> Investor
+              </button>
+              <button
+                onClick={() => { switchRole?.('advisor'); navigate('/advisor/clients'); }}
+                style={{
+                  border: 'none',
+                  background: isAdvisor ? 'var(--primary)' : 'transparent',
+                  color: isAdvisor ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="Advisor Practice: Client book, recommendations, AUM"
+              >
+                <span>🏢</span> Advisor
+              </button>
+              <button
+                onClick={() => navigate('/cpa')}
+                style={{
+                  border: 'none',
+                  background: location.pathname === '/cpa' ? 'var(--primary)' : 'transparent',
+                  color: location.pathname === '/cpa' ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="CPA Portal: 1040 Sch D, Form 8949, client tax audit"
+              >
+                <span>📋</span> CPA
+              </button>
+              <button
+                onClick={() => navigate('/work')}
+                style={{
+                  border: 'none',
+                  background: isWorkPortal ? 'var(--primary)' : 'transparent',
+                  color: isWorkPortal ? '#fff' : 'var(--text-muted)',
+                  borderRadius: 16,
+                  padding: '0.2rem 0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+                title="FinAgent for Work: Enterprise HR, 401(k), equity & payroll"
+              >
+                <span>💼</span> Work
+              </button>
+            </div>
 
             {/* Experience Mode Depth Switcher (Essential ⇋ Pro ⇋ Sovereign) */}
             {!isAdvisor && (
@@ -437,183 +474,195 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
             )}
           </div>
 
-          {/* Mobile/Tablet Quick Controls Popover Toggle (visible on <=1024px) */}
-          {!isAdvisor && (
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className="topbar-mobile-controls-trigger"
-                onClick={() => setControlsOpen(o => !o)}
-                title="Quick Controls"
-              >
-                <SlidersHorizontal size={13} />
-                <span>Controls</span>
-              </button>
+          {/* Mobile/Tablet Quick Controls Popover Toggle */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="topbar-mobile-controls-trigger"
+              onClick={() => setControlsOpen(o => !o)}
+              title="Quick Controls"
+            >
+              <SlidersHorizontal size={13} />
+              <span>Controls</span>
+            </button>
 
-              {controlsOpen && (
-                <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 998 }}
-                    onClick={() => setControlsOpen(false)}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      right: 0,
-                      width: 290,
-                      background: 'var(--surface-raised)',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      border: '1px solid var(--glass-border)',
-                      borderRadius: 'var(--radius)',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-                      padding: '1rem',
-                      zIndex: 999,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.85rem',
-                      animation: 'fadeIn 0.15s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>Quick Controls</span>
+            {controlsOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                  onClick={() => setControlsOpen(false)}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    width: 290,
+                    background: 'var(--surface-raised)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                    padding: '1rem',
+                    zIndex: 999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem',
+                    animation: 'fadeIn 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>Quick Controls</span>
+                    <button
+                      type="button"
+                      onClick={() => setControlsOpen(false)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  {/* Market Switcher */}
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>FINANCIAL MARKET</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button
-                        type="button"
-                        onClick={() => setControlsOpen(false)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+                        className={`btn btn-sm ${currentMarket === 'US' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
+                        onClick={() => { switchMarket?.('US'); setControlsOpen(false); }}
                       >
-                        <X size={14} />
-                      </button>
-                    </div>
-
-                    {/* Market Switcher */}
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>FINANCIAL MARKET</div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          className={`btn btn-sm ${currentMarket === 'US' ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
-                          onClick={() => { switchMarket?.('US'); setControlsOpen(false); }}
-                        >
-                          🇺🇸 US ($)
-                        </button>
-                        <button
-                          className={`btn btn-sm ${currentMarket === 'IN' ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
-                          onClick={() => { switchMarket?.('IN'); setControlsOpen(false); }}
-                        >
-                          🇮🇳 India (₹)
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Depth Mode */}
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>EXPERIENCE DEPTH</div>
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
-                        <button
-                          className={`btn btn-sm ${activeMode === 'essential' ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
-                          onClick={() => { setExperienceMode?.('essential'); setControlsOpen(false); }}
-                        >
-                          🌱 Essential
-                        </button>
-                        <button
-                          className={`btn btn-sm ${activeMode === 'pro' ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
-                          onClick={() => { setExperienceMode?.('pro'); setControlsOpen(false); }}
-                        >
-                          ⚡ Pro
-                        </button>
-                        <button
-                          className={`btn btn-sm ${activeMode === 'sovereign' ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
-                          onClick={() => { setExperienceMode?.('sovereign'); setControlsOpen(false); }}
-                        >
-                          👑 Sovereign
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Workspace Role Switcher */}
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>WORKSPACE</div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          className={`btn btn-sm ${!isWorkPortal ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
-                          onClick={() => { navigate('/app/dashboard'); setControlsOpen(false); }}
-                        >
-                          👤 Personal
-                        </button>
-                        <button
-                          className={`btn btn-sm ${isWorkPortal ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
-                          onClick={() => { navigate('/work'); setControlsOpen(false); }}
-                        >
-                          🏢 Work
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Appearance (Light / Dark Mode) */}
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>APPEARANCE</div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          type="button"
-                          className={`btn btn-sm ${!isDark ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                          onClick={() => { if (isDark) toggleTheme(); setControlsOpen(false); }}
-                        >
-                          <Sun size={14} /> Light
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn btn-sm ${isDark ? 'btn-primary' : 'btn-ghost'}`}
-                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                          onClick={() => { if (!isDark) toggleTheme(); setControlsOpen(false); }}
-                        >
-                          <Moon size={14} /> Dark
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* VIP and PIN Lock */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
-                      <button
-                        onClick={() => { navigate('/app/black'); setControlsOpen(false); }}
-                        style={{
-                          border: '1px solid rgba(212, 175, 55, 0.6)',
-                          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(0, 0, 0, 0.4))',
-                          color: '#D4AF37',
-                          borderRadius: 16,
-                          padding: '0.3rem 0.65rem',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontWeight: 800,
-                        }}
-                      >
-                        👑 FinAgent Black
+                        🇺🇸 US ($)
                       </button>
                       <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          localStorage.setItem('finagent_pin_enabled', 'true');
-                          document.dispatchEvent(new Event('visibilitychange'));
-                          setControlsOpen(false);
-                        }}
-                        style={{ fontSize: '0.75rem' }}
+                        className={`btn btn-sm ${currentMarket === 'IN' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem' }}
+                        onClick={() => { switchMarket?.('IN'); setControlsOpen(false); }}
                       >
-                        <Lock size={13} style={{ marginRight: 4 }} /> PIN Lock
+                        🇮🇳 India (₹)
                       </button>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
-          )}
+
+                  {/* Depth Mode */}
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>EXPERIENCE DEPTH</div>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <button
+                        className={`btn btn-sm ${activeMode === 'essential' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
+                        onClick={() => { setExperienceMode?.('essential'); setControlsOpen(false); }}
+                      >
+                        🌱 Essential
+                      </button>
+                      <button
+                        className={`btn btn-sm ${activeMode === 'pro' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
+                        onClick={() => { setExperienceMode?.('pro'); setControlsOpen(false); }}
+                      >
+                        ⚡ Pro
+                      </button>
+                      <button
+                        className={`btn btn-sm ${activeMode === 'sovereign' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.7rem', padding: '0.3rem' }}
+                        onClick={() => { setExperienceMode?.('sovereign'); setControlsOpen(false); }}
+                      >
+                        👑 Sovereign
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Workspace & Portal Switcher */}
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>PORTAL & WORKSPACE</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                      <button
+                        className={`btn btn-sm ${(!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        onClick={() => { switchRole?.('investor'); navigate('/app/dashboard'); setControlsOpen(false); }}
+                      >
+                        👤 Investor
+                      </button>
+                      <button
+                        className={`btn btn-sm ${isAdvisor ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        onClick={() => { switchRole?.('advisor'); navigate('/advisor/clients'); setControlsOpen(false); }}
+                      >
+                        🏢 Advisor
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/cpa' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/cpa'); setControlsOpen(false); }}
+                      >
+                        📋 CPA Tax
+                      </button>
+                      <button
+                        className={`btn btn-sm ${isWorkPortal ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/work'); setControlsOpen(false); }}
+                      >
+                        💼 Work B2B
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Appearance (Light / Dark Mode) */}
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>APPEARANCE</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${!isDark ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        onClick={() => { if (isDark) toggleTheme(); setControlsOpen(false); }}
+                      >
+                        <Sun size={14} /> Light
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${isDark ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        onClick={() => { if (!isDark) toggleTheme(); setControlsOpen(false); }}
+                      >
+                        <Moon size={14} /> Dark
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* VIP and PIN Lock */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
+                    <button
+                      onClick={() => { navigate('/app/black'); setControlsOpen(false); }}
+                      style={{
+                        border: '1px solid rgba(212, 175, 55, 0.6)',
+                        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(0, 0, 0, 0.4))',
+                        color: '#D4AF37',
+                        borderRadius: 16,
+                        padding: '0.3rem 0.65rem',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      👑 FinAgent Black
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        localStorage.setItem('finagent_pin_enabled', 'true');
+                        document.dispatchEvent(new Event('visibilitychange'));
+                        setControlsOpen(false);
+                      }}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      <Lock size={13} style={{ marginRight: 4 }} /> PIN Lock
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Theme Toggle (Permanent, flexShrink: 0) */}
           <button
@@ -641,9 +690,195 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
             />
           )}
 
-          {/* Mode badge */}
-          <div className={`badge ${isAdvisor ? 'badge-purple' : 'badge-primary'}`}>
-            {isAdvisor ? '🏢 Advisor' : '👤 Investor'}
+          {/* Role & Portal Switcher Badge with Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setRoleMenuOpen(o => !o)}
+              className={`badge ${isAdvisor ? 'badge-purple' : 'badge-primary'}`}
+              style={{
+                cursor: 'pointer',
+                border: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '0.28rem 0.65rem',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                borderRadius: 20,
+                transition: 'all 0.15s ease',
+              }}
+              title="Click to Switch Portal (Investor, Advisor, CPA, Enterprise Work)"
+            >
+              <span>{isAdvisor ? '🏢 Advisor' : '👤 Investor'}</span>
+              <ChevronDown size={13} style={{ transform: roleMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+            </button>
+
+            {roleMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                  onClick={() => setRoleMenuOpen(false)}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    width: 280,
+                    background: 'var(--surface-raised)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                    padding: '0.75rem',
+                    zIndex: 999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                    animation: 'fadeIn 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SWITCH ROLE & PORTAL</span>
+                    <button
+                      type="button"
+                      onClick={() => setRoleMenuOpen(false)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+
+                  {/* 1. Investor */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchRole?.('investor');
+                      navigate('/app/dashboard');
+                      setRoleMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: 'var(--radius)',
+                      background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                      border: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? '1px solid var(--primary)' : '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem' }}>👤</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Investor Cockpit</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Personal wealth, holdings, taxes & AI</div>
+                    </div>
+                    {(!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800 }}>Active</span>
+                    )}
+                  </button>
+
+                  {/* 2. Wealth Advisor */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchRole?.('advisor');
+                      navigate('/advisor/clients');
+                      setRoleMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: 'var(--radius)',
+                      background: isAdvisor ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                      border: isAdvisor ? '1px solid #a855f7' : '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem' }}>🏢</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Wealth Advisor Portal</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Client book, reco queue, SEBI/SEC RIA</div>
+                    </div>
+                    {isAdvisor && (
+                      <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: 800 }}>Active</span>
+                    )}
+                  </button>
+
+                  {/* 3. CPA / Tax Portal */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/cpa');
+                      setRoleMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: 'var(--radius)',
+                      background: location.pathname === '/cpa' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                      border: location.pathname === '/cpa' ? '1px solid var(--green)' : '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem' }}>📋</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>CPA & Tax Portal</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>1040 Sch D, Form 8949, client tax audit</div>
+                    </div>
+                    {location.pathname === '/cpa' && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--green)', fontWeight: 800 }}>Active</span>
+                    )}
+                  </button>
+
+                  {/* 4. FinAgent for Work */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/work');
+                      setRoleMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: 'var(--radius)',
+                      background: isWorkPortal ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                      border: isWorkPortal ? '1px solid #3b82f6' : '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem' }}>💼</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>FinAgent for Work</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Enterprise B2B, 401(k), equity & payroll</div>
+                    </div>
+                    {isWorkPortal && (
+                      <span style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 800 }}>Active</span>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

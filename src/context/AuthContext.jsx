@@ -101,6 +101,18 @@ export function AuthProvider({ children }) {
     return demoUser;
   }
 
+  function switchRole(role = 'investor') {
+    if (currentUser?.isDemo || !currentUser) {
+      return loginAsDemo(role);
+    }
+    setUserRole(role);
+    try {
+      localStorage.setItem('finagent_demo_role', role);
+      localStorage.setItem('finagent_user_role', role);
+    } catch {}
+    track('role_switch', { role });
+  }
+
   // Listen for auth state changes
   useEffect(() => {
     // Check if demo session exists in localStorage
@@ -299,6 +311,7 @@ export function AuthProvider({ children }) {
     userRole,
     loading,
     loginAsDemo,
+    switchRole,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,

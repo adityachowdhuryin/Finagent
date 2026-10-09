@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
@@ -153,8 +153,14 @@ import PortalSettings from './pages/advisor/PortalSettings';
 
 // ── Protected Route ─────────────────────────────────────────────────────────
 function ProtectedRoute({ children, requiredRole }) {
-  const { currentUser, userRole, loading } = useAuth();
+  const { currentUser, userRole, loading, switchRole } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && currentUser?.isDemo && requiredRole && userRole && userRole !== requiredRole) {
+      switchRole(requiredRole);
+    }
+  }, [loading, currentUser?.isDemo, requiredRole, userRole, switchRole]);
 
   if (loading) {
     return (
@@ -170,6 +176,14 @@ function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (requiredRole && userRole && userRole !== requiredRole) {
+    if (currentUser?.isDemo) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid var(--primary)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Switching to {requiredRole === 'advisor' ? 'Advisor Portal' : 'Investor Cockpit'}…</div>
+        </div>
+      );
+    }
     return <Navigate to={userRole === 'advisor' ? '/advisor' : '/app'} replace />;
   }
 
