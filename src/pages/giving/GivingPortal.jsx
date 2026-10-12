@@ -12,13 +12,40 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 
+const DEFAULT_GIVING_DATA = {
+  institutionName: 'Stanford Climate & Tech Foundation',
+  taxExemptId: 'EIN-94-1156820',
+  market: 'US',
+  totalEndowmentAUM: 42500000.00,
+  annualDisbursementTarget: 2125000.00,
+  disbursedYTD: 1420000.00,
+  stockGiftsProcessedYTD: 3840000.00,
+  donorTaxSavingsUnlockedYTD: 1420800.00,
+  ipsComplianceScore: 98,
+  assetAllocation: [
+    { assetClass: 'Global Equities', targetPct: 50, currentPct: 52.4, currentValue: 22270000, variance: '+2.4%', status: 'COMPLIANT' },
+    { assetClass: 'Fixed Income & Sovereign Debt', targetPct: 25, currentPct: 23.8, currentValue: 10115000, variance: '-1.2%', status: 'COMPLIANT' },
+    { assetClass: 'Alternative Syndicates & Private Equity', targetPct: 15, currentPct: 14.5, currentValue: 6162500, variance: '-0.5%', status: 'COMPLIANT' },
+    { assetClass: 'Liquid Cash & T-Bill Sweeps', targetPct: 10, currentPct: 9.3, currentValue: 3952500, variance: '-0.7%', status: 'COMPLIANT' },
+  ],
+  esgExclusions: [
+    { sector: 'Thermal Coal & Fossil Exploration', status: 'ZERO_EXPOSURE', verified: true },
+    { sector: 'Tobacco & Weapons Manufacturing', status: 'ZERO_EXPOSURE', verified: true },
+  ],
+  recentGifts: [
+    { id: 'gft_01', donor: 'Anonymous Family Fund', asset: 'NVDA (500 shares)', fmvValue: 68500.00, taxDeductionClaimed: 68500.00, capitalGainsAvoided: 19865.00, status: 'LIQUIDATED_SETTLED', date: '2026-10-09' },
+    { id: 'gft_02', donor: 'Dr. Rajiv Malhotra', asset: 'AAPL (300 shares)', fmvValue: 69300.00, taxDeductionClaimed: 69300.00, capitalGainsAvoided: 18711.00, status: 'LIQUIDATED_SETTLED', date: '2026-10-04' },
+    { id: 'gft_03', donor: 'Sarah & Keith Collins', asset: 'GOOGL (200 shares)', fmvValue: 37400.00, taxDeductionClaimed: 37400.00, capitalGainsAvoided: 10846.00, status: 'PROCESSING_DTC', date: '2026-10-01' }
+  ]
+};
+
 export default function GivingPortal() {
   const navigate = useNavigate();
   const { isUSMarket, switchMarket } = useApp();
   const { theme, toggleTheme } = useTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(DEFAULT_GIVING_DATA);
   const [activeTab, setActiveTab] = useState('calc'); // 'calc' | 'widget' | 'ips' | 'receipts'
   const [toastMsg, setToastMsg] = useState(null);
 

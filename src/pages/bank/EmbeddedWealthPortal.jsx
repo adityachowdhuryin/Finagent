@@ -12,13 +12,49 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 
+const DEFAULT_BANK_DATA = {
+  partnerId: 'bank_partner_882',
+  institutionName: 'First Pacific Bank & Trust',
+  institutionType: 'Commercial Bank & Trust',
+  market: 'US',
+  brand: {
+    primaryColor: '#0284C7',
+    secondaryColor: '#0EA5E9',
+    accentColor: '#10B981',
+    themeMode: 'dark',
+    logoText: 'FirstPacific Wealth AI',
+    customDomain: 'wealth.firstpacificbank.com',
+  },
+  commercialTerms: {
+    advisoryWrapBps: 25,
+    bankRevenueSharePct: 70,
+    monthlyPlatformLicenseFee: 4500.00,
+    contractStatus: 'ENTERPRISE_ACTIVE',
+  },
+  metrics: {
+    totalRetailCheckingAccounts: 65000,
+    sweptWealthAccountsActive: 11840,
+    conversionRate: '18.2%',
+    embeddedAUM: 88750000.00,
+    bankAnnualFeeRevenueProjected: 155312.50,
+    depositRetentionScore: 94,
+  },
+  enabledFeatures: {
+    directIndexing: true,
+    automatedSweepRobo: true,
+    taxLossHarvesting: true,
+    fireSimulator: true,
+    voiceBanker: true,
+  }
+};
+
 export default function EmbeddedWealthPortal() {
   const navigate = useNavigate();
   const { isUSMarket, switchMarket } = useApp();
   const { theme, toggleTheme } = useTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(DEFAULT_BANK_DATA);
   const [activeTab, setActiveTab] = useState('brand'); // 'brand' | 'simulator' | 'revenue' | 'dev'
   const [toastMsg, setToastMsg] = useState(null);
 

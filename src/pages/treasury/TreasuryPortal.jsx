@@ -12,13 +12,41 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 
+const DEFAULT_TREASURY_DATA = {
+  orgId: 'corp_hyperion_912',
+  companyName: 'Hyperion AI Labs Inc.',
+  market: 'US',
+  totalCash: 12450000,
+  payrollMonthlyNeed: 385000,
+  liquidityReserveDays: 90,
+  blendedYieldPct: 4.92,
+  annualProjectedYield: 612540,
+  monthlyYieldEarned: 51045,
+  sweepNetworkStatus: 'OPTIMAL (100% INSURED)',
+  banks: [
+    { id: 'b_01', name: 'Silicon Valley Bank (First Citizens)', routing: '121140399', balance: 245000, maxLimit: 250000, status: 'FDIC INSURED', yieldPct: 4.85, logo: '🏦' },
+    { id: 'b_02', name: 'Mercury / Evolve Bank & Trust', routing: '084301768', balance: 248000, maxLimit: 250000, status: 'FDIC INSURED', yieldPct: 5.02, logo: '⚡' },
+    { id: 'b_03', name: 'Brex / Column N.A.', routing: '122244018', balance: 240000, maxLimit: 250000, status: 'FDIC INSURED', yieldPct: 4.95, logo: '💳' },
+    { id: 'b_04', name: 'JPMorgan Chase Treasury', routing: '021000021', balance: 242000, maxLimit: 250000, status: 'FDIC INSURED', yieldPct: 4.60, logo: '🏛️' },
+    { id: 'b_05', name: 'BNY Mellon Insured Cash Sweep', routing: '011001234', balance: 4500000, maxLimit: 50000000, status: '100% SWEEP SAFE', yieldPct: 5.15, logo: '🛡️' },
+    { id: 'b_06', name: 'State Street Global Cash Reserve', routing: '011000015', balance: 3975000, maxLimit: 50000000, status: '100% SWEEP SAFE', yieldPct: 5.18, logo: '🌐' },
+    { id: 'b_07', name: 'Goldman Sachs Bank USA ICS', routing: '124003112', balance: 3000000, maxLimit: 50000000, status: '100% SWEEP SAFE', yieldPct: 5.22, logo: '💎' }
+  ],
+  tBillLadder: [
+    { id: 'tb_01', tenor: '4-Week Sovereign T-Bill', cusip: '912797HC4', allocation: 2000000, yieldRate: 5.28, maturityDate: '2026-11-05', gainMaturity: 8800 },
+    { id: 'tb_02', tenor: '8-Week Sovereign T-Bill', cusip: '912797HD2', allocation: 2500000, yieldRate: 5.22, maturityDate: '2026-12-03', gainMaturity: 21750 },
+    { id: 'tb_03', tenor: '13-Week Sovereign T-Bill', cusip: '912797HE0', allocation: 2000000, yieldRate: 5.14, maturityDate: '2027-01-07', gainMaturity: 25700 },
+    { id: 'tb_04', tenor: '26-Week Sovereign T-Bill', cusip: '912797HF7', allocation: 1500000, yieldRate: 4.98, maturityDate: '2027-04-08', gainMaturity: 37350 }
+  ]
+};
+
 export default function TreasuryPortal() {
   const navigate = useNavigate();
   const { state, isUSMarket, switchMarket } = useApp();
   const { theme, toggleTheme } = useTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(DEFAULT_TREASURY_DATA);
   const [activeTab, setActiveTab] = useState('sweep'); // 'sweep' | 'tbills' | 'runway' | 'board' | 'api'
   const [reSweepLoading, setReSweepLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);

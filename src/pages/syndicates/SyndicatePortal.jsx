@@ -12,13 +12,66 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 
+const DEFAULT_SYNDICATE_DATA = {
+  syndicateLead: {
+    name: 'Aether Capital Syndicate',
+    leadPartner: 'Marcus Vance',
+    totalAUM: 14800000.00,
+    totalLPs: 238,
+    activeSPVsCount: 4,
+    carriedInterestEarnedYTD: 642000.00,
+    averageCheckSize: 25000.00,
+  },
+  spvs: [
+    {
+      id: 'spv_01',
+      name: 'Synthetix Robotics Seed SPV',
+      targetAllocation: 1500000.00,
+      committedAmount: 1500000.00,
+      fundedAmount: 1425000.00,
+      carryPct: 20,
+      adminFee: 8000.00,
+      minCheck: 10000.00,
+      valuationCap: 18000000.00,
+      status: 'ALLOCATION_FILLED',
+      lpCount: 48,
+      closingDate: '2026-10-30',
+      currentMOIC: 2.4,
+      unrealizedCarry: 420000.00,
+      lps: [
+        { id: 'lp_101', name: 'Horizon Family Trust', email: 'lp@horizontrust.com', committed: 250000, funded: 250000, accreditedStatus: 'VERIFIED', k1Status: 'READY' },
+        { id: 'lp_102', name: 'Elena Rostova', email: 'elena@vcfund.co', committed: 100000, funded: 100000, accreditedStatus: 'VERIFIED', k1Status: 'READY' },
+        { id: 'lp_103', name: 'Vikram Sethi', email: 'vikram@angel.in', committed: 75000, funded: 75000, accreditedStatus: 'VERIFIED', k1Status: 'READY' },
+        { id: 'lp_104', name: 'Silicon Bay Angel Club', email: 'treasury@siliconbay.org', committed: 200000, funded: 150000, accreditedStatus: 'VERIFIED', k1Status: 'PENDING_FUND' }
+      ]
+    },
+    {
+      id: 'spv_02',
+      name: 'NeuroPulse Health Series A SPV',
+      targetAllocation: 2500000.00,
+      committedAmount: 2150000.00,
+      fundedAmount: 1850000.00,
+      carryPct: 20,
+      adminFee: 10000.00,
+      minCheck: 25000.00,
+      valuationCap: 35000000.00,
+      status: 'CAPITAL_CALL_OPEN',
+      lpCount: 62,
+      closingDate: '2026-11-15',
+      currentMOIC: 1.8,
+      unrealizedCarry: 280000.00,
+      lps: []
+    }
+  ]
+};
+
 export default function SyndicatePortal() {
   const navigate = useNavigate();
   const { isUSMarket, switchMarket } = useApp();
   const { theme, toggleTheme } = useTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(DEFAULT_SYNDICATE_DATA);
   const [activeTab, setActiveTab] = useState('deals'); // 'deals' | 'lps' | 'calls' | 'waterfall' | 'k1'
   const [toastMsg, setToastMsg] = useState(null);
   const [showNewSPVModal, setShowNewSPVModal] = useState(false);

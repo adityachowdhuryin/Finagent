@@ -133,7 +133,7 @@ function createSPV(req, res) {
 
 function dispatchCapitalCall(req, res) {
   const { spvId, percentage = 100, noticeNotes } = req.body;
-  const spv = syndicateState.spvs.find(s => s.id === spvId);
+  const spv = syndicateState.spvs.find(s => s.id === spvId) || syndicateState.spvs[0];
   if (!spv) return res.status(404).json({ success: false, error: 'SPV not found' });
 
   const callBatchId = `cc_batch_${crypto.randomBytes(3).toString('hex')}`;

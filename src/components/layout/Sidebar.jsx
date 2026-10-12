@@ -6,7 +6,7 @@ import {
   CalendarCheck, Receipt, ShieldCheck,
   Download, DollarSign,
   UserPlus, Layers, Mail, Lock, Zap,
-  Building2, Briefcase
+  Building2, Briefcase, Landmark, Scale, Heart, Globe
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -69,8 +69,13 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       matchPrefixes: ['/app/plaid-sync', '/app/report-settings', '/app/reports', '/app/invoices'],
     },
     { divider: true, label: 'Enterprise & Practice' },
-    { to: '/cpa',  label: 'CPA Tax Portal', icon: FileText, matchPrefixes: ['/cpa'] },
-    { to: '/work', label: 'FinAgent for Work', icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
+    { to: '/treasury',   label: 'Corporate Treasury',  icon: Landmark, badge: 'CFO', matchPrefixes: ['/treasury'] },
+    { to: '/syndicates', label: 'Venture Syndicates',  icon: Briefcase, badge: 'SPV', matchPrefixes: ['/syndicates'] },
+    { to: '/work',       label: 'FinAgent for Work',   icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
+    { to: '/giving',     label: 'Endowments & Giving', icon: Heart, badge: 'Tax', matchPrefixes: ['/giving'] },
+    { to: '/divorce',    label: 'Family Law Forensics',icon: Scale, badge: 'Legal', matchPrefixes: ['/divorce'] },
+    { to: '/cpa',        label: 'CPA Tax Portal',      icon: FileText, matchPrefixes: ['/cpa'] },
+    { to: '/bank-embed',  label: 'Embedded Bank SDK',   icon: Globe, badge: 'API', matchPrefixes: ['/bank-embed'] },
   ] : [
     {
       to: '/app/dashboard',
@@ -123,12 +128,18 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       matchPrefixes: ['/app/aa-sync', '/app/cas-import', '/app/report-settings', '/app/reports', '/app/invoices'],
     },
     { divider: true, label: 'Enterprise & Practice' },
-    { to: '/cpa',  label: 'CA Tax Portal', icon: FileText, matchPrefixes: ['/cpa'] },
-    { to: '/work', label: 'FinAgent for Work', icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
+    { to: '/treasury',   label: 'Corporate Treasury',  icon: Landmark, badge: 'CFO', matchPrefixes: ['/treasury'] },
+    { to: '/syndicates', label: 'Venture Syndicates',  icon: Briefcase, badge: 'SPV', matchPrefixes: ['/syndicates'] },
+    { to: '/work',       label: 'FinAgent for Work',   icon: Building2, badge: 'B2B', matchPrefixes: ['/work'] },
+    { to: '/giving',     label: 'Endowments & Giving', icon: Heart, badge: 'Tax', matchPrefixes: ['/giving'] },
+    { to: '/divorce',    label: 'Family Law Forensics',icon: Scale, badge: 'Legal', matchPrefixes: ['/divorce'] },
+    { to: '/cpa',        label: 'CA Tax Portal',       icon: FileText, matchPrefixes: ['/cpa'] },
+    { to: '/bank-embed',  label: 'Embedded Bank SDK',   icon: Globe, badge: 'API', matchPrefixes: ['/bank-embed'] },
   ];
 
   if (experienceMode === 'essential') {
-    return base.filter(item => item.to !== '/cpa' && item.to !== '/work' && !item.divider);
+    const enterprisePaths = ['/treasury', '/syndicates', '/work', '/giving', '/divorce', '/cpa', '/bank-embed'];
+    return base.filter(item => !enterprisePaths.includes(item.to) && !item.divider);
   }
 
   return base;

@@ -12,13 +12,42 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 
+const DEFAULT_FAMILY_LAW_DATA = {
+  activeCase: {
+    caseId: 'matter_8892',
+    caseTitle: 'Vance v. Vance (Matrimonial Dissolution)',
+    courtJurisdiction: 'Superior Court of California / Family Division',
+    market: 'US',
+    filingDate: '2026-04-12',
+    caseStage: 'EVIDENTIARY_DISCOVERY',
+    spouseA: { name: 'David Vance', income: 420000, representation: 'Morrison & Foerster LLP' },
+    spouseB: { name: 'Claire Vance', income: 110000, representation: 'Henschel Family Law' },
+    grossMaritalEstate: 5850000.00,
+    forensicAuditStatus: 'ANOMALIES_DETECTED',
+    anomaliesFoundCount: 4,
+    anomaliesTotalValue: 642000.00,
+    assets: [
+      { id: 'ast_01', type: 'Real Estate', name: 'Primary Residence (Palo Alto)', grossValue: 2800000, debt: 850000, netEquity: 1950000, taxDiscountPct: 0, maritalPortionPct: 100 },
+      { id: 'ast_02', type: 'Retirement (401k)', name: 'Spouse A Employer 401(k)', grossValue: 1200000, debt: 0, netEquity: 1200000, taxDiscountPct: 24, maritalPortionPct: 100 },
+      { id: 'ast_03', type: 'Brokerage (Taxable)', name: 'Charles Schwab Joint Account', grossValue: 1150000, debt: 0, netEquity: 1150000, taxDiscountPct: 15, maritalPortionPct: 100 },
+      { id: 'ast_04', type: 'Unvested RSUs', name: 'Spouse A Tech Company RSUs', grossValue: 700000, debt: 0, netEquity: 700000, taxDiscountPct: 37, maritalPortionPct: 65 }
+    ],
+    anomalies: [
+      { id: 'flg_01', severity: 'HIGH', category: 'Undisclosed Crypto Wallet', amount: 285000, date: '2026-01-14', description: 'Repeated $45k outbound wires from joint checking to Kraken and self-custody Ethereum wallet 0x71a...9b', status: 'UNEXPLAINED' },
+      { id: 'flg_02', severity: 'MEDIUM', category: 'Pre-Separation Cash Dissipation', amount: 140000, date: '2025-11-20', description: 'Abnormal cash withdrawals totaling $140,000 over 6 weeks preceding formal notice of separation', status: 'FLAGGED_FOR_HEARING' },
+      { id: 'flg_03', severity: 'HIGH', category: 'Secret Entity Capital Contribution', amount: 180000, date: '2026-02-05', description: 'Wire to Nevada LLC registered under business partner with no recorded spousal consent', status: 'SUBPOENA_RECOMMENDED' },
+      { id: 'flg_04', severity: 'LOW', category: 'Delayed Bonus Payment', amount: 37000, date: '2026-03-30', description: 'Deferred compensation bonus scheduled for distribution post-filing', status: 'INCLUDED_IN_ESTATE' }
+    ]
+  }
+};
+
 export default function FamilyLawPortal() {
   const navigate = useNavigate();
   const { isUSMarket, switchMarket } = useApp();
   const { theme, toggleTheme } = useTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(DEFAULT_FAMILY_LAW_DATA);
   const [activeTab, setActiveTab] = useState('forensics'); // 'forensics' | 'equalizer' | 'qdro' | 'affidavit'
   const [toastMsg, setToastMsg] = useState(null);
 

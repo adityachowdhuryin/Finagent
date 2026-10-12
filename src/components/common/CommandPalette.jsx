@@ -113,6 +113,13 @@ const ALL_TOOLS = [
   { title: 'Non-Recourse ESOP Exercise Funding Marketplace', category: 'Enterprise', to: '/app/esop-financing', icon: Briefcase, keywords: 'esop financing funding non recourse options exercise term sheet liquidity private credit' },
   { title: 'Pre-IPO Unicorn Secondaries & Private Credit Deal Room', category: 'Investments', to: '/app/syndicates', icon: Briefcase, keywords: 'syndicate secondaries pre ipo spacex stripe openai anthropic databricks private credit spv' },
   { title: 'Gemini Live Multimodal Vision Banker', category: 'Advisory & AI', to: '/app/live-banker', icon: Mic, keywords: 'live banker multimodal vision webrtc camera webcam ocr trap inspection neural voice' },
+
+  // Institutional & Enterprise Portals
+  { title: 'Corporate Treasury & CFO Yield Sentinel', category: 'Enterprise', to: '/treasury', icon: Landmark, keywords: 'corporate treasury cfo sweep fdic dicgc tbill ladder burn runway netsuite quickbooks' },
+  { title: 'Venture Syndicates, SPV & Cap Table OS', category: 'Enterprise', to: '/syndicates', icon: Briefcase, keywords: 'syndicate spv carried interest capital call k1 waterfall 506c lp angel rolling fund' },
+  { title: 'Non-Profits, Endowments & Tax-Optimized Stock Giving', category: 'Enterprise', to: '/giving', icon: Heart, keywords: 'giving charitable donation endowment ips form 8283 daf appreciated stock gift non profit' },
+  { title: 'Family Law, Divorce & Forensic Asset Discovery', category: 'Legal & Practice', to: '/divorce', icon: Scale, keywords: 'divorce family law forensic discovery qdro equitable distribution marital estate hidden crypto' },
+  { title: 'Commercial Bank & White-Label Embedded Wealth SDK', category: 'Enterprise', to: '/bank-embed', icon: Globe, keywords: 'bank embed white label sdk deposit sweep robo advisory rest api swift kotlin react' },
 ];
 
 
