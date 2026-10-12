@@ -493,7 +493,7 @@ textarea.input { resize: vertical; min-height: 80px; }
 /* ======================== TOPBAR ======================== */
 .topbar {
   position: fixed; top: 0; left: var(--sidebar-width); right: 0;
-  height: var(--topbar-height); z-index: 90;
+  height: var(--topbar-height); z-index: 900;
   background: var(--topbar-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--glass-border);
   display: flex; align-items: center; justify-content: space-between;
@@ -501,7 +501,7 @@ textarea.input { resize: vertical; min-height: 80px; }
   max-width: calc(100vw - var(--sidebar-width));
   width: calc(100vw - var(--sidebar-width));
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 @media (max-width: 768px) {
   .topbar {

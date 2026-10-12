@@ -514,6 +514,8 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                     top: 'calc(100% + 8px)',
                     right: 0,
                     width: 290,
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
                     background: 'var(--surface-raised)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
