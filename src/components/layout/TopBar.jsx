@@ -33,9 +33,13 @@ const breadcrumbs = {
   '/app/roundups': ['FinAgent', 'Micro-Investing', 'Round-Up Jar & Dip Radar'],
   '/app/household': ['FinAgent', 'Multi-Player', 'Household & Spouse Co-Pilot'],
   '/app/succession': ['FinAgent', 'Succession', 'Proof-of-Life Escrow'],
-  '/app/offers': ['FinAgent', 'Marketplace', 'Perks & Cashback Offers'],
   '/cpa': ['FinAgent', 'Practice', 'CPA Tax Portal'],
   '/work': ['FinAgent', 'Enterprise', 'FinAgent for Work (HR)'],
+  '/treasury': ['FinAgent', 'Enterprise', 'Corporate Treasury & CFO Sentinel'],
+  '/syndicates': ['FinAgent', 'Enterprise', 'Venture Syndicates & SPVs'],
+  '/giving': ['FinAgent', 'Non-Profit', 'Endowments & Stock Giving'],
+  '/divorce': ['FinAgent', 'Practice', 'Family Law Forensics & Splitter'],
+  '/bank-embed': ['FinAgent', 'Enterprise', 'Embedded Wealth SDK Studio'],
 
   // Hub 2: Investments
   '/app/portfolio': ['FinAgent', 'Investments', 'Holdings'],
@@ -124,6 +128,18 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+
+  const getActivePortalLabel = () => {
+    if (location.pathname.startsWith('/treasury')) return '🏦 Treasury';
+    if (location.pathname.startsWith('/syndicates')) return '🤝 Syndicates';
+    if (location.pathname.startsWith('/giving')) return '🏛️ Giving';
+    if (location.pathname.startsWith('/divorce')) return '⚖️ Family Law';
+    if (location.pathname.startsWith('/bank-embed')) return '🌐 Bank SDK';
+    if (location.pathname.startsWith('/cpa')) return '📋 CPA';
+    if (isWorkPortal) return '💼 Work';
+    if (isAdvisor) return '🏢 Advisor';
+    return '👤 Investor';
+  };
 
   // Pass portfolio context for AI-generated alerts
   const portfolioData = !isAdvisor ? {
@@ -574,35 +590,70 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
 
                   {/* Workspace & Portal Switcher */}
                   <div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>PORTAL & WORKSPACE</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>PORTALS & INSTITUTIONS</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
                       <button
-                        className={`btn btn-sm ${(!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        className={`btn btn-sm ${(!isAdvisor && !isWorkPortal && location.pathname !== '/cpa' && !location.pathname.startsWith('/treasury') && !location.pathname.startsWith('/syndicates') && !location.pathname.startsWith('/giving') && !location.pathname.startsWith('/divorce') && !location.pathname.startsWith('/bank-embed')) ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
                         onClick={() => { switchRole?.('investor'); navigate('/app/dashboard'); setControlsOpen(false); }}
                       >
                         👤 Investor
                       </button>
                       <button
                         className={`btn btn-sm ${isAdvisor ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
                         onClick={() => { switchRole?.('advisor'); navigate('/advisor/clients'); setControlsOpen(false); }}
                       >
                         🏢 Advisor
                       </button>
                       <button
                         className={`btn btn-sm ${location.pathname === '/cpa' ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
                         onClick={() => { navigate('/cpa'); setControlsOpen(false); }}
                       >
                         📋 CPA Tax
                       </button>
                       <button
                         className={`btn btn-sm ${isWorkPortal ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ fontSize: '0.72rem', padding: '0.4rem 0.35rem', justifyContent: 'center' }}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
                         onClick={() => { navigate('/work'); setControlsOpen(false); }}
                       >
                         💼 Work B2B
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/treasury' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/treasury'); setControlsOpen(false); }}
+                      >
+                        🏦 Treasury
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/syndicates' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/syndicates'); setControlsOpen(false); }}
+                      >
+                        🤝 Syndicates
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/giving' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/giving'); setControlsOpen(false); }}
+                      >
+                        🏛️ Giving
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/divorce' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/divorce'); setControlsOpen(false); }}
+                      >
+                        ⚖️ Divorce
+                      </button>
+                      <button
+                        className={`btn btn-sm ${location.pathname === '/bank-embed' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.68rem', padding: '0.35rem 0.2rem', justifyContent: 'center' }}
+                        onClick={() => { navigate('/bank-embed'); setControlsOpen(false); }}
+                      >
+                        🌐 Bank SDK
                       </button>
                     </div>
                   </div>
@@ -708,9 +759,9 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                 borderRadius: 20,
                 transition: 'all 0.15s ease',
               }}
-              title="Click to Switch Portal (Investor, Advisor, CPA, Enterprise Work)"
+              title="Click to Switch Portal (Investor, Advisor, CPA, Treasury, Syndicates, Giving, Law, Bank)"
             >
-              <span>{isAdvisor ? '🏢 Advisor' : '👤 Investor'}</span>
+              <span>{getActivePortalLabel()}</span>
               <ChevronDown size={13} style={{ transform: roleMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
             </button>
 
@@ -725,22 +776,24 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     right: 0,
-                    width: 280,
+                    width: 320,
+                    maxHeight: '82vh',
+                    overflowY: 'auto',
                     background: 'var(--surface-raised)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     border: '1px solid var(--glass-border)',
                     borderRadius: 'var(--radius)',
                     boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-                    padding: '0.75rem',
+                    padding: '0.85rem',
                     zIndex: 999,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.5rem',
+                    gap: '0.65rem',
                     animation: 'fadeIn 0.15s ease',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem' }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SWITCH ROLE & PORTAL</span>
                     <button
                       type="button"
@@ -751,131 +804,218 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
                     </button>
                   </div>
 
-                  {/* 1. Investor */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      switchRole?.('investor');
-                      navigate('/app/dashboard');
-                      setRoleMenuOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.6rem 0.75rem',
-                      borderRadius: 'var(--radius)',
-                      background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                      border: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? '1px solid var(--primary)' : '1px solid transparent',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.25rem' }}>👤</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Investor Cockpit</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Personal wealth, holdings, taxes & AI</div>
+                  {/* Section 1: Personal Wealth */}
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase' }}>
+                      Personal Wealth
                     </div>
-                    {(!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800 }}>Active</span>
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchRole?.('investor');
+                        navigate('/app/dashboard');
+                        setRoleMenuOpen(false);
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                        padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                        background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa' && !location.pathname.startsWith('/treasury') && !location.pathname.startsWith('/syndicates') && !location.pathname.startsWith('/giving') && !location.pathname.startsWith('/divorce') && !location.pathname.startsWith('/bank-embed')) ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                        border: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa' && !location.pathname.startsWith('/treasury') && !location.pathname.startsWith('/syndicates') && !location.pathname.startsWith('/giving') && !location.pathname.startsWith('/divorce') && !location.pathname.startsWith('/bank-embed')) ? '1px solid var(--primary)' : '1px solid transparent',
+                        color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>👤</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Investor Cockpit</div>
+                        <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Personal wealth, holdings, taxes & AI</div>
+                      </div>
+                    </button>
+                  </div>
 
-                  {/* 2. Wealth Advisor */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      switchRole?.('advisor');
-                      navigate('/advisor/clients');
-                      setRoleMenuOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.6rem 0.75rem',
-                      borderRadius: 'var(--radius)',
-                      background: isAdvisor ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-                      border: isAdvisor ? '1px solid #a855f7' : '1px solid transparent',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.25rem' }}>🏢</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Wealth Advisor Portal</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Client book, reco queue, SEBI/SEC RIA</div>
+                  {/* Section 2: Professional Practice */}
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#a855f7', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase' }}>
+                      Professional Practice
                     </div>
-                    {isAdvisor && (
-                      <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: 800 }}>Active</span>
-                    )}
-                  </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          switchRole?.('advisor');
+                          navigate('/advisor/clients');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: isAdvisor ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                          border: isAdvisor ? '1px solid #a855f7' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>🏢</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Wealth Advisor Portal</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Client book, reco queue, SEBI/SEC RIA</div>
+                        </div>
+                      </button>
 
-                  {/* 3. CPA / Tax Portal */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate('/cpa');
-                      setRoleMenuOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.6rem 0.75rem',
-                      borderRadius: 'var(--radius)',
-                      background: location.pathname === '/cpa' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                      border: location.pathname === '/cpa' ? '1px solid var(--green)' : '1px solid transparent',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.25rem' }}>📋</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>CPA & Tax Portal</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>1040 Sch D, Form 8949, client tax audit</div>
-                    </div>
-                    {location.pathname === '/cpa' && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--green)', fontWeight: 800 }}>Active</span>
-                    )}
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/cpa');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/cpa' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                          border: location.pathname === '/cpa' ? '1px solid var(--green)' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>📋</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>CPA & Tax Practice</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>1040 Sch D, Form 8949, client tax audit</div>
+                        </div>
+                      </button>
 
-                  {/* 4. FinAgent for Work */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate('/work');
-                      setRoleMenuOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.6rem 0.75rem',
-                      borderRadius: 'var(--radius)',
-                      background: isWorkPortal ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      border: isWorkPortal ? '1px solid #3b82f6' : '1px solid transparent',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.25rem' }}>💼</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700 }}>FinAgent for Work</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Enterprise B2B, 401(k), equity & payroll</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/divorce');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/divorce' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                          border: location.pathname === '/divorce' ? '1px solid var(--red)' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>⚖️</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Family Law & Divorce</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>AI asset discovery, 50/50 splitter, QDRO</div>
+                        </div>
+                      </button>
                     </div>
-                    {isWorkPortal && (
-                      <span style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 800 }}>Active</span>
-                    )}
-                  </button>
+                  </div>
+
+                  {/* Section 3: Enterprise & Institutional */}
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.05em', marginBottom: 4, textTransform: 'uppercase' }}>
+                      Enterprise & Institutional
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/treasury');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/treasury' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                          border: location.pathname === '/treasury' ? '1px solid var(--gold)' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>🏦</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Corporate Treasury</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Multi-bank sweep, T-Bills, runway sentinel</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/work');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: isWorkPortal ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                          border: isWorkPortal ? '1px solid #3b82f6' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>💼</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>FinAgent for Work</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Enterprise HR, 401(k), R&D tax credits</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/syndicates');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/syndicates' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                          border: location.pathname === '/syndicates' ? '1px solid #a855f7' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>🤝</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Venture Syndicates & SPVs</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>SPV cap table, capital calls, waterfall carry</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/giving');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/giving' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                          border: location.pathname === '/giving' ? '1px solid var(--green)' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>🏛️</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Endowments & Giving</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Appreciated stock gifts, DAF, IPS audit</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate('/bank-embed');
+                          setRoleMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                          padding: '0.5rem 0.65rem', borderRadius: 'var(--radius)',
+                          background: location.pathname === '/bank-embed' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                          border: location.pathname === '/bank-embed' ? '1px solid #06b6d4' : '1px solid transparent',
+                          color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>🌐</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Embedded Bank SDK</div>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>White-label banking, deposit sweep robo</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}

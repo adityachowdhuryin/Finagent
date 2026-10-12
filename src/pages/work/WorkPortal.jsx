@@ -8,7 +8,7 @@ import {
   Building2, Users, HeartHandshake, ShieldCheck, TrendingUp,
   DollarSign, Sliders, CheckCircle2, ChevronRight, Activity, Plus, Sparkles,
   RefreshCw, FileText, CheckCircle, Calendar, ArrowUpRight, Lock, Award,
-  ArrowLeft, Home, Sun, Moon
+  ArrowLeft, Home, Sun, Moon, GraduationCap, Calculator
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
@@ -33,6 +33,25 @@ export default function WorkPortal() {
     initialSeats: 240,
   });
   const [toastMsg, setToastMsg] = useState(null);
+
+  // R&D Tax Credit Harvester State
+  const [taxCreditLoading, setTaxCreditLoading] = useState(false);
+  const [taxCreditInput, setTaxCreditInput] = useState({
+    rAndDWages: 1850000,
+    cloudContractors: 340000,
+    supplies: 45000,
+    newHiresCount: 42,
+    avgMonthlySalary: 24000,
+  });
+  const [taxCreditResult, setTaxCreditResult] = useState(null);
+
+  // Section 127 Student Loan Matching State
+  const [loanMatchLoading, setLoanMatchLoading] = useState(false);
+  const [loanMatchInput, setLoanMatchInput] = useState({
+    monthlyMatch: isUSMarket ? 350 : 25000,
+    participants: 75,
+  });
+  const [loanMatchResult, setLoanMatchResult] = useState(null);
 
   const market = isUSMarket ? 'US' : 'IN';
   const currencySymbol = isUSMarket ? '$' : '₹';
@@ -74,7 +93,59 @@ export default function WorkPortal() {
       ...prev,
       planType: isUSMarket ? 'Safe Harbor 401(k)' : 'Corporate NPS Tier-1'
     }));
+    handleCalculateTaxCredits();
+    handleUpdateStudentLoanMatch();
   }, [isUSMarket]);
+
+  const handleCalculateTaxCredits = async (e) => {
+    if (e) e.preventDefault();
+    setTaxCreditLoading(true);
+    try {
+      const res = await fetch('/api/work/tax-credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          market,
+          ...taxCreditInput,
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTaxCreditResult(data);
+        if (e) showToast(isUSMarket ? '✓ R&D Tax Credit (IRS Form 6765) computed!' : '✓ Section 80JJAA Tax Deduction computed!');
+      }
+    } catch (err) {
+      if (e) showToast('Tax credit calculation failed');
+    } finally {
+      setTaxCreditLoading(false);
+    }
+  };
+
+  const handleUpdateStudentLoanMatch = async (e) => {
+    if (e) e.preventDefault();
+    setLoanMatchLoading(true);
+    try {
+      const res = await fetch('/api/work/student-loan-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          market,
+          monthlyMatchPerEmployee: loanMatchInput.monthlyMatch,
+          eligibleEmployees: loanMatchInput.participants,
+          programStatus: 'ACTIVE',
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLoanMatchResult(data);
+        if (e) showToast(isUSMarket ? '✓ Section 127 Student Loan match policy active!' : '✓ Higher Education Allowance policy active!');
+      }
+    } catch (err) {
+      if (e) showToast('Student loan policy update failed');
+    } finally {
+      setLoanMatchLoading(false);
+    }
+  };
 
   const handleUpdateSeats = async () => {
     setUpdatingSeats(true);
@@ -651,6 +722,268 @@ export default function WorkPortal() {
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700 }}>
               = {currencySymbol}{(seatCount * unitSeatPrice).toLocaleString()}/month
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Module: Federal R&D Tax Credit Harvester & Section 80JJAA */}
+      <div className="card" style={{ padding: '1.75rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 4 }}>
+              <span className="badge badge-green">New Enterprise Rail</span>
+              <span className="badge badge-primary">{isUSMarket ? 'IRS Form 6765 & Form 8974' : 'Income Tax Act Sec 80JJAA'}</span>
+            </div>
+            <h3 className="text-h3" style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Calculator size={20} color="var(--green)" /> {isUSMarket ? 'Federal R&D Payroll Tax Credit Harvester' : 'Section 80JJAA Employment Tax Deduction Harvester'}
+            </h3>
+            <p className="text-sm text-secondary" style={{ marginTop: 2, maxWidth: 680 }}>
+              {isUSMarket
+                ? 'Monetize qualified engineering wages as dollar-for-dollar cash offsets against quarterly employer FICA payroll taxes under IRC § 41(h).'
+                : 'Claim an additional 30% tax deduction on emoluments paid to new qualifying employees for 3 consecutive assessment years.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => showToast(`✓ Exported ${isUSMarket ? 'IRS_Form_6765_RD_Audit_Bundle.pdf' : 'Form_10DA_Section_80JJAA_Report.pdf'}`)}
+              className="btn btn-ghost btn-sm"
+              style={{ border: '1px solid var(--glass-border)' }}
+            >
+              <FileText size={14} style={{ marginRight: 4 }} /> {isUSMarket ? 'Form 6765 PDF' : 'Form 10DA PDF'}
+            </button>
+            <button
+              onClick={handleCalculateTaxCredits}
+              disabled={taxCreditLoading}
+              className="btn btn-primary btn-sm"
+              style={{ fontWeight: 700 }}
+            >
+              {taxCreditLoading ? 'Recalculating…' : 'Compute Tax Credits'}
+            </button>
+          </div>
+        </div>
+
+        {/* Input Parameters Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+          {isUSMarket ? (
+            <>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Qualifying R&D Payroll Wages ($)
+                </label>
+                <input
+                  type="number"
+                  value={taxCreditInput.rAndDWages}
+                  onChange={(e) => setTaxCreditInput(prev => ({ ...prev, rAndDWages: Number(e.target.value) }))}
+                  style={{
+                    width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Cloud & US Contractor Expenses ($)
+                </label>
+                <input
+                  type="number"
+                  value={taxCreditInput.cloudContractors}
+                  onChange={(e) => setTaxCreditInput(prev => ({ ...prev, cloudContractors: Number(e.target.value) }))}
+                  style={{
+                    width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Research Supplies & Dev Servers ($)
+                </label>
+                <input
+                  type="number"
+                  value={taxCreditInput.supplies}
+                  onChange={(e) => setTaxCreditInput(prev => ({ ...prev, supplies: Number(e.target.value) }))}
+                  style={{
+                    width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Qualifying New Hires (Last 12 Mo)
+                </label>
+                <input
+                  type="number"
+                  value={taxCreditInput.newHiresCount}
+                  onChange={(e) => setTaxCreditInput(prev => ({ ...prev, newHiresCount: Number(e.target.value) }))}
+                  style={{
+                    width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Average Monthly Salary per Hire (₹)
+                </label>
+                <input
+                  type="number"
+                  value={taxCreditInput.avgMonthlySalary}
+                  onChange={(e) => setTaxCreditInput(prev => ({ ...prev, avgMonthlySalary: Number(e.target.value) }))}
+                  style={{
+                    width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+                  }}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Calculated Results Display */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', background: 'var(--surface-raised)', borderRadius: 12, padding: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {isUSMarket ? 'Total Qualified R&D Expenses' : 'Annual Qualifying Emoluments'}
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: 'var(--text-primary)', marginTop: 4 }}>
+              {currencySymbol}{taxCreditResult?.totalQRE?.toLocaleString() || (isUSMarket ? (2116000).toLocaleString() : (12096000).toLocaleString())}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {isUSMarket ? 'Wages + 65% Contractors + Supplies' : '42 qualifying employee additions'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {isUSMarket ? 'Direct Payroll Tax Cash Credit' : 'Annual Corporate Tax Saved'}
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: 'var(--green)', marginTop: 4 }}>
+              {currencySymbol}{taxCreditResult?.credits?.totalCredit?.toLocaleString() || (isUSMarket ? (166650).toLocaleString() : (913444).toLocaleString())}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--green)', marginTop: 2 }}>
+              {isUSMarket ? 'Offset on Form 941 up to $125k/qtr' : '25.17% Section 115BAA corporate tax rate'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {isUSMarket ? 'ASC Effective Rate' : '3-Year Total Cumulative Saving'}
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: '#D4AF37', marginTop: 4 }}>
+              {isUSMarket ? '8.2% Blended' : `₹${(taxCreditResult?.credits?.threeYearTotalTaxSaved || 2740332).toLocaleString()}`}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {isUSMarket ? 'Includes $24k WOTC credits' : '30% deduction claimed across 3 assessment years'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Module: Section 127 Employer Student Loan Match & Education Assistance Policy */}
+      <div className="card" style={{ padding: '1.75rem', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 4 }}>
+              <span className="badge badge-primary">Turnkey HR Benefit</span>
+              <span className="badge badge-gold">{isUSMarket ? 'IRC § 127 Tax-Free Repayment' : 'Section 10(14) Higher Education'}</span>
+            </div>
+            <h3 className="text-h3" style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GraduationCap size={20} color="var(--primary)" /> {isUSMarket ? 'Section 127 Employer Student Loan Match Program' : 'Corporate Higher Education & Student Debt Assistance Plan'}
+            </h3>
+            <p className="text-sm text-secondary" style={{ marginTop: 2, maxWidth: 680 }}>
+              {isUSMarket
+                ? 'Pay up to $5,250/yr tax-free directly toward employee student loans under IRC Section 127. Completely exempt from federal withholding and employer FICA taxes.'
+                : 'Sponsor higher education and executive certifications tax-free as legitimate business expenditures under Section 10(14) / 37.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => showToast(`✓ Downloaded ${isUSMarket ? 'Section_127_Plan_Adoption_Agreement.pdf' : 'Corporate_Education_Policy_Document.pdf'}`)}
+              className="btn btn-ghost btn-sm"
+              style={{ border: '1px solid var(--glass-border)' }}
+            >
+              <FileText size={14} style={{ marginRight: 4 }} /> Plan Document
+            </button>
+            <button
+              onClick={handleUpdateStudentLoanMatch}
+              disabled={loanMatchLoading}
+              className="btn btn-primary btn-sm"
+              style={{ fontWeight: 700 }}
+            >
+              {loanMatchLoading ? 'Updating…' : 'Save Loan Match Policy'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Monthly Employer Match per Employee ({currencySymbol})
+            </label>
+            <input
+              type="number"
+              value={loanMatchInput.monthlyMatch}
+              onChange={(e) => setLoanMatchInput(prev => ({ ...prev, monthlyMatch: Number(e.target.value) }))}
+              style={{
+                width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Participating Employees Enrolled
+            </label>
+            <input
+              type="number"
+              value={loanMatchInput.participants}
+              onChange={(e) => setLoanMatchInput(prev => ({ ...prev, participants: Number(e.target.value) }))}
+              style={{
+                width: '100%', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+                borderRadius: 'var(--radius)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', fontWeight: 600
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', background: 'var(--surface-raised)', borderRadius: 12, padding: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Annual Tax-Free Benefit per Employee</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: 'var(--text-primary)', marginTop: 4 }}>
+              {currencySymbol}{isUSMarket ? Math.min(5250, loanMatchInput.monthlyMatch * 12).toLocaleString() : (loanMatchInput.monthlyMatch * 12).toLocaleString()}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {isUSMarket ? 'Capped at statutory $5,250/yr IRC limit' : 'Tax-free educational reimbursement'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {isUSMarket ? 'Employer FICA Payroll Tax Saved' : 'Employer Corporate Tax Saved'}
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: 'var(--green)', marginTop: 4 }}>
+              {currencySymbol}{loanMatchResult?.financialImpact?.employerFicaTaxSaved?.toLocaleString() || (isUSMarket ? (24100).toLocaleString() : (471937).toLocaleString())}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--green)', marginTop: 2 }}>
+              {isUSMarket ? '7.65% FICA exemption vs bonus' : '25.17% corporate deduction'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Estimated Retention ROI</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: '#D4AF37', marginTop: 4 }}>
+              3.8x ROI
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+              42% lower employee turnover in 22-35 age cohort
             </div>
           </div>
         </div>

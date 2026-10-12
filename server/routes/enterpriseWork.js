@@ -299,6 +299,133 @@ function getComplianceAudit(req, res) {
   });
 }
 
+/**
+ * POST /api/work/tax-credits
+ * Calculates Federal R&D Tax Credit (IRS Form 6765 / Form 8974) or Indian Section 80JJAA employment deduction.
+ */
+function calculateTaxCredits(req, res) {
+  const { market = 'US', rAndDWages = 1850000, cloudContractors = 340000, supplies = 45000, newHiresCount = 42, avgMonthlySalary = 24000 } = req.body;
+  const isUS = market.toUpperCase() === 'US';
+
+  if (isUS) {
+    const totalQRE = Number(rAndDWages) + Number(cloudContractors * 0.65) + Number(supplies);
+    const ascCredit = Math.round(totalQRE * 0.082); // ~8.2% blended statutory credit
+    const wotcCredit = 24000; // Work Opportunity Tax Credit estimate
+    const totalPayrollCredit = Math.min(500000, ascCredit + wotcCredit); // $500k cap under IRC § 41(h) against employer FICA
+
+    return res.json({
+      success: true,
+      market: 'US',
+      statutorySection: 'IRC § 41(h) / IRS Form 6765 & Form 8974',
+      totalQRE,
+      breakdown: {
+        qualifyingWages: Number(rAndDWages),
+        cloudContractorsQRE: Math.round(Number(cloudContractors) * 0.65),
+        supplies: Number(supplies),
+        ascRate: '8.2% Blended Effective Rate',
+      },
+      credits: {
+        ascCredit,
+        wotcCredit,
+        totalCredit: totalPayrollCredit,
+        quarterlyOffsetCap: 125000,
+      },
+      payrollTaxRelief: {
+        payrollFicaOffset: totalPayrollCredit,
+        cashFlowImpact: 'Direct dollar-for-dollar reduction of quarterly employer payroll tax liabilities',
+        formExport: 'IRS_Form_6765_RD_Tax_Credit_Schedule.pdf'
+      }
+    });
+  }
+
+  const eligibleHires = Number(newHiresCount) || 42;
+  const monthlySalary = Number(avgMonthlySalary) || 24000;
+  const annualEmoluments = eligibleHires * monthlySalary * 12;
+  const additionalDeduction30 = Math.round(annualEmoluments * 0.30);
+  const corporateTaxSaved = Math.round(additionalDeduction30 * 0.2517);
+
+  return res.json({
+    success: true,
+    market: 'IN',
+    statutorySection: 'Section 80JJAA of Income Tax Act, 1961',
+    eligibleEmployees: eligibleHires,
+    annualEmoluments,
+    threeYearCumulativeDeduction: additionalDeduction30 * 3,
+    credits: {
+      annualAdditionalDeduction: additionalDeduction30,
+      annualCorporateTaxSaved: corporateTaxSaved,
+      threeYearTotalTaxSaved: corporateTaxSaved * 3,
+    },
+    payrollTaxRelief: {
+      corporateTaxSavings: corporateTaxSaved,
+      cashFlowImpact: '30% additional tax deduction on new employee costs for 3 assessment years',
+      formExport: 'Form_10DA_Section_80JJAA_Accountant_Report.pdf'
+    }
+  });
+}
+
+/**
+ * POST /api/work/student-loan-match
+ * Configures IRC Section 127 Educational Assistance Program or Indian Executive Skill Enhancement Program.
+ */
+function updateStudentLoanMatch(req, res) {
+  const { market = 'US', monthlyMatchPerEmployee = 350, eligibleEmployees = 75, programStatus = 'ACTIVE' } = req.body;
+  const isUS = market.toUpperCase() === 'US';
+  const matchAmount = Number(monthlyMatchPerEmployee) || 350;
+  const employees = Number(eligibleEmployees) || 75;
+
+  if (isUS) {
+    const annualPerEmployee = Math.min(5250, matchAmount * 12);
+    const totalAnnualBenefit = annualPerEmployee * employees;
+    const employerFicaSavings = Math.round(totalAnnualBenefit * 0.0765);
+    const employeeTaxSavingsTotal = Math.round(totalAnnualBenefit * 0.27);
+
+    return res.json({
+      success: true,
+      market: 'US',
+      statutorySection: 'IRC § 127 (Tax-Free Educational Assistance & Student Loan Repayments)',
+      policy: {
+        monthlyMatchPerEmployee: matchAmount,
+        annualPerEmployee,
+        eligibleEmployees: employees,
+        programStatus,
+        statutoryMaxPerYear: 5250,
+      },
+      financialImpact: {
+        totalEmployerAnnualSpend: totalAnnualBenefit,
+        employerFicaTaxSaved: employerFicaSavings,
+        employeeTaxSavingsTotal,
+        netEmployerCost: totalAnnualBenefit - employerFicaSavings,
+        turnoverReductionEstimate: '42% lower employee turnover in 22-35 cohort',
+        retentionRoiMultiplier: '3.8x',
+      },
+      compliancePackage: 'Section_127_Written_Educational_Assistance_Plan_Document.pdf'
+    });
+  }
+
+  const monthlyInr = matchAmount > 1000 ? matchAmount : matchAmount * 80;
+  const annualTotalInr = monthlyInr * 12 * employees;
+  const corporateTaxSavedInr = Math.round(annualTotalInr * 0.2517);
+
+  return res.json({
+    success: true,
+    market: 'IN',
+    statutorySection: 'Section 10(14) / Section 37 Business Expenditure for Employee Upskilling & Education',
+    policy: {
+      monthlyAllowancePerEmployee: monthlyInr,
+      eligibleEmployees: employees,
+      programStatus,
+    },
+    financialImpact: {
+      totalEmployerAnnualSpend: annualTotalInr,
+      corporateTaxSaved: corporateTaxSavedInr,
+      employeeExemption: '100% tax-free reimbursement on certified higher education / student loan debt',
+      retentionRoiMultiplier: '3.4x',
+    },
+    compliancePackage: 'Corporate_Skill_Education_Assistance_Policy_FY2026.pdf'
+  });
+}
+
 module.exports = {
   getWorkplaceOverview,
   updateSeats,
@@ -306,4 +433,6 @@ module.exports = {
   setupCorporatePlan,
   syncCensus,
   getComplianceAudit,
+  calculateTaxCredits,
+  updateStudentLoanMatch,
 };

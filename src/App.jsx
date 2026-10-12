@@ -107,6 +107,13 @@ import MarketplaceOffers from './pages/consumer/MarketplaceOffers';
 import CPAPortal from './pages/cpa/CPAPortal';
 import WorkPortal from './pages/work/WorkPortal';
 
+// Institutional & Enterprise Portals
+import TreasuryPortal from './pages/treasury/TreasuryPortal';
+import SyndicatePortal from './pages/syndicates/SyndicatePortal';
+import GivingPortal from './pages/giving/GivingPortal';
+import FamilyLawPortal from './pages/legal/FamilyLawPortal';
+import EmbeddedWealthPortal from './pages/bank/EmbeddedWealthPortal';
+
 // Wave 2: Autonomous Execution, Multimodal AI & Venture-Scale Engines
 import BrokerOrderRouter from './pages/consumer/BrokerOrderRouter';
 import VoiceBanker from './pages/consumer/VoiceBanker';
@@ -318,9 +325,14 @@ function AppRoutes() {
       </Route>
 
 
-      {/* Standalone Portals: CPA & FinAgent for Work */}
+      {/* Standalone Enterprise & Institutional Portals */}
       <Route path="/cpa" element={<CPAPortal />} />
       <Route path="/work" element={<WorkPortal />} />
+      <Route path="/treasury" element={<TreasuryPortal />} />
+      <Route path="/syndicates" element={<SyndicatePortal />} />
+      <Route path="/giving" element={<GivingPortal />} />
+      <Route path="/divorce" element={<FamilyLawPortal />} />
+      <Route path="/bank-embed" element={<EmbeddedWealthPortal />} />
 
       {/* Advisor Portal */}
       <Route path="/advisor" element={<ProtectedRoute requiredRole="advisor"><AdvisorApp /></ProtectedRoute>}>

@@ -296,9 +296,11 @@ app.get('/api/household/overview', getHouseholdOverview);
 app.post('/api/household/invite', invitePartner);
 app.post('/api/household/tag-account', tagAccount);
 
-const { getCPAClients, getClientTaxPackage } = require('./routes/cpaPortal');
+const { getCPAClients, getClientTaxPackage, batchProcessDossiers, exportBulkForm8949 } = require('./routes/cpaPortal');
 app.get('/api/cpa/clients', getCPAClients);
 app.get('/api/cpa/client-tax-package', getClientTaxPackage);
+app.post('/api/cpa/batch-process', batchProcessDossiers);
+app.get('/api/cpa/export-8949-bundle', exportBulkForm8949);
 
 const { getEscrowStatus, recordHeartbeat, challengeNominee } = require('./routes/successionEscrow');
 app.get('/api/escrow/status', getEscrowStatus);
@@ -319,6 +321,8 @@ const {
   setupCorporatePlan,
   syncCensus,
   getComplianceAudit,
+  calculateTaxCredits,
+  updateStudentLoanMatch,
 } = require('./routes/enterpriseWork');
 app.get('/api/work/overview', getWorkplaceOverview);
 app.get('/api/workplace/overview', getWorkplaceOverview);
@@ -328,6 +332,8 @@ app.post('/api/work/corporate-plan/setup', setupCorporatePlan);
 app.post('/api/workplace/setup', setupCorporatePlan);
 app.post('/api/work/corporate-plan/sync-census', syncCensus);
 app.get('/api/work/corporate-plan/compliance', getComplianceAudit);
+app.post('/api/work/tax-credits', calculateTaxCredits);
+app.post('/api/work/student-loan-match', updateStudentLoanMatch);
 
 // ── Wave 2: Autonomous Execution, Multimodal AI & Venture-Scale Engines ───────
 
@@ -399,6 +405,46 @@ app.post('/api/residency/state-arbitrage', calculateStateArbitrage);
 app.post('/api/residency/rnor-holiday', calculateRNORStatus);
 app.post('/api/residency/day-counter', trackPhysicalPresence);
 
+// ── Institutional & Enterprise Expansion Suite ─────────────────────────────
+
+// 1. Corporate Treasury & CFO Yield Sentinel (/treasury)
+const { getTreasuryOverview, optimizeSweep, calculateTBillLadder, projectRunway, updateApiConfig } = require('./routes/corporateTreasury');
+app.get('/api/corporate-treasury/overview', getTreasuryOverview);
+app.post('/api/corporate-treasury/optimize-sweep', optimizeSweep);
+app.post('/api/corporate-treasury/tbill-ladder', calculateTBillLadder);
+app.post('/api/corporate-treasury/project-runway', projectRunway);
+app.post('/api/corporate-treasury/api-config', updateApiConfig);
+
+// 2. Venture Syndicates, SPV & Cap Table OS (/syndicates)
+const { getSyndicateDashboard, createSPV, dispatchCapitalCall, calculateWaterfall, generateK1TaxPackage } = require('./routes/syndicateAdmin');
+app.get('/api/syndicate-admin/dashboard', getSyndicateDashboard);
+app.post('/api/syndicate-admin/create-spv', createSPV);
+app.post('/api/syndicate-admin/capital-call', dispatchCapitalCall);
+app.post('/api/syndicate-admin/waterfall', calculateWaterfall);
+app.post('/api/syndicate-admin/generate-k1', generateK1TaxPackage);
+
+// 3. Non-Profits, Endowments & Tax-Optimized Stock Giving (/giving)
+const { getEndowmentOverview, calculateStockGiftTaxSavings, auditEndowmentIPS, generateForm8283, getEmbedWidgetCode } = require('./routes/charitableGiving');
+app.get('/api/charitable-giving/overview', getEndowmentOverview);
+app.post('/api/charitable-giving/stock-tax-savings', calculateStockGiftTaxSavings);
+app.post('/api/charitable-giving/audit-ips', auditEndowmentIPS);
+app.post('/api/charitable-giving/generate-form-8283', generateForm8283);
+app.get('/api/charitable-giving/widget-code', getEmbedWidgetCode);
+
+// 4. Family Law, Divorce & Forensic Asset Discovery (/divorce)
+const { getFamilyLawDashboard, analyzeForensicStatements, calculateEquitableDistribution, modelQDRO, generateCourtAffidavit } = require('./routes/familyLawForensics');
+app.get('/api/family-law/dashboard', getFamilyLawDashboard);
+app.post('/api/family-law/analyze-statements', analyzeForensicStatements);
+app.post('/api/family-law/equitable-distribution', calculateEquitableDistribution);
+app.post('/api/family-law/model-qdro', modelQDRO);
+app.post('/api/family-law/generate-affidavit', generateCourtAffidavit);
+
+// 5. Commercial Bank & White-Label Embedded Wealth SDK (/bank-embed)
+const { getPartnerConfig, savePartnerConfig, simulateDepositSweep, getDeveloperDocs } = require('./routes/embeddedWealthSDK');
+app.get('/api/embedded-wealth/config', getPartnerConfig);
+app.post('/api/embedded-wealth/save-config', savePartnerConfig);
+app.post('/api/embedded-wealth/simulate-sweep', simulateDepositSweep);
+app.get('/api/embedded-wealth/developer-docs', getDeveloperDocs);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 if (require.main === module || !process.env.VERCEL) {
