@@ -2,8 +2,57 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Check, X, Edit2, ChevronDown, ChevronUp, Shield, Send } from 'lucide-react';
 
-function SendToClientModal({ reco, onClose }) {
+function SendToClientModal({ reco, onClose, onDispatched }) {
+  const { dispatch } = useApp();
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [clientEmail, setClientEmail] = useState(reco.clientEmail || 'adityachowdhury1995@gmail.com');
+  const [dispatchInfo, setDispatchInfo] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleDispatch = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/advisor/dispatch-recommendation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recoId: reco.id,
+          clientName: reco.clientName,
+          clientEmail,
+          title: reco.title,
+          summary: reco.advisorEdit || reco.summary,
+          advisorSig: 'Meera Kapoor · SEBI-RIA INA000014523',
+          advisorNote: reco.advisorNote || '',
+          viaEmail: true,
+          viaWhatsApp: false,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Dispatch failed');
+
+      dispatch({
+        type: 'DISPATCH_RECO',
+        payload: {
+          id: reco.id,
+          clientName: reco.clientName,
+          title: reco.title,
+          sentAt: json.dispatch?.sentAt || new Date().toISOString(),
+          dispatchId: json.dispatch?.id,
+        },
+      });
+
+      setDispatchInfo(json);
+      setSent(true);
+      onDispatched?.(reco.id);
+    } catch (err) {
+      setErrorMsg(err.message || 'Dispatch failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
       <div className="card" style={{ width: 480, maxWidth: '95vw', background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
@@ -19,33 +68,84 @@ function SendToClientModal({ reco, onClose }) {
                 Dear <strong>{reco.clientName}</strong>,<br /><br />
                 As your registered SEBI Investment Adviser, I'd like to share the following recommendation:<br /><br />
                 <strong>{reco.title}</strong><br /><br />
-                {reco.summary}<br /><br />
+                {reco.advisorEdit || reco.summary}<br /><br />
                 This recommendation has been reviewed and approved by me, <strong>Meera Kapoor</strong> (SEBI-RIA INA000014523). Please call me before acting.
               </div>
             </div>
+
+            {/* Recipient Email Config */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                RECIPIENT EMAIL ADDRESS
+              </label>
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={e => setClientEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--glass-border)',
+                  background: 'var(--surface-raised)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                }}
+                placeholder="client@example.com"
+              />
+            </div>
+
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
               <div style={{ flex: 1, padding: '0.625rem 0.875rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', fontSize: '0.8125rem' }}>
-                <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>Via</div>
-                <div style={{ fontWeight: 600 }}>📱 WhatsApp + 📧 Email</div>
+                <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>Dispatch Engine</div>
+                <div style={{ fontWeight: 600, color: 'var(--green)' }}>⚡ Resend Verified Delivery</div>
               </div>
               <div style={{ flex: 1, padding: '0.625rem 0.875rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', fontSize: '0.8125rem' }}>
                 <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>Advisor Signature</div>
                 <div style={{ fontWeight: 600 }}>Meera Kapoor · INA000014523</div>
               </div>
             </div>
+
+            {errorMsg && (
+              <div style={{ padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                {errorMsg}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-primary" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }} onClick={() => setSent(true)}>
-                <Send size={14} /> Dispatch Now
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
+                onClick={handleDispatch}
+                disabled={loading}
+              >
+                <Send size={14} /> {loading ? 'Transmitting…' : 'Dispatch Now'}
               </button>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
+                Cancel
+              </button>
             </div>
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: '2rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>✅</div>
-            <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.5rem' }}>Sent Successfully</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Message dispatched to {reco.clientName} via WhatsApp and email. Entry logged to SEBI audit trail.</div>
-            <button className="btn btn-primary" style={{ marginTop: '1.25rem' }} onClick={onClose}>Close</button>
+            <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+              Dispatch Certified & Delivered
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+              {dispatchInfo?.message || `Recommendation transmitted to ${clientEmail}.`}
+            </div>
+            {dispatchInfo?.dispatch?.id && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', background: 'var(--surface-raised)', padding: '0.4rem 0.75rem', borderRadius: 4, display: 'inline-block' }}>
+                Audit Ref: {dispatchInfo.dispatch.id}
+              </div>
+            )}
+            <div>
+              <button className="btn btn-primary" style={{ marginTop: '1.25rem' }} onClick={onClose}>
+                Return to Reco Queue
+              </button>
+            </div>
           </div>
         )}
       </div>

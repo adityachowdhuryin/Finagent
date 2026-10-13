@@ -3,6 +3,7 @@
 // Embedded Robo-Advisory, Deposit-to-Wealth Sweeps, and Bank Partner Revenue Share (15-25 bps)
 
 const crypto = require('crypto');
+const { saveEmbeddedWealthState, getEmbeddedWealthState, logAuditEvent } = require('../db/database');
 
 let partnerConfig = {
   partnerId: 'bank_partner_882',
@@ -42,6 +43,12 @@ let partnerConfig = {
 
 function getPartnerConfig(req, res) {
   const isIN = req.query.market === 'IN';
+  const partnerId = req.query.partnerId || partnerConfig.partnerId;
+  const saved = getEmbeddedWealthState(partnerId);
+  if (saved) {
+    partnerConfig = { ...partnerConfig, ...saved };
+  }
+
   res.json({
     success: true,
     data: {
@@ -57,11 +64,14 @@ function getPartnerConfig(req, res) {
 }
 
 function savePartnerConfig(req, res) {
-  const { institutionName, brand, commercialTerms, enabledFeatures } = req.body;
+  const { institutionName, brand, commercialTerms, enabledFeatures, partnerId = partnerConfig.partnerId } = req.body;
   if (institutionName) partnerConfig.institutionName = institutionName;
   if (brand) partnerConfig.brand = { ...partnerConfig.brand, ...brand };
   if (commercialTerms) partnerConfig.commercialTerms = { ...partnerConfig.commercialTerms, ...commercialTerms };
   if (enabledFeatures) partnerConfig.enabledFeatures = { ...partnerConfig.enabledFeatures, ...enabledFeatures };
+
+  saveEmbeddedWealthState(partnerId, partnerConfig);
+  logAuditEvent({ eventType: 'EMBEDDED_WEALTH_CONFIG_SAVED', actor: 'Bank Admin', market: 'US', details: { partnerId, institutionName: partnerConfig.institutionName } });
 
   res.json({
     success: true,

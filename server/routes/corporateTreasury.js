@@ -3,6 +3,7 @@
 // Multi-Bank FDIC/DICGC Deposit Sweeps ($10M+ Protection), T-Bill Laddering, and Dynamic Runway Sentinel
 
 const crypto = require('crypto');
+const { saveTreasuryState, getTreasuryState, logAuditEvent } = require('../db/database');
 
 // Default Corporate Treasury Dataset
 let treasuryData = {
@@ -52,6 +53,11 @@ let treasuryData = {
 
 function getTreasuryOverview(req, res) {
   const isIN = req.query.market === 'IN';
+  const market = isIN ? 'IN' : 'US';
+  const saved = getTreasuryState(market);
+  if (saved) {
+    treasuryData = { ...treasuryData, ...saved };
+  }
   
   if (isIN) {
     const inFactor = 83.5;
@@ -97,7 +103,7 @@ function getTreasuryOverview(req, res) {
 }
 
 function optimizeSweep(req, res) {
-  const { totalCash, partnerCount = 40 } = req.body;
+  const { totalCash, partnerCount = 40, market = 'US' } = req.body;
   const cash = Number(totalCash) || treasuryData.totalCash;
   const maxSafePerBank = 245000;
   
@@ -115,6 +121,8 @@ function optimizeSweep(req, res) {
     hash: crypto.randomBytes(4).toString('hex')
   };
   treasuryData.recentAuditLogs.unshift(auditEntry);
+  saveTreasuryState(market, treasuryData);
+  logAuditEvent({ eventType: 'TREASURY_SWEEP_OPTIMIZED', actor: 'CFO Sentinel', market, details: auditEntry });
   
   res.json({
     success: true,

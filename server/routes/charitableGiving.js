@@ -3,6 +3,7 @@
 // Appreciated Stock Gifting (37% Tax Alpha), DAF Onramp, and Fiduciary IPS Auditor
 
 const crypto = require('crypto');
+const { saveEndowmentState, getEndowmentState, logAuditEvent } = require('../db/database');
 
 let endowmentState = {
   institutionName: 'Stanford Climate & Tech Foundation',
@@ -33,6 +34,12 @@ let endowmentState = {
 
 function getEndowmentOverview(req, res) {
   const isIN = req.query.market === 'IN';
+  const market = isIN ? 'IN' : 'US';
+  const saved = getEndowmentState(market);
+  if (saved) {
+    endowmentState = { ...endowmentState, ...saved };
+  }
+
   res.json({
     success: true,
     data: {

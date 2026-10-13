@@ -135,6 +135,13 @@ app.post('/api/marketplace/apply', applyAsAdvisor);
 app.post('/api/marketplace/booking/create', createBooking);
 app.post('/api/marketplace/booking/confirm', confirmBooking);
 
+// Advisor Practice Management (Real Dispatches & Onboarding Persistence)
+const { dispatchRecommendation, onboardClient, listAdvisorClients, listAdvisorDispatches } = require('./routes/advisorAdmin');
+app.post('/api/advisor/dispatch-recommendation', dispatchRecommendation);
+app.post('/api/advisor/onboard-client', onboardClient);
+app.get('/api/advisor/clients', listAdvisorClients);
+app.get('/api/advisor/dispatches', listAdvisorDispatches);
+
 // ── 5 High-WTP Features ───────────────────────────────────────────────────────
 
 // 1. Regular-to-Direct Commission Hunter

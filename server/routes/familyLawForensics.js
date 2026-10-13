@@ -3,6 +3,7 @@
 // AI Forensic Statement Audit, Equitable Marital Asset Division, and QDRO Retirement Splitter
 
 const crypto = require('crypto');
+const { saveFamilyLawState, getFamilyLawState, logAuditEvent } = require('../db/database');
 
 let familyLawCases = [
   {
@@ -35,6 +36,11 @@ let familyLawCases = [
 
 function getFamilyLawDashboard(req, res) {
   const isIN = req.query.market === 'IN';
+  const market = isIN ? 'IN' : 'US';
+  const saved = getFamilyLawState(market);
+  if (saved && saved.activeCase) {
+    familyLawCases[0] = saved.activeCase;
+  }
   const activeCase = familyLawCases[0];
 
   res.json({
@@ -52,8 +58,10 @@ function getFamilyLawDashboard(req, res) {
 }
 
 function analyzeForensicStatements(req, res) {
-  const { caseId, filesCount = 12 } = req.body;
+  const { caseId, filesCount = 12, market = 'US' } = req.body;
   const currentCase = familyLawCases[0];
+  saveFamilyLawState(market, { activeCase: currentCase });
+  logAuditEvent({ eventType: 'DIVORCE_FORENSIC_DISCOVERY_RUN', actor: 'Forensic Legal AI', market, details: { caseId: currentCase.caseId, anomalies: currentCase.anomaliesFoundCount } });
 
   res.json({
     success: true,

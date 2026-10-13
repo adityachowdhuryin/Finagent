@@ -43,7 +43,9 @@ export default function ClientBook() {
           <h1 className="text-h1 mt-1">Client Book</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-secondary btn-sm">Export Report</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/advisor/onboarding')}>
+            + Onboard Client
+          </button>
           <button className="btn btn-primary" onClick={() => navigate('/advisor/recommendations')}>
             Review {pendingCount} Pending Recos →
           </button>
@@ -106,11 +108,11 @@ export default function ClientBook() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.875rem', color: 'white', flexShrink: 0 }}>
-                          {c.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          {(c.name || 'Client').split(' ').map(n => n[0]).join('').slice(0, 2)}
                         </div>
                         <div>
                           <div style={{ fontWeight: 600 }}>{c.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.age}y · {c.city}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.age ? `${c.age}y · ` : ''}{c.city}</div>
                         </div>
                       </div>
                     </td>

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 import { analyze } from '../../services/geminiService';
 
 const STEPS = ['Personal Details', 'Risk Profiling', 'IPS Generation', 'Digital Signature', 'Confirmation'];
@@ -146,12 +148,16 @@ function SignatureCanvas({ label, sigRef }) {
 }
 
 export default function ClientOnboarding() {
+  const navigate = useNavigate();
+  const { dispatch } = useApp();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(emptyForm);
   const [answers, setAnswers] = useState(Array(RISK_QUESTIONS.length).fill(null));
   const [ipsText, setIpsText] = useState('');
   const [loadingIPS, setLoadingIPS] = useState(false);
   const [toast, setToast] = useState('');
+  const [savedClient, setSavedClient] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const clientSigRef = useRef();
   const advisorSigRef = useRef();
 
@@ -179,8 +185,34 @@ export default function ClientOnboarding() {
 
   const handleNext = async () => {
     if (step === 2 && !ipsText) await generateIPS();
+    if (step === 3) {
+      setIsSubmitting(true);
+      try {
+        const res = await fetch('/api/advisor/onboard-client', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...form,
+            riskProfile: riskProfile?.label || 'Moderate',
+            ipsText,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.client) {
+          dispatch({ type: 'ADD_ADVISOR_CLIENT', payload: data.client });
+          setSavedClient(data.client);
+          showToast(`✅ Client registered: ${data.client.id}`);
+        } else {
+          showToast(`⚠️ ${data.error || 'Saved locally'}`);
+        }
+      } catch (err) {
+        console.warn('Network notice during client onboarding persist:', err.message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
     if (step < STEPS.length - 1) setStep(s => s + 1);
-    showToast('✅ Step saved');
+    else showToast('✅ Step saved');
   };
 
   const styles = {
@@ -360,24 +392,26 @@ export default function ClientOnboarding() {
             <div style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 32 }}>
               {form.name || 'The client'} has been onboarded as a <strong style={{ color: riskProfile?.color }}>{riskProfile?.label || 'Moderate'} investor</strong>
             </div>
-            <div style={{ display: 'inline-block', textAlign: 'left', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: 24, marginBottom: 32, minWidth: 320 }}>
+            <div style={{ display: 'inline-block', textAlign: 'left', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: 24, marginBottom: 32, minWidth: 340 }}>
               {[
+                { label: 'Client ID', value: savedClient?.id || 'CL-2026-REG', color: 'var(--primary-light)' },
                 { label: 'Client Name', value: form.name || 'N/A' },
+                { label: 'Estimated AUM', value: savedClient?.aum ? `₹${(savedClient.aum / 100000).toFixed(1)} Lakh` : 'Calculating...' },
                 { label: 'PAN', value: form.pan || 'N/A' },
                 { label: 'Risk Profile', value: riskProfile?.label || 'Moderate', color: riskProfile?.color },
-                { label: 'IPS', value: 'Generated & Signed ✅' },
-                { label: 'Signatures', value: 'Client + Advisor ✅' },
-                { label: 'Date', value: new Date().toLocaleDateString('en-IN') },
+                { label: 'IPS & Disclosures', value: 'Generated & Signed ✅' },
+                { label: 'Signatures', value: 'Client + Advisor (IT Act 2000) ✅' },
+                { label: 'Registration Date', value: new Date().toLocaleDateString('en-IN') },
               ].map((r, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 5 ? '1px solid var(--glass-border)' : 'none' }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 7 ? '1px solid var(--glass-border)' : 'none' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{r.label}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: r.color || 'var(--text-primary)' }}>{r.value}</span>
                 </div>
               ))}
             </div>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
-              <button className="btn btn-primary" onClick={() => showToast('📋 Opening client profile…')}>View Client Profile</button>
-              <button className="btn btn-ghost" onClick={() => { setStep(0); setForm(emptyForm); setAnswers(Array(RISK_QUESTIONS.length).fill(null)); setIpsText(''); }}>+ Onboard Another Client</button>
+              <button className="btn btn-primary" onClick={() => navigate('/advisor/clients')}>View in Client Book →</button>
+              <button className="btn btn-ghost" onClick={() => { setStep(0); setForm(emptyForm); setAnswers(Array(RISK_QUESTIONS.length).fill(null)); setIpsText(''); setSavedClient(null); }}>+ Onboard Another Client</button>
             </div>
           </div>
         );
@@ -417,8 +451,8 @@ export default function ClientOnboarding() {
         {step < STEPS.length - 1 && (
           <div style={styles.navRow}>
             {step > 0 && <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>← Back</button>}
-            <button className="btn btn-primary" onClick={handleNext}>
-              {step === STEPS.length - 2 ? '✅ Complete Onboarding' : 'Save & Continue →'}
+            <button className="btn btn-primary" onClick={handleNext} disabled={isSubmitting}>
+              {isSubmitting ? 'Registering Client…' : step === STEPS.length - 2 ? '✅ Complete Onboarding' : 'Save & Continue →'}
             </button>
           </div>
         )}

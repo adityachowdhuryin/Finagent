@@ -3,6 +3,7 @@
 // Rule 506(c) LP Onboarding, Capital Call Dispatcher, Waterfall Carry & Schedule K-1 Engine
 
 const crypto = require('crypto');
+const { saveSyndicateState, getSyndicateState, logAuditEvent } = require('../db/database');
 
 let syndicateState = {
   syndicateLead: {
@@ -85,6 +86,12 @@ let syndicateState = {
 
 function getSyndicateDashboard(req, res) {
   const isIN = req.query.market === 'IN';
+  const market = isIN ? 'IN' : 'US';
+  const saved = getSyndicateState(market);
+  if (saved) {
+    syndicateState = { ...syndicateState, ...saved };
+  }
+
   res.json({
     success: true,
     data: {
@@ -98,7 +105,7 @@ function getSyndicateDashboard(req, res) {
 }
 
 function createSPV(req, res) {
-  const { name, targetAllocation, valuationCap, carryPct = 20, minCheck = 10000, closingDate } = req.body;
+  const { name, targetAllocation, valuationCap, carryPct = 20, minCheck = 10000, closingDate, market = 'US' } = req.body;
   if (!name || !targetAllocation) {
     return res.status(400).json({ success: false, error: 'Deal Name and Target Allocation required' });
   }
@@ -123,6 +130,8 @@ function createSPV(req, res) {
 
   syndicateState.spvs.unshift(newSPV);
   syndicateState.syndicateLead.activeSPVsCount += 1;
+  saveSyndicateState(market, syndicateState);
+  logAuditEvent({ eventType: 'SPV_CREATED', actor: syndicateState.syndicateLead.leadPartner, market, details: { spvId: newSPV.id, name, targetAllocation } });
 
   res.json({
     success: true,
@@ -132,12 +141,14 @@ function createSPV(req, res) {
 }
 
 function dispatchCapitalCall(req, res) {
-  const { spvId, percentage = 100, noticeNotes } = req.body;
+  const { spvId, percentage = 100, noticeNotes, market = 'US' } = req.body;
   const spv = syndicateState.spvs.find(s => s.id === spvId) || syndicateState.spvs[0];
   if (!spv) return res.status(404).json({ success: false, error: 'SPV not found' });
 
   const callBatchId = `cc_batch_${crypto.randomBytes(3).toString('hex')}`;
   spv.status = 'CAPITAL_CALL_OPEN';
+  saveSyndicateState(market, syndicateState);
+  logAuditEvent({ eventType: 'CAPITAL_CALL_DISPATCHED', actor: syndicateState.syndicateLead.leadPartner, market, details: { spvId: spv.id, percentage, callBatchId } });
 
   res.json({
     success: true,

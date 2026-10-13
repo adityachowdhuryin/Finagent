@@ -133,6 +133,82 @@ function initSchema() {
       data TEXT,
       created_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT,
+      actor TEXT,
+      market TEXT,
+      details TEXT,
+      created_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS advisor_clients (
+      id TEXT PRIMARY KEY,
+      advisor_id TEXT,
+      name TEXT,
+      email TEXT,
+      phone TEXT,
+      city TEXT,
+      income REAL,
+      risk_profile TEXT,
+      aum REAL,
+      status TEXT,
+      data TEXT,
+      created_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS advisor_dispatches (
+      id TEXT PRIMARY KEY,
+      reco_id TEXT,
+      client_name TEXT,
+      client_email TEXT,
+      title TEXT,
+      summary TEXT,
+      advisor_sig TEXT,
+      status TEXT,
+      data TEXT,
+      sent_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS corporate_treasury (
+      id TEXT PRIMARY KEY,
+      market TEXT,
+      data TEXT,
+      updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS syndicate_spvs (
+      id TEXT PRIMARY KEY,
+      spv_name TEXT,
+      ticker TEXT,
+      market TEXT,
+      data TEXT,
+      updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS endowments_giving (
+      id TEXT PRIMARY KEY,
+      market TEXT,
+      data TEXT,
+      updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS family_law_forensics (
+      id TEXT PRIMARY KEY,
+      case_id TEXT,
+      market TEXT,
+      data TEXT,
+      updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS embedded_wealth_configs (
+      id TEXT PRIMARY KEY,
+      partner_id TEXT,
+      market TEXT,
+      data TEXT,
+      updated_at TEXT
+    );
   `);
 }
 
@@ -516,8 +592,20 @@ function logAuditEvent(event) {
   const eventType = event.eventType || event.type || 'SYSTEM_ACTION';
   const actor = event.actor || 'system';
   const market = event.market || 'US';
-  const details = event.details || event;
+  const details = typeof event.details === 'object' ? JSON.stringify(event.details) : String(event.details || '');
   const createdAt = event.createdAt || new Date().toISOString();
+
+  if (db) {
+    try {
+      const stmt = db.prepare(`
+        INSERT OR REPLACE INTO audit_events (id, event_type, actor, market, details, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(id, eventType, actor, market, details, createdAt);
+    } catch (e) {
+      console.warn('SQLite audit log notice:', e.message);
+    }
+  }
 
   if (pgPool) {
     pgPool.query(
@@ -527,6 +615,222 @@ function logAuditEvent(event) {
     ).catch(err => console.error('⚠️ Supabase write error (audit_events):', err.message));
   }
   return { id, eventType, actor, market, details, createdAt };
+}
+
+// 9. Advisor Clients
+function saveAdvisorClient(client, broadcastToCloud = true) {
+  const id = client.id || `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const advisorId = client.advisorId || 'adv001';
+  const name = client.name || 'New Client';
+  const email = client.email || '';
+  const phone = client.phone || '';
+  const city = client.city || '';
+  const income = Number(client.income) || 0;
+  const riskProfile = client.riskProfile || 'Moderate';
+  const aum = Number(client.aum) || (income ? income * 2.5 : 2500000);
+  const status = client.status || 'Active';
+  const data = JSON.stringify({ ...client, id, aum });
+  const createdAt = client.createdAt || new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO advisor_clients (id, advisor_id, name, email, phone, city, income, risk_profile, aum, status, data, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, advisorId, name, email, phone, city, income, riskProfile, aum, status, data, createdAt);
+  }
+
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO advisor_clients (id, advisor_id, name, email, phone, city, income, risk_profile, aum, status, data, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (id) DO UPDATE SET
+         name = EXCLUDED.name, email = EXCLUDED.email, income = EXCLUDED.income,
+         risk_profile = EXCLUDED.risk_profile, aum = EXCLUDED.aum, status = EXCLUDED.status,
+         data = EXCLUDED.data`,
+      [id, advisorId, name, email, phone, city, income, riskProfile, aum, status, data, createdAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (advisor_clients):', err.message));
+  }
+
+  return { ...client, id, aum };
+}
+
+function getAdvisorClients(advisorId = 'adv001', limit = 100) {
+  if (!db) return [];
+  const safeLimit = getSafeLimit(limit);
+  const rows = db.prepare(`SELECT data FROM advisor_clients WHERE advisor_id = ? ORDER BY created_at DESC LIMIT ?`).all(advisorId, safeLimit);
+  return rows.map(r => JSON.parse(r.data));
+}
+
+// 10. Advisor Dispatches
+function saveAdvisorDispatch(dispatch, broadcastToCloud = true) {
+  const id = dispatch.id || `disp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const recoId = dispatch.recoId || '';
+  const clientName = dispatch.clientName || '';
+  const clientEmail = dispatch.clientEmail || '';
+  const title = dispatch.title || '';
+  const summary = dispatch.summary || '';
+  const advisorSig = dispatch.advisorSig || 'Meera Kapoor · INA000014523';
+  const status = dispatch.status || 'SENT';
+  const data = JSON.stringify(dispatch);
+  const sentAt = dispatch.sentAt || new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO advisor_dispatches (id, reco_id, client_name, client_email, title, summary, advisor_sig, status, data, sent_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, recoId, clientName, clientEmail, title, summary, advisorSig, status, data, sentAt);
+  }
+
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO advisor_dispatches (id, reco_id, client_name, client_email, title, summary, advisor_sig, status, data, sent_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, data = EXCLUDED.data`,
+      [id, recoId, clientName, clientEmail, title, summary, advisorSig, status, data, sentAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (advisor_dispatches):', err.message));
+  }
+
+  return { ...dispatch, id, sentAt };
+}
+
+function getAdvisorDispatches(limit = 100) {
+  if (!db) return [];
+  const safeLimit = getSafeLimit(limit);
+  const rows = db.prepare(`SELECT data FROM advisor_dispatches ORDER BY sent_at DESC LIMIT ?`).all(safeLimit);
+  return rows.map(r => JSON.parse(r.data));
+}
+
+// 11. Institutional Portals Persistence
+function saveTreasuryState(market, state, broadcastToCloud = true) {
+  const id = `treasury_${market.toUpperCase()}`;
+  const data = JSON.stringify(state);
+  const updatedAt = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`INSERT OR REPLACE INTO corporate_treasury (id, market, data, updated_at) VALUES (?, ?, ?, ?)`);
+    stmt.run(id, market.toUpperCase(), data, updatedAt);
+  }
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO corporate_treasury (id, market, data, updated_at) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+      [id, market.toUpperCase(), data, updatedAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (corporate_treasury):', err.message));
+  }
+  return state;
+}
+
+function getTreasuryState(market) {
+  if (!db) return null;
+  const id = `treasury_${market.toUpperCase()}`;
+  const row = db.prepare(`SELECT data FROM corporate_treasury WHERE id = ?`).get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+function saveSyndicateState(market, state, broadcastToCloud = true) {
+  const id = `syndicates_${market.toUpperCase()}`;
+  const data = JSON.stringify(state);
+  const updatedAt = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`INSERT OR REPLACE INTO syndicate_spvs (id, spv_name, ticker, market, data, updated_at) VALUES (?, ?, ?, ?, ?, ?)`);
+    stmt.run(id, state.syndicateLead?.name || 'Syndicate', 'SPV', market.toUpperCase(), data, updatedAt);
+  }
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO syndicate_spvs (id, spv_name, ticker, market, data, updated_at) VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+      [id, state.syndicateLead?.name || 'Syndicate', 'SPV', market.toUpperCase(), data, updatedAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (syndicate_spvs):', err.message));
+  }
+  return state;
+}
+
+function getSyndicateState(market) {
+  if (!db) return null;
+  const id = `syndicates_${market.toUpperCase()}`;
+  const row = db.prepare(`SELECT data FROM syndicate_spvs WHERE id = ?`).get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+function saveEndowmentState(market, state, broadcastToCloud = true) {
+  const id = `endowment_${market.toUpperCase()}`;
+  const data = JSON.stringify(state);
+  const updatedAt = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`INSERT OR REPLACE INTO endowments_giving (id, market, data, updated_at) VALUES (?, ?, ?, ?)`);
+    stmt.run(id, market.toUpperCase(), data, updatedAt);
+  }
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO endowments_giving (id, market, data, updated_at) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+      [id, market.toUpperCase(), data, updatedAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (endowments_giving):', err.message));
+  }
+  return state;
+}
+
+function getEndowmentState(market) {
+  if (!db) return null;
+  const id = `endowment_${market.toUpperCase()}`;
+  const row = db.prepare(`SELECT data FROM endowments_giving WHERE id = ?`).get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+function saveFamilyLawState(market, state, broadcastToCloud = true) {
+  const id = `family_law_${market.toUpperCase()}`;
+  const data = JSON.stringify(state);
+  const updatedAt = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`INSERT OR REPLACE INTO family_law_forensics (id, case_id, market, data, updated_at) VALUES (?, ?, ?, ?, ?)`);
+    stmt.run(id, state.caseFile?.caseNumber || 'FL-2026', market.toUpperCase(), data, updatedAt);
+  }
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO family_law_forensics (id, case_id, market, data, updated_at) VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+      [id, state.caseFile?.caseNumber || 'FL-2026', market.toUpperCase(), data, updatedAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (family_law_forensics):', err.message));
+  }
+  return state;
+}
+
+function getFamilyLawState(market) {
+  if (!db) return null;
+  const id = `family_law_${market.toUpperCase()}`;
+  const row = db.prepare(`SELECT data FROM family_law_forensics WHERE id = ?`).get(id);
+  return row ? JSON.parse(row.data) : null;
+}
+
+function saveEmbeddedWealthState(partnerId = 'partner_apex_bank', state, broadcastToCloud = true) {
+  const id = `bank_embed_${partnerId}`;
+  const data = JSON.stringify(state);
+  const updatedAt = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`INSERT OR REPLACE INTO embedded_wealth_configs (id, partner_id, market, data, updated_at) VALUES (?, ?, ?, ?, ?)`);
+    stmt.run(id, partnerId, 'US', data, updatedAt);
+  }
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO embedded_wealth_configs (id, partner_id, market, data, updated_at) VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+      [id, partnerId, 'US', data, updatedAt]
+    ).catch(err => console.warn('⚠️ Supabase write error (embedded_wealth_configs):', err.message));
+  }
+  return state;
+}
+
+function getEmbeddedWealthState(partnerId = 'partner_apex_bank') {
+  if (!db) return null;
+  const id = `bank_embed_${partnerId}`;
+  const row = db.prepare(`SELECT data FROM embedded_wealth_configs WHERE id = ?`).get(id);
+  return row ? JSON.parse(row.data) : null;
 }
 
 module.exports = {
@@ -548,4 +852,18 @@ module.exports = {
   getTaxFilings,
   getTaxFilingById,
   logAuditEvent,
+  saveAdvisorClient,
+  getAdvisorClients,
+  saveAdvisorDispatch,
+  getAdvisorDispatches,
+  saveTreasuryState,
+  getTreasuryState,
+  saveSyndicateState,
+  getSyndicateState,
+  saveEndowmentState,
+  getEndowmentState,
+  saveFamilyLawState,
+  getFamilyLawState,
+  saveEmbeddedWealthState,
+  getEmbeddedWealthState,
 };

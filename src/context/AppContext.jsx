@@ -348,6 +348,57 @@ function appReducer(state, action) {
       };
     }
 
+    case 'DISPATCH_RECO': {
+      const updated = state.advisor.pendingRecommendations.map(r =>
+        r.id === action.payload.id ? { ...r, status: 'dispatched', dispatchedAt: action.payload.sentAt, dispatchId: action.payload.dispatchId } : r
+      );
+      const newEntry = {
+        id: `al${Date.now()}`,
+        clientName: action.payload.clientName,
+        timestamp: new Date().toISOString(),
+        type: action.payload.recoType || 'STATUTORY_RECO',
+        title: action.payload.title,
+        action: 'dispatched',
+        advisorNote: action.payload.advisorNote || 'Dispatched to client via Resend email with statutory SEBI disclosures.',
+        aiVersion: 'FinAgent-Advisory-v2.1',
+        dataHash: `sha256:${Math.random().toString(36).substr(2, 12)}...`,
+      };
+      return {
+        ...state,
+        advisor: {
+          ...state.advisor,
+          pendingRecommendations: updated,
+          auditLog: [newEntry, ...state.advisor.auditLog],
+        },
+      };
+    }
+
+    case 'ADD_ADVISOR_CLIENT': {
+      const existing = state.advisor.clients || [];
+      const newClient = action.payload;
+      return {
+        ...state,
+        advisor: {
+          ...state.advisor,
+          clients: [newClient, ...existing.filter(c => c.id !== newClient.id)],
+          profile: {
+            ...state.advisor.profile,
+            totalAUM: (state.advisor.profile?.totalAUM || 0) + (newClient.aum || 0),
+          }
+        },
+      };
+    }
+
+    case 'SET_ADVISOR_CLIENTS': {
+      return {
+        ...state,
+        advisor: {
+          ...state.advisor,
+          clients: action.payload,
+        },
+      };
+    }
+
     case 'SET_MARKET': {
       const newMarket = action.payload; // 'US' or 'IN'
       try { localStorage.setItem('finagent_market', newMarket); } catch {}
@@ -431,6 +482,26 @@ export function AppProvider({ children }) {
     };
     dispatch({ type: 'INIT_STATE', payload: newState });
   }, [userProfile, userRole, isDemo]);
+
+  // Hydrate persistent advisor clients from backend database
+  useEffect(() => {
+    fetch('/api/advisor/clients')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && Array.isArray(json.clients) && json.clients.length > 0) {
+          const currentClients = state.advisor?.clients || [];
+          const existingIds = new Set(currentClients.map(c => c.id));
+          const toAdd = json.clients.filter(c => !existingIds.has(c.id));
+          if (toAdd.length > 0) {
+            dispatch({
+              type: 'SET_ADVISOR_CLIENTS',
+              payload: [...toAdd, ...currentClients]
+            });
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Persistence helpers exposed to pages ────────────────────────────────────
   async function persistGoals(goals) {
