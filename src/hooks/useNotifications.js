@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { analyze } from '../services/geminiService';
 
 const ALERT_TYPES = {
@@ -8,6 +8,7 @@ const ALERT_TYPES = {
   fd_maturity: { icon: '🏦', color: 'var(--primary)', label: 'FD Maturity' },
   rebalance: { icon: '⚖️', color: 'var(--purple)', label: 'Rebalance' },
   insurance_gap: { icon: '🛡️', color: 'var(--red)', label: 'Insurance' },
+  advisor_reco: { icon: '👔', color: 'var(--primary)', label: 'Advisor Reco' },
 };
 
 // Fallback alerts shown when backend is unavailable
@@ -48,6 +49,32 @@ export function useNotifications(portfolioData) {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Hydrate active advisor recommendations directly into investor notification bell
+  useEffect(() => {
+    fetch('/api/advisor/dispatches')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.dispatches) && data.dispatches.length > 0) {
+          const advisorAlerts = data.dispatches.slice(0, 3).map((d, i) => ({
+            id: `advisor-alert-${d.id || i}`,
+            type: 'advisor_reco',
+            urgency: 'high',
+            read: false,
+            title: `👔 Advisor: ${d.title}`,
+            description: d.summary ? `${d.summary}${d.advisorNote ? ` — Note: ${d.advisorNote}` : ''}` : 'Official recommendation from your Registered Investment Adviser.',
+            action: 'View Recommendation',
+            route: '/app/ai-advisor',
+          }));
+          setNotifications(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newOnes = advisorAlerts.filter(a => !existingIds.has(a.id));
+            return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const generateAlerts = useCallback(async () => {
     setLoading(true);

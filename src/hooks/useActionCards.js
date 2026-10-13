@@ -15,12 +15,29 @@ export function useActionCards(portfolioContext) {
     if (!currentUser) return;
     setLoading(true);
 
-    if (currentUser.isDemo) {
-      if (portfolioSummary?.actionItems && portfolioSummary.actionItems.length > 0) {
-        setCards(portfolioSummary.actionItems);
-      } else {
-        setCards(mockActionItems || []);
+    let advisorActionCards = [];
+    try {
+      const advRes = await fetch('/api/advisor/dispatches');
+      const advJson = await advRes.json();
+      if (advJson.success && Array.isArray(advJson.dispatches) && advJson.dispatches.length > 0) {
+        advisorActionCards = advJson.dispatches.slice(0, 2).map((d, idx) => ({
+          id: `advisor-card-${d.id || idx}`,
+          priority: 'high',
+          icon: '👔',
+          title: `Advisor: ${d.title}`,
+          body: d.summary ? `${d.summary}` : `Statutory fiduciary recommendation from your RIA.`,
+          potentialGain: null,
+          prompt: `Explain the fiduciary advice on: ${d.title}`,
+          category: 'rebalancing'
+        }));
       }
+    } catch {}
+
+    if (currentUser.isDemo) {
+      const base = (portfolioSummary?.actionItems && portfolioSummary.actionItems.length > 0)
+        ? portfolioSummary.actionItems
+        : (mockActionItems || []);
+      setCards([...advisorActionCards, ...base.filter(c => !advisorActionCards.some(a => a.id === c.id))]);
       setLoading(false);
       return;
     }
@@ -90,13 +107,15 @@ Return ONLY valid JSON array.`;
           dismissedActionCards: []
         }, { merge: true });
         
-        setCards(generatedCards);
+        setCards([...advisorActionCards, ...generatedCards]);
       } else {
-        setCards(existingCards.filter(c => !dismissedIds.includes(c.id)));
+        const userCards = existingCards.filter(c => !dismissedIds.includes(c.id));
+        setCards([...advisorActionCards, ...userCards.filter(c => !advisorActionCards.some(a => a.id === c.id))]);
       }
     } catch (err) {
       console.error("Failed to fetch/generate action cards:", err);
-      setCards(portfolioSummary?.actionItems || mockActionItems || []);
+      const base = portfolioSummary?.actionItems || mockActionItems || [];
+      setCards([...advisorActionCards, ...base.filter(c => !advisorActionCards.some(a => a.id === c.id))]);
     } finally {
       setLoading(false);
     }
