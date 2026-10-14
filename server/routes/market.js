@@ -27,55 +27,65 @@ function isMarketOpen() {
 module.exports.getQuotes = async (req, res) => {
   try {
     const symbolsParam = req.query.symbols || '';
-    const symbols = symbolsParam.split(',').filter(Boolean).slice(0, 20);
-    if (!symbols.length) return res.json({ success: true, quotes: [] });
+    const rawSymbols = symbolsParam.split(',').map(s => s.trim()).filter(Boolean).slice(0, 30);
+    if (!rawSymbols.length) return res.json({ success: true, quotes: [] });
 
-    const cacheKey = `quotes:${symbols.join(',')}`;
+    const cacheKey = `quotes:${rawSymbols.join(',')}`;
     if (isCached(cacheKey)) return res.json({ success: true, quotes: cache.get(cacheKey).data, cached: true });
 
-    let quotes;
-    try {
-      const results = await Promise.allSettled(
-        symbols.map(sym => yahooFinance.quote(sym.trim()))
-      );
+    const results = await Promise.allSettled(
+      rawSymbols.map(async (rawSym) => {
+        // If symbol doesn't have an exchange suffix (.NS, .BO) and looks like an Indian stock name, try raw first then .NS
+        let sym = rawSym;
+        try {
+          const q = await yahooFinance.quote(sym, {}, { validateResult: false });
+          if (q && q.regularMarketPrice) return { sym, q };
+        } catch (e) {}
 
-      let hasThrowError = false;
-      quotes = results.map((r, i) => {
-        if (r.status === 'fulfilled' && r.value) {
-          const q = r.value;
-          return {
-            symbol: symbols[i],
-            name: q.longName || q.shortName || symbols[i],
-            price: q.regularMarketPrice || 0,
-            change: q.regularMarketChange || 0,
-            changePct: q.regularMarketChangePercent || 0,
-            dayHigh: q.regularMarketDayHigh || 0,
-            dayLow: q.regularMarketDayLow || 0,
-            volume: q.regularMarketVolume || 0,
-            prevClose: q.regularMarketPreviousClose || 0,
-            marketCap: q.marketCap || 0,
-            pe: q.trailingPE || null,
-            fiftyTwoWeekHigh: q.fiftyTwoWeekHigh || 0,
-            fiftyTwoWeekLow: q.fiftyTwoWeekLow || 0,
-          };
+        if (!sym.includes('.')) {
+          try {
+            const qNS = await yahooFinance.quote(`${sym}.NS`, {}, { validateResult: false });
+            if (qNS && qNS.regularMarketPrice) return { sym: `${sym}.NS`, q: qNS };
+          } catch (e) {}
         }
-        hasThrowError = true;
-        return { symbol: symbols[i], error: true, price: 0 };
-      });
-      
-      if (hasThrowError) {
-          throw new Error("Yahoo Finance error on one or more symbols");
+
+        // Final fallback: try raw symbol once more or return null
+        return null;
+      })
+    );
+
+    const quotes = rawSymbols.map((originalSym, i) => {
+      const outcome = results[i];
+      if (outcome.status === 'fulfilled' && outcome.value && outcome.value.q) {
+        const q = outcome.value.q;
+        return {
+          symbol: originalSym,
+          resolvedSymbol: outcome.value.sym,
+          name: q.longName || q.shortName || originalSym,
+          price: q.regularMarketPrice || 0,
+          change: q.regularMarketChange || 0,
+          changePct: q.regularMarketChangePercent || 0,
+          dayHigh: q.regularMarketDayHigh || 0,
+          dayLow: q.regularMarketDayLow || 0,
+          volume: q.regularMarketVolume || 0,
+          prevClose: q.regularMarketPreviousClose || 0,
+          marketCap: q.marketCap || 0,
+          pe: q.trailingPE || null,
+          fiftyTwoWeekHigh: q.fiftyTwoWeekHigh || 0,
+          fiftyTwoWeekLow: q.fiftyTwoWeekLow || 0,
+          currency: q.currency || 'INR',
+        };
       }
-      
+      return { symbol: originalSym, error: true, price: 0 };
+    });
+
+    // Cache if we got at least one valid quote
+    const hasValidQuotes = quotes.some(q => !q.error && q.price > 0);
+    if (hasValidQuotes) {
       cache.set(cacheKey, { data: quotes, time: Date.now() });
-      res.json({ success: true, quotes, marketOpen: isMarketOpen() });
-    } catch (apiError) {
-      if (cache.has(cacheKey)) {
-        res.json({ success: true, quotes: cache.get(cacheKey).data, stale: true, marketOpen: isMarketOpen() });
-      } else {
-        throw apiError;
-      }
     }
+
+    res.json({ success: true, quotes, marketOpen: isMarketOpen() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -243,7 +243,7 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
     dispatch({ type: 'UPDATE_HOLDINGS', payload: newHoldings });
     
     // Fire-and-forget — don't block UI on Firestore write
-    try { persistHoldings().catch(() => {}); } catch {}
+    try { persistHoldings(newHoldings).catch(() => {}); } catch {}
     
     // Toast
     const toast = document.createElement('div');

@@ -28,7 +28,7 @@ import {
   advisorAUMByAsset,
   riskProfileBreakdown,
 } from '../data/mockAdvisorData';
-import { computeNetWorth, computeAssetBreakdown } from '../utils/firestoreSync';
+import { computeNetWorth, computeAssetBreakdown, computePortfolioMetrics } from '../utils/firestoreSync';
 import { computeHealthScore } from '../utils/healthScoreEngine';
 import {
   usUserProfile,
@@ -86,31 +86,48 @@ function buildUSConsumerState(profile, isDemo) {
 }
 
 function buildConsumerState(profile, isDemo) {
+  let savedLocalHoldings = null;
+  try {
+    const raw = localStorage.getItem('finagent_user_holdings');
+    if (raw) savedLocalHoldings = JSON.parse(raw);
+  } catch {}
+
   if (isDemo || !profile) {
     // Rich mock data for demos / unauthenticated sessions
+    const baseHoldings = savedLocalHoldings || {
+      equities: equityHoldings,
+      mutualFunds,
+      fixedDeposits,
+      epf: epfData,
+      realEstate,
+      gold: goldHoldings,
+      insurance: insurancePolicies,
+    };
+    const metrics = computePortfolioMetrics(baseHoldings);
     return {
       user: mockUserProfile,
-      netWorth: mockNetWorth,
-      assetBreakdown: mockAssetBreakdown,
+      netWorth: {
+        ...mockNetWorth,
+        total: metrics.total || mockNetWorth.total,
+        totalInvested: metrics.totalInvested || 0,
+        unrealizedPnL: metrics.unrealizedPnL || 0,
+        unrealizedPnLPct: metrics.unrealizedPnLPct || 0,
+        dayChange: metrics.dayChange || 0,
+        dayChangePct: metrics.dayChangePct || 0,
+      },
+      assetBreakdown: computeAssetBreakdown(baseHoldings),
       goals: mockGoals,
       healthScore: healthScoreData,
       actionItems: mockActionItems,
-      holdings: {
-        equities: equityHoldings,
-        mutualFunds,
-        fixedDeposits,
-        epf: epfData,
-        realEstate,
-        gold: goldHoldings,
-        insurance: insurancePolicies,
-      },
+      holdings: baseHoldings,
       netWorthHistory,
     };
   }
 
-  // Real Firestore user — derive from profile
-  const holdings = profile.holdings || {};
-  const nwTotal = profile.netWorth || computeNetWorth(holdings);
+  // Real Firestore user — derive from profile or local cache
+  const holdings = profile.holdings || savedLocalHoldings || {};
+  const metrics = computePortfolioMetrics(holdings);
+  const nwTotal = profile.netWorth || metrics.total;
   const breakdown = computeAssetBreakdown(holdings);
   const goals = profile.goals && profile.goals.length > 0 ? profile.goals : mockGoals;
 
@@ -126,9 +143,11 @@ function buildConsumerState(profile, isDemo) {
     },
     netWorth: {
       total: nwTotal,
-      totalInvested: 0,
-      unrealizedPnL: 0,
-      unrealizedPnLPct: 0,
+      totalInvested: metrics.totalInvested || 0,
+      unrealizedPnL: metrics.unrealizedPnL || 0,
+      unrealizedPnLPct: metrics.unrealizedPnLPct || 0,
+      dayChange: metrics.dayChange || 0,
+      dayChangePct: metrics.dayChangePct || 0,
       monthlyDelta: 0,
       monthlyDeltaPct: 0,
       lastSynced: 'Just now',
@@ -257,7 +276,11 @@ function appReducer(state, action) {
       return { ...state, activeRole: action.payload };
 
     // ── Holdings ──────────────────────────────────────────────────────────────
-    case 'UPDATE_HOLDINGS':
+    case 'UPDATE_HOLDINGS': {
+      const metrics = computePortfolioMetrics(action.payload);
+      try {
+        localStorage.setItem('finagent_user_holdings', JSON.stringify(action.payload));
+      } catch {}
       return {
         ...state,
         consumer: {
@@ -266,10 +289,17 @@ function appReducer(state, action) {
           assetBreakdown: computeAssetBreakdown(action.payload),
           netWorth: {
             ...state.consumer.netWorth,
-            total: computeNetWorth(action.payload),
+            total: metrics.total,
+            totalInvested: metrics.totalInvested,
+            unrealizedPnL: metrics.unrealizedPnL,
+            unrealizedPnLPct: metrics.unrealizedPnLPct,
+            dayChange: metrics.dayChange,
+            dayChangePct: metrics.dayChangePct,
+            lastSynced: 'Just now',
           },
         },
       };
+    }
 
     // ── Goals ─────────────────────────────────────────────────────────────────
     case 'UPDATE_GOALS':

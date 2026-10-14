@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle, ChevronRight, FileText, Edit3, Database } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 
 const DEMO_HOLDINGS = [
   { fund: 'Axis Bluechip Fund - Growth', category: 'Large Cap', units: 892.456, nav: 58.32, value: 52032, folio: 'AXS/001234' },
@@ -20,6 +21,7 @@ const STEPS = ['Choose Source', 'Upload / Enter', 'Review Holdings', 'Done'];
 
 export default function ImportPortfolio() {
   const navigate = useNavigate();
+  const { state, dispatch, persistHoldings } = useApp();
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(null);
   const [holdings, setHoldings] = useState(DEMO_HOLDINGS);
@@ -43,10 +45,10 @@ export default function ImportPortfolio() {
       reader.onload = async (e) => {
         const base64 = e.target.result.split(',')[1];
         try {
-          const res = await fetch('http://localhost:3001/api/cams/parse-pdf', {
+          const res = await fetch('/api/cams/parse-pdf', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pdf: base64, source }),
+            body: JSON.stringify({ base64, source }),
           });
           if (!res.ok) throw new Error('Backend error');
           const data = await res.json();
@@ -357,7 +359,37 @@ export default function ImportPortfolio() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" onClick={() => setStep(3)} style={{ gap: '0.5rem', display: 'flex', alignItems: 'center' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                const newMFs = holdings.map(h => ({
+                  name: h.scheme || h.fund || 'Mutual Fund',
+                  amc: h.amc || (h.scheme || h.fund || '').split(' ')[0] || 'Mutual Fund',
+                  units: Number(h.units) || 0,
+                  nav: Number(h.nav) || 0,
+                  value: Number(h.value || h.currentValue) || (Number(h.units || 0) * Number(h.nav || 0)),
+                  pnl: 0,
+                  pnlPct: 0,
+                  cagr3Y: Number(h.xirr) || 14.2,
+                  expenseRatio: 0.85,
+                  taxType: 'LTCG',
+                  category: h.category || 'Equity',
+                  folio: h.folio || '',
+                }));
+
+                const currentHoldings = state.consumer?.holdings || {};
+                const existingMFs = currentHoldings.mutualFunds || currentHoldings.mf || [];
+                const updatedHoldings = {
+                  ...currentHoldings,
+                  mutualFunds: [...existingMFs, ...newMFs],
+                };
+
+                dispatch({ type: 'UPDATE_HOLDINGS', payload: updatedHoldings });
+                try { persistHoldings(updatedHoldings).catch(() => {}); } catch {}
+                setStep(3);
+              }}
+              style={{ gap: '0.5rem', display: 'flex', alignItems: 'center' }}
+            >
               Confirm & Import <ChevronRight size={16} />
             </button>
           </div>

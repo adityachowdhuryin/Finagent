@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { formatLakh, formatPct, formatCurrency } from '../../utils/formatters';
-import { X, ExternalLink, Sparkles, FileDown, Plus, Upload } from 'lucide-react';
+import { X, ExternalLink, Sparkles, FileDown, Plus, Upload, RefreshCw, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import ReportGenerator from './ReportGenerator';
 import AddHoldingForm from '../onboarding/AddHoldingForm';
 import BehavioralCircuitBreakerModal from '../../components/ui/BehavioralCircuitBreakerModal';
+import { computePortfolioMetrics } from '../../utils/firestoreSync';
 
 const IN_FILTERS = ['All', 'Equity', 'Mutual Funds', 'Fixed Deposits', 'EPF', 'Real Estate', 'Gold'];
 const US_FILTERS = ['All', 'Equity', '401(k) & Retirement', 'Real Estate', 'Cash & HYSA', 'Crypto'];
@@ -414,7 +415,7 @@ function CryptoSection({ crypto, isUSMarket }) {
 }
 
 export default function Portfolio() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const isUSMarket = state.activeMarket === 'US';
   const { holdings } = state.consumer;
@@ -428,6 +429,13 @@ export default function Portfolio() {
   const [reportOpen, setReportOpen] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [circuitBreakerHolding, setCircuitBreakerHolding] = useState(null);
+  const [syncingQuotes, setSyncingQuotes] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState(() => {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  });
+  const [isMarketOpenStatus, setIsMarketOpenStatus] = useState(null);
+
+  const metrics = computePortfolioMetrics(holdings);
 
   const totalEquityValue = (holdings.equities || []).reduce((s, h) => s + (h.value || 0), 0);
   const totalEquityPnL = (holdings.equities || []).reduce((s, h) => s + (h.pnl || 0), 0);
@@ -444,6 +452,74 @@ export default function Portfolio() {
     (holdings.crypto || []).length > 0 ||
     (holdings.realEstate || []).length > 0 ||
     (holdings.gold || []).length > 0;
+
+  // Sync live quotes from backend Yahoo Finance
+  const syncLiveQuotes = useCallback(async () => {
+    const equities = holdings.equities || [];
+    if (!equities.length) return;
+
+    setSyncingQuotes(true);
+    try {
+      const symbols = equities.map(e => e.symbol).filter(Boolean);
+      if (!symbols.length) return;
+
+      const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.quotes) && data.quotes.length > 0) {
+        setIsMarketOpenStatus(data.marketOpen);
+        const quoteMap = {};
+        data.quotes.forEach(q => {
+          if (!q.error && q.price > 0) {
+            quoteMap[q.symbol] = q;
+            if (q.resolvedSymbol) quoteMap[q.resolvedSymbol] = q;
+          }
+        });
+
+        const updatedEquities = equities.map(eq => {
+          const q = quoteMap[eq.symbol] || quoteMap[`${eq.symbol}.NS`] || quoteMap[`${eq.symbol}.BO`];
+          if (!q || !q.price) return eq;
+
+          const liveLTP = q.price;
+          const qty = eq.qty || eq.quantity || 1;
+          const avgCost = eq.avgCost || eq.avgBuy || liveLTP;
+          const currentVal = Math.round(qty * liveLTP);
+          const invested = Math.round(qty * avgCost);
+          const pnl = currentVal - invested;
+          const pnlPct = invested > 0 ? +(((pnl / invested) * 100).toFixed(2)) : 0;
+
+          return {
+            ...eq,
+            ltp: liveLTP,
+            value: currentVal,
+            pnl,
+            pnlPct,
+            change: q.change || 0,
+            changePct: q.changePct || 0,
+            dayHigh: q.dayHigh || liveLTP,
+            dayLow: q.dayLow || liveLTP,
+            prevClose: q.prevClose || liveLTP,
+          };
+        });
+
+        const updatedHoldings = {
+          ...holdings,
+          equities: updatedEquities,
+        };
+
+        dispatch({ type: 'UPDATE_HOLDINGS', payload: updatedHoldings });
+        setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    } catch (err) {
+      console.warn('[Portfolio] Live quote sync failed:', err);
+    } finally {
+      setSyncingQuotes(false);
+    }
+  }, [holdings, dispatch]);
+
+  useEffect(() => {
+    syncLiveQuotes();
+  }, []);
 
   function handleSelect(item, type) { setSelectedItem(item); setSelectedType(type); }
   function handleClose() { setSelectedItem(null); setSelectedType(null); }
@@ -488,6 +564,7 @@ export default function Portfolio() {
         </>
       )}
 
+      {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 className="text-h1">Portfolio</h1>
@@ -505,6 +582,90 @@ export default function Portfolio() {
           {filters.map(f => <button key={f} className={`chip ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>)}
         </div>
       </div>
+
+      {/* Portfolio Executive KPI Deck */}
+      {hasAnyHoldings && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.875rem' }}>
+          {/* Card 1: Total Net Worth */}
+          <div className="card" style={{ padding: '1.1rem 1.25rem', background: 'linear-gradient(135deg, var(--surface), var(--surface-raised))' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600 }}>
+                Total Net Worth
+              </span>
+              <span className="badge badge-primary" style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem' }}>
+                {isUSMarket ? 'US Portfolio' : 'All 7 Classes'}
+              </span>
+            </div>
+            <div style={{ fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '1.6rem', color: 'var(--text-primary)' }}>
+              {formatLakh(metrics.total, isUSMarket ? 'US' : 'IN')}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Clock size={12} color="var(--text-muted)" />
+              Synced {lastSyncedTime}
+            </div>
+          </div>
+
+          {/* Card 2: Total Invested Capital */}
+          <div className="card" style={{ padding: '1.1rem 1.25rem' }}>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.4rem' }}>
+              Total Invested
+            </div>
+            <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.6rem', color: 'var(--text-primary)' }}>
+              {formatLakh(metrics.totalInvested, isUSMarket ? 'US' : 'IN')}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Principal Cost Basis
+            </div>
+          </div>
+
+          {/* Card 3: Total Unrealized P&L */}
+          <div className="card" style={{ padding: '1.1rem 1.25rem', background: metrics.unrealizedPnL >= 0 ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)' }}>
+            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.4rem' }}>
+              Unrealized P&L
+            </div>
+            <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.6rem', color: metrics.unrealizedPnL >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              {metrics.unrealizedPnL >= 0 ? '+' : ''}{cur}{Math.abs(metrics.unrealizedPnL).toLocaleString(loc)}
+            </div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: metrics.unrealizedPnL >= 0 ? 'var(--green)' : 'var(--red)', marginTop: '0.25rem' }}>
+              {formatPct(metrics.unrealizedPnLPct)} total return
+            </div>
+          </div>
+
+          {/* Card 4: Day's Change & Sync Controls */}
+          <div className="card" style={{ padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  Day's Change
+                </span>
+                {isMarketOpenStatus !== null && (
+                  <span style={{ fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: 3, color: isMarketOpenStatus ? 'var(--green)' : 'var(--text-muted)' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: isMarketOpenStatus ? 'var(--green)' : 'var(--text-muted)', display: 'inline-block' }} />
+                    {isMarketOpenStatus ? 'Live Market' : 'Market Closed'}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.4rem', color: metrics.dayChange >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                {metrics.dayChange >= 0 ? '+' : ''}{cur}{Math.abs(metrics.dayChange).toLocaleString(loc)}
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, marginLeft: 6 }}>
+                  ({formatPct(metrics.dayChangePct)})
+                </span>
+              </div>
+            </div>
+            <div style={{ marginTop: '0.6rem' }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={syncLiveQuotes}
+                disabled={syncingQuotes}
+                style={{ width: '100%', fontSize: '0.75rem', padding: '0.35rem 0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <RefreshCw size={12} className={syncingQuotes ? 'animate-spin' : ''} />
+                {syncingQuotes ? 'Updating Quotes…' : 'Refresh Live Quotes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!hasAnyHoldings && (
         <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', margin: '0.5rem 0' }}>

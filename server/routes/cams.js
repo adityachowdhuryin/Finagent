@@ -3,8 +3,9 @@ const fetch = require('node-fetch');
 // POST /api/cams/parse-pdf
 // Accepts base64 PDF, uses Gemini Vision to extract MF holdings
 module.exports.parsePdf = async (req, res) => {
-  const { base64, filename } = req.body;
-  if (!base64) return res.status(400).json({ success: false, error: 'base64 PDF required' });
+  const pdfData = req.body.base64 || req.body.pdf;
+  const filename = req.body.filename || req.body.source || 'statement.pdf';
+  if (!pdfData) return res.status(400).json({ success: false, error: 'base64 PDF required' });
 
   if (!process.env.GEMINI_API_KEY) {
     return res.json({ success: true, holdings: DEMO_HOLDINGS, source: 'demo' });
@@ -43,7 +44,7 @@ Return ONLY valid JSON, no markdown, no explanation.`;
           contents: [{
             parts: [
               { text: prompt },
-              { inline_data: { mime_type: 'application/pdf', data: base64 } }
+              { inline_data: { mime_type: 'application/pdf', data: pdfData } }
             ]
           }],
           generationConfig: { temperature: 0, responseMimeType: 'application/json' }
