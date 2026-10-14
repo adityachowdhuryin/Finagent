@@ -1,0 +1,14 @@
+TRANSACTION LEDGER AUDIT EXCERPT:
+Account: Apex Platinum Checking (#8849-XXXX)
+Account Holder: Jonathan & Claire Sterling
+
+Date         Description                                         Debit ($)     Credit ($)   Balance ($)
+-------------------------------------------------------------------------------------------------------
+2026-08-01   Bi-Weekly Executive Payroll Wire Credit                            42,500.00   184,200.00
+2026-08-03   Aston Martin Financial Services Monthly Lease        3,850.00                  180,350.00
+2026-08-08   ATM Cash Withdrawal #401 (Structuring Flag < $10k)   9,900.00                  170,450.00
+2026-08-09   ATM Cash Withdrawal #402 (Structuring Flag < $10k)   9,800.00                  160,650.00
+2026-08-14   Outward Wire: Al-Maktoum Holdings FZE (Dubai UAE)   85,000.00                   75,650.00
+2026-08-18   Coinbase Inc Deposit / Digital Asset Purchase       25,000.00                   50,650.00
+2026-08-22   Cartier Jewelers Fifth Ave Retail Purchase          14,200.00                   36,450.00
+2026-08-28   Pasadena Family Court Legal Retainer Escrow         15,000.00                   21,450.00

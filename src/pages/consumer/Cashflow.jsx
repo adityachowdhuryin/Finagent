@@ -26,33 +26,76 @@ function saveCashflow(monthKey, data) {
 // ── CSV Parser (client-side) ─────────────────────────────────────────────────
 
 function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { income: 0, expenses: 0, breakdown: [], subscriptions: [] };
+
   let income = 0, expenses = 0;
   const categories = {};
+  const subscriptions = [];
 
-  lines.forEach(line => {
-    const cols = line.split(',');
-    const desc = (cols[1] || cols[2] || '').toLowerCase();
-    const amount = parseFloat((cols[3] || cols[4] || '0').replace(/[^0-9.-]/g, ''));
-    if (isNaN(amount) || amount === 0) return;
+  // Inspect headers
+  const headerCols = lines[0].toLowerCase().split(',').map(c => c.trim().replace(/["\r]/g, ''));
+  let descIdx = headerCols.findIndex(c => c.includes('desc') || c.includes('narrat') || c.includes('particular') || c.includes('detail'));
+  let debitIdx = headerCols.findIndex(c => c.includes('debit') || c.includes('withdrawal') || c === 'dr');
+  let creditIdx = headerCols.findIndex(c => c.includes('credit') || c.includes('deposit') || c === 'cr');
+  let amountIdx = headerCols.findIndex(c => c.includes('amount') || c.includes('trans'));
+  let typeIdx = headerCols.findIndex(c => c === 'type' || c.includes('cr/dr') || c.includes('d/c'));
 
-    // Credit or debit detection
-    const isCredit = (cols[5] || '').toLowerCase().includes('cr') ||
-                     (cols[3] || '').toLowerCase().includes('cr') ||
-                     (cols[4] || '') === '' && amount > 0;
+  if (descIdx === -1) descIdx = 1;
 
-    if (isCredit || desc.includes('salary') || desc.includes('credit')) {
-      income += Math.abs(amount);
-    } else {
-      expenses += Math.abs(amount);
-      // Categorize
-      if (desc.includes('emi') || desc.includes('loan')) categories['EMI'] = (categories['EMI'] || 0) + amount;
-      else if (desc.includes('sip') || desc.includes('mutual') || desc.includes('invest')) categories['SIP/Investments'] = (categories['SIP/Investments'] || 0) + amount;
-      else if (desc.includes('swiggy') || desc.includes('zomato') || desc.includes('food')) categories['Food'] = (categories['Food'] || 0) + amount;
-      else if (desc.includes('amazon') || desc.includes('flipkart') || desc.includes('myntra')) categories['Shopping'] = (categories['Shopping'] || 0) + amount;
-      else if (desc.includes('netflix') || desc.includes('prime') || desc.includes('spotify')) categories['Entertainment'] = (categories['Entertainment'] || 0) + amount;
-      else if (desc.includes('electricity') || desc.includes('gas') || desc.includes('water')) categories['Utilities'] = (categories['Utilities'] || 0) + amount;
-      else categories['Others'] = (categories['Others'] || 0) + amount;
+  const dataLines = (debitIdx !== -1 || creditIdx !== -1 || amountIdx !== -1) ? lines.slice(1) : lines;
+
+  dataLines.forEach(line => {
+    const cols = line.split(',').map(c => c.trim().replace(/["\r]/g, ''));
+    const desc = (cols[descIdx] || cols[1] || cols[0] || '').toLowerCase();
+
+    let debitAmt = 0;
+    let creditAmt = 0;
+
+    if (debitIdx !== -1 && cols[debitIdx]) {
+      debitAmt = Math.abs(parseFloat(cols[debitIdx].replace(/[^0-9.-]/g, '')) || 0);
+    }
+    if (creditIdx !== -1 && cols[creditIdx]) {
+      creditAmt = Math.abs(parseFloat(cols[creditIdx].replace(/[^0-9.-]/g, '')) || 0);
+    }
+
+    if (debitAmt === 0 && creditAmt === 0 && amountIdx !== -1 && cols[amountIdx]) {
+      const rawAmt = parseFloat(cols[amountIdx].replace(/[^0-9.-]/g, '')) || 0;
+      const typeStr = (typeIdx !== -1 ? cols[typeIdx] : '').toLowerCase();
+      if (typeStr.includes('cr') || rawAmt > 0 && desc.includes('salary')) {
+        creditAmt = Math.abs(rawAmt);
+      } else {
+        debitAmt = Math.abs(rawAmt);
+      }
+    }
+
+    // Fallback if no explicit headers found
+    if (debitAmt === 0 && creditAmt === 0) {
+      const val3 = parseFloat((cols[3] || '').replace(/[^0-9.-]/g, '')) || 0;
+      const val4 = parseFloat((cols[4] || '').replace(/[^0-9.-]/g, '')) || 0;
+      if (val4 > 0) creditAmt = val4;
+      else if (val3 > 0) debitAmt = val3;
+      else if (cols[2]) {
+        const val2 = parseFloat(cols[2].replace(/[^0-9.-]/g, '')) || 0;
+        if (desc.includes('salary') || (cols[3] || '').toLowerCase().includes('cr')) creditAmt = Math.abs(val2);
+        else debitAmt = Math.abs(val2);
+      }
+    }
+
+    if (creditAmt > 0 || desc.includes('salary')) {
+      income += creditAmt;
+    } else if (debitAmt > 0) {
+      expenses += debitAmt;
+      if (desc.includes('emi') || desc.includes('loan') || desc.includes('mortgage')) categories['EMI'] = (categories['EMI'] || 0) + debitAmt;
+      else if (desc.includes('sip') || desc.includes('mutual') || desc.includes('invest') || desc.includes('zerodha') || desc.includes('groww')) categories['SIP/Investments'] = (categories['SIP/Investments'] || 0) + debitAmt;
+      else if (desc.includes('swiggy') || desc.includes('zomato') || desc.includes('food') || desc.includes('uber eats') || desc.includes('doordash') || desc.includes('starbucks')) categories['Food'] = (categories['Food'] || 0) + debitAmt;
+      else if (desc.includes('amazon') || desc.includes('flipkart') || desc.includes('myntra') || desc.includes('shop') || desc.includes('target') || desc.includes('walmart')) categories['Shopping'] = (categories['Shopping'] || 0) + debitAmt;
+      else if (desc.includes('netflix') || desc.includes('prime') || desc.includes('spotify') || desc.includes('apple') || desc.includes('hotstar')) {
+        categories['Entertainment'] = (categories['Entertainment'] || 0) + debitAmt;
+        subscriptions.push({ name: cols[descIdx] || 'Subscription', amount: Math.round(debitAmt) });
+      }
+      else if (desc.includes('electric') || desc.includes('gas') || desc.includes('water') || desc.includes('utility') || desc.includes('bescom') || desc.includes('wifi') || desc.includes('broadband')) categories['Utilities'] = (categories['Utilities'] || 0) + debitAmt;
+      else categories['Others'] = (categories['Others'] || 0) + debitAmt;
     }
   });
 
@@ -64,7 +107,7 @@ function parseCSV(text) {
     .filter(([, v]) => v > 0)
     .map(([category, amount]) => ({ category, amount: Math.round(amount), color: COLORS[category] || '#64748b' }));
 
-  return { income: Math.round(income), expenses: Math.round(expenses), breakdown, subscriptions: [] };
+  return { income: Math.round(income), expenses: Math.round(expenses), breakdown, subscriptions };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
