@@ -573,6 +573,9 @@ export default function Portfolio() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/app/import')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Upload size={14} /> Import CAMS
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <Plus size={14} /> Add Holding
           </button>

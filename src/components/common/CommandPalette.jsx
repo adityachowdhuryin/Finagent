@@ -60,7 +60,7 @@ const ALL_TOOLS = [
 
   // Data Sync & Billing
   { title: '1-Click Account Aggregator Sync', category: 'Data Sync', to: '/app/aa-sync', icon: Zap, keywords: 'rbi aa otp bank auto sync' },
-  { title: 'Import CAS Statement (PDF)', category: 'Data Sync', to: '/app/cas-import', icon: Download, keywords: 'cams kfintech pdf import mutual funds' },
+  { title: 'Import CAMS CAS Statement (PDF)', category: 'Data Sync', to: '/app/import', icon: Download, keywords: 'cams kfintech pdf import mutual funds statement' },
   { title: 'Monthly Report Email Settings', category: 'Data Sync', to: '/app/report-settings', icon: Mail, keywords: 'email digest monthly pdf' },
   { title: 'PDF Report Generator', category: 'Data Sync', to: '/app/reports', icon: FileText, keywords: 'export download print report' },
   { title: 'GST Invoices & Subscription Billing', category: 'Data Sync', to: '/app/invoices', icon: CreditCard, keywords: 'gst tax invoice billing subscription pro receipt reimbursement' },

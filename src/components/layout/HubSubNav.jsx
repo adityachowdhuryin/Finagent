@@ -321,8 +321,8 @@ function getHubs(market = 'US', mode = 'pro') {
           tabs: isUS ? [
             { to: '/app/plaid-sync', label: 'Plaid 1-Click Sync', icon: Zap, badge: 'Fidelity/Chase', desc: 'Automated sync with 12,000+ US banks, brokers & 401(k)s', minMode: 'essential' },
           ] : [
+            { to: '/app/import', label: 'Import CAMS CAS', icon: Download, badge: 'AI Parse', desc: 'Upload CAMS or KFintech consolidated mutual fund statement', minMode: 'essential' },
             { to: '/app/aa-sync', label: '1-Click AA Sync', icon: Zap, desc: 'RBI Account Aggregator protocol for instant bank statements', minMode: 'essential' },
-            { to: '/app/cas-import', label: 'Import CAS', icon: Download, desc: 'Upload CAMS or KFintech consolidated mutual fund statement', minMode: 'essential' },
           ],
         },
         {
