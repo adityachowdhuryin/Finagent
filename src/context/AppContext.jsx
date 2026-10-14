@@ -159,7 +159,7 @@ function buildConsumerState(profile, isDemo) {
     actionItems: profile.actionCards || mockActionItems,
     holdings: {
       // Normalize equities: handle both mock schema (ltp, avgCost, value, pnl) and seed schema (avgBuy, no ltp)
-      equities: (holdings.equities || []).map(eq => ({
+      equities: (holdings.equities || holdings.equity || []).map(eq => ({
         ...eq,
         ltp: eq.ltp || eq.avgBuy || eq.avgCost || 0,
         avgCost: eq.avgCost || eq.avgBuy || 0,
@@ -170,12 +170,12 @@ function buildConsumerState(profile, isDemo) {
         taxType: eq.taxType || 'STCG',
       })),
       // Normalize MFs: handle scheme vs name, xirr vs cagr3Y, missing category
-      mutualFunds: (holdings.mf || []).map(mf => ({
+      mutualFunds: (holdings.mutualFunds || holdings.mf || []).map(mf => ({
         ...mf,
-        name: mf.name || mf.scheme || '',
-        nav: mf.nav || 0,
-        units: mf.units || 0,
-        value: mf.value || ((mf.units || 0) * (mf.nav || 0)),
+        name: mf.name || mf.scheme || mf.fund || '',
+        nav: Number(mf.nav) || 0,
+        units: Number(mf.units) || 0,
+        value: Number(mf.value ?? mf.currentValue ?? ((mf.units || 0) * (mf.nav || 0))) || 0,
         pnl: mf.pnl ?? 0,
         pnlPct: mf.pnlPct ?? 0,
         cagr3Y: mf.cagr3Y || mf.xirr || 0,
@@ -184,7 +184,7 @@ function buildConsumerState(profile, isDemo) {
         category: mf.category || 'Equity',
       })),
       // Normalize FDs: principal vs amount, compute interest and daysRemaining if missing
-      fixedDeposits: (holdings.fd || []).map(fd => {
+      fixedDeposits: (holdings.fixedDeposits || holdings.fd || []).map(fd => {
         const principal = fd.principal || fd.amount || 0;
         const maturityAmount = fd.maturityAmount || principal;
         const daysRemaining = fd.daysRemaining ?? Math.max(0, Math.floor((new Date(fd.maturityDate) - Date.now()) / 86400000));

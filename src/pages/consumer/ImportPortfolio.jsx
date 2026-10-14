@@ -4,11 +4,11 @@ import { Upload, CheckCircle, ChevronRight, FileText, Edit3, Database } from 'lu
 import { useApp } from '../../context/AppContext';
 
 const DEMO_HOLDINGS = [
-  { fund: 'Axis Bluechip Fund - Growth', category: 'Large Cap', units: 892.456, nav: 58.32, value: 52032, folio: 'AXS/001234' },
-  { fund: 'Mirae Asset Large Cap Fund - Growth', category: 'Large Cap', units: 421.123, nav: 98.45, value: 41472, folio: 'MIR/005678' },
-  { fund: 'HDFC Mid-Cap Opportunities Fund', category: 'Mid Cap', units: 312.789, nav: 142.10, value: 44448, folio: 'HDFC/009012' },
-  { fund: 'SBI Bluechip Fund - Growth', category: 'Large Cap', units: 567.234, nav: 72.80, value: 41294, folio: 'SBI/003456' },
-  { fund: 'Parag Parikh Flexi Cap Fund - Growth', category: 'Flexi Cap', units: 198.567, nav: 76.45, value: 15184, folio: 'PPFAS/007890' },
+  { fund: 'Axis Bluechip Fund - Growth', scheme: 'Axis Bluechip Fund - Growth', name: 'Axis Bluechip Fund - Growth', category: 'Large Cap', units: 892.456, nav: 58.32, value: 52032, currentValue: 52032, folio: 'AXS/001234', amc: 'Axis Mutual Fund' },
+  { fund: 'Mirae Asset Large Cap Fund - Growth', scheme: 'Mirae Asset Large Cap Fund - Growth', name: 'Mirae Asset Large Cap Fund - Growth', category: 'Large Cap', units: 421.123, nav: 98.45, value: 41472, currentValue: 41472, folio: 'MIR/005678', amc: 'Mirae Asset Mutual Fund' },
+  { fund: 'HDFC Mid-Cap Opportunities Fund', scheme: 'HDFC Mid-Cap Opportunities Fund', name: 'HDFC Mid-Cap Opportunities Fund', category: 'Mid Cap', units: 312.789, nav: 142.10, value: 44448, currentValue: 44448, folio: 'HDFC/009012', amc: 'HDFC Mutual Fund' },
+  { fund: 'SBI Bluechip Fund - Growth', scheme: 'SBI Bluechip Fund - Growth', name: 'SBI Bluechip Fund - Growth', category: 'Large Cap', units: 567.234, nav: 72.80, value: 41294, currentValue: 41294, folio: 'SBI/003456', amc: 'SBI Mutual Fund' },
+  { fund: 'Parag Parikh Flexi Cap Fund - Growth', scheme: 'Parag Parikh Flexi Cap Fund - Growth', name: 'Parag Parikh Flexi Cap Fund - Growth', category: 'Flexi Cap', units: 198.567, nav: 76.45, value: 15184, currentValue: 15184, folio: 'PPFAS/007890', amc: 'PPFAS Mutual Fund' },
 ];
 
 const SOURCES = [
@@ -53,7 +53,31 @@ export default function ImportPortfolio() {
           if (!res.ok) throw new Error('Backend error');
           const data = await res.json();
           if (data.holdings?.length) {
-            setHoldings(data.holdings);
+            const normalized = data.holdings.map(h => {
+              const units = Number(h.units) || 0;
+              const nav = Number(h.nav) || 0;
+              const value = Number(h.currentValue ?? h.value ?? (units * nav)) || 0;
+              const name = h.scheme || h.fund || h.name || 'Mutual Fund';
+              const amc = h.amc || name.split(' ')[0] || 'Mutual Fund';
+              const category = h.category || 'Equity';
+              const folio = h.folio || '';
+              const xirr = Number(h.xirr) || 14.2;
+              return {
+                fund: name,
+                scheme: name,
+                name: name,
+                amc,
+                category,
+                folio,
+                units,
+                nav,
+                value,
+                currentValue: value,
+                xirr,
+                cagr3Y: xirr,
+              };
+            });
+            setHoldings(normalized);
           } else {
             setHoldings(DEMO_HOLDINGS);
           }
@@ -82,12 +106,18 @@ export default function ImportPortfolio() {
     if (!manualForm.fund) return;
     const units = parseFloat(manualForm.units) || 0;
     const nav = parseFloat(manualForm.nav) || 0;
+    const value = manualForm.value ? parseFloat(manualForm.value) : Math.round(units * nav);
+    const name = manualForm.fund;
     setHoldings(prev => [...prev, {
-      fund: manualForm.fund,
+      fund: name,
+      scheme: name,
+      name: name,
+      amc: name.split(' ')[0] || 'Mutual Fund',
       category: 'Manual',
       units,
       nav,
-      value: manualForm.value ? parseFloat(manualForm.value) : Math.round(units * nav),
+      value,
+      currentValue: value,
       folio: manualForm.folio || 'MANUAL',
     }]);
     setManualForm({ fund: '', units: '', nav: '', value: '', folio: '' });
@@ -95,17 +125,86 @@ export default function ImportPortfolio() {
 
   const startEdit = (idx) => {
     setEditingIdx(idx);
-    setEditRow({ ...holdings[idx] });
+    const item = holdings[idx];
+    setEditRow({
+      ...item,
+      fund: item.fund || item.scheme || item.name || '',
+      units: item.units,
+      nav: item.nav,
+      value: item.value ?? item.currentValue ?? 0,
+      folio: item.folio || '',
+      category: item.category || 'Equity',
+    });
   };
 
   const saveEdit = () => {
-    setHoldings(prev => prev.map((h, i) => i === editingIdx ? { ...editRow, units: parseFloat(editRow.units), nav: parseFloat(editRow.nav), value: parseFloat(editRow.value) } : h));
+    const units = parseFloat(editRow.units) || 0;
+    const nav = parseFloat(editRow.nav) || 0;
+    const value = editRow.value ? parseFloat(editRow.value) : Math.round(units * nav);
+    const name = editRow.fund || editRow.scheme || 'Mutual Fund';
+    setHoldings(prev => prev.map((h, i) => i === editingIdx ? {
+      ...h,
+      ...editRow,
+      fund: name,
+      scheme: name,
+      name: name,
+      units,
+      nav,
+      value,
+      currentValue: value,
+    } : h));
     setEditingIdx(null);
   };
 
   const deleteHolding = (idx) => setHoldings(prev => prev.filter((_, i) => i !== idx));
 
-  const totalValue = holdings.reduce((s, h) => s + h.value, 0);
+  const totalValue = holdings.reduce((s, h) => s + (Number(h.value ?? h.currentValue) || 0), 0);
+
+  const handleConfirmImport = () => {
+    const newMFs = holdings.map(h => {
+      const name = h.scheme || h.fund || h.name || 'Mutual Fund';
+      const units = Number(h.units) || 0;
+      const nav = Number(h.nav) || 0;
+      const val = Number(h.value ?? h.currentValue) || Math.round(units * nav);
+      const cagr = Number(h.cagr3Y || h.xirr) || 14.2;
+      return {
+        name,
+        scheme: name,
+        fund: name,
+        amc: h.amc || name.split(' ')[0] || 'Mutual Fund',
+        units,
+        nav,
+        value: val,
+        currentValue: val,
+        pnl: 0,
+        pnlPct: 0,
+        cagr3Y: cagr,
+        xirr: cagr,
+        expenseRatio: 0.85,
+        taxType: 'LTCG',
+        category: h.category || 'Equity',
+        folio: h.folio || '',
+      };
+    });
+
+    const currentHoldings = state.consumer?.holdings || {};
+    const existingMFs = currentHoldings.mutualFunds || currentHoldings.mf || [];
+    const updatedHoldings = {
+      ...currentHoldings,
+      mutualFunds: [...existingMFs, ...newMFs],
+      mf: [...existingMFs, ...newMFs],
+    };
+
+    dispatch({ type: 'UPDATE_HOLDINGS', payload: updatedHoldings });
+    try {
+      if (typeof persistHoldings === 'function') {
+        persistHoldings(updatedHoldings).catch(() => {});
+      } else {
+        localStorage.setItem('finagent_user_holdings', JSON.stringify(updatedHoldings));
+      }
+    } catch {}
+    setStep(3);
+  };
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900, margin: '0 auto' }}>
@@ -275,7 +374,7 @@ export default function ImportPortfolio() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span className="badge badge-green">{holdings.length} Funds Found</span>
-              <button className="btn btn-primary" onClick={() => setStep(3)}>Confirm Import →</button>
+              <button className="btn btn-primary" onClick={handleConfirmImport}>Confirm Import →</button>
             </div>
           </div>
 
@@ -298,7 +397,7 @@ export default function ImportPortfolio() {
                       {editingIdx === idx ? (
                         <>
                           <td style={{ padding: '0.625rem 1rem' }} colSpan={3}>
-                            <input value={editRow.fund} onChange={e => setEditRow(r => ({ ...r, fund: e.target.value }))}
+                            <input value={editRow.fund || editRow.scheme || ''} onChange={e => setEditRow(r => ({ ...r, fund: e.target.value, scheme: e.target.value }))}
                               style={{ width: '100%', padding: '0.375rem 0.5rem', background: 'var(--surface-raised)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8125rem' }} />
                           </td>
                           <td style={{ padding: '0.625rem 0.5rem' }}>
@@ -310,7 +409,7 @@ export default function ImportPortfolio() {
                               style={{ width: 80, padding: '0.375rem 0.5rem', background: 'var(--surface-raised)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8125rem' }} />
                           </td>
                           <td style={{ padding: '0.625rem 0.5rem', textAlign: 'right' }}>
-                            <input value={editRow.value} onChange={e => setEditRow(r => ({ ...r, value: e.target.value }))}
+                            <input value={editRow.value ?? editRow.currentValue ?? ''} onChange={e => setEditRow(r => ({ ...r, value: e.target.value, currentValue: e.target.value }))}
                               style={{ width: 90, padding: '0.375rem 0.5rem', background: 'var(--surface-raised)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8125rem', textAlign: 'right' }} />
                           </td>
                           <td style={{ padding: '0.625rem 1rem' }}>
@@ -323,15 +422,16 @@ export default function ImportPortfolio() {
                       ) : (
                         <>
                           <td style={{ padding: '0.875rem 1rem' }}>
-                            <div style={{ fontWeight: 500, color: 'var(--text-primary)', maxWidth: 260, lineHeight: 1.4 }}>{h.fund}</div>
+                            <div style={{ fontWeight: 500, color: 'var(--text-primary)', maxWidth: 260, lineHeight: 1.4 }}>{h.scheme || h.fund || h.name || 'Mutual Fund'}</div>
+                            {h.amc && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{h.amc}</div>}
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
-                            <span className="chip" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>{h.category}</span>
+                            <span className="chip" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>{h.category || 'Equity'}</span>
                           </td>
-                          <td style={{ padding: '0.875rem 1rem', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>{h.folio}</td>
-                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk', fontWeight: 600 }}>{Number(h.units).toFixed(3)}</td>
-                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk' }}>₹{Number(h.nav).toFixed(2)}</td>
-                          <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 700, color: 'var(--green)' }}>₹{Number(h.value).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '0.875rem 1rem', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>{h.folio || '—'}</td>
+                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk', fontWeight: 600 }}>{(Number(h.units) || 0).toFixed(3)}</td>
+                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk' }}>₹{(Number(h.nav) || 0).toFixed(2)}</td>
+                          <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 700, color: 'var(--green)' }}>₹{(Number(h.value ?? h.currentValue) || 0).toLocaleString('en-IN')}</td>
                           <td style={{ padding: '0.875rem 1rem' }}>
                             <div style={{ display: 'flex', gap: '0.375rem' }}>
                               <button className="btn btn-ghost btn-sm" onClick={() => startEdit(idx)} title="Edit" style={{ padding: '0.25rem 0.5rem' }}>
@@ -361,33 +461,7 @@ export default function ImportPortfolio() {
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button
               className="btn btn-primary"
-              onClick={() => {
-                const newMFs = holdings.map(h => ({
-                  name: h.scheme || h.fund || 'Mutual Fund',
-                  amc: h.amc || (h.scheme || h.fund || '').split(' ')[0] || 'Mutual Fund',
-                  units: Number(h.units) || 0,
-                  nav: Number(h.nav) || 0,
-                  value: Number(h.value || h.currentValue) || (Number(h.units || 0) * Number(h.nav || 0)),
-                  pnl: 0,
-                  pnlPct: 0,
-                  cagr3Y: Number(h.xirr) || 14.2,
-                  expenseRatio: 0.85,
-                  taxType: 'LTCG',
-                  category: h.category || 'Equity',
-                  folio: h.folio || '',
-                }));
-
-                const currentHoldings = state.consumer?.holdings || {};
-                const existingMFs = currentHoldings.mutualFunds || currentHoldings.mf || [];
-                const updatedHoldings = {
-                  ...currentHoldings,
-                  mutualFunds: [...existingMFs, ...newMFs],
-                };
-
-                dispatch({ type: 'UPDATE_HOLDINGS', payload: updatedHoldings });
-                try { persistHoldings(updatedHoldings).catch(() => {}); } catch {}
-                setStep(3);
-              }}
+              onClick={handleConfirmImport}
               style={{ gap: '0.5rem', display: 'flex', alignItems: 'center' }}
             >
               Confirm & Import <ChevronRight size={16} />
