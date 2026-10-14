@@ -7,10 +7,25 @@ import { useNavigate } from 'react-router-dom';
 import {
   Scale, AlertTriangle, ShieldCheck, FileText, ArrowLeft, Home,
   Sun, Moon, Download, Search, CheckCircle, Sliders, Lock, Sparkles,
-  PieChart, DollarSign
+  PieChart, DollarSign, Upload
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
+
+const SAMPLE_FORENSIC_STATEMENT = `TRANSACTION LEDGER AUDIT EXCERPT:
+Account: Apex Platinum Checking (#8849-XXXX)
+Account Holder: Jonathan & Claire Sterling
+
+Date         Description                                         Debit ($)     Credit ($)   Balance ($)
+-------------------------------------------------------------------------------------------------------
+2026-08-01   Bi-Weekly Executive Payroll Wire Credit                            42,500.00   184,200.00
+2026-08-03   Aston Martin Financial Services Monthly Lease        3,850.00                  180,350.00
+2026-08-08   ATM Cash Withdrawal #401 (Structuring Flag < $10k)   9,900.00                  170,450.00
+2026-08-09   ATM Cash Withdrawal #402 (Structuring Flag < $10k)   9,800.00                  160,650.00
+2026-08-14   Outward Wire: Al-Maktoum Holdings FZE (Dubai UAE)   85,000.00                   75,650.00
+2026-08-18   Coinbase Inc Deposit / Digital Asset Purchase       25,000.00                   50,650.00
+2026-08-22   Cartier Jewelers Fifth Ave Retail Purchase          14,200.00                   36,450.00
+2026-08-28   Pasadena Family Court Legal Retainer Escrow         15,000.00                   21,450.00`;
 
 const DEFAULT_FAMILY_LAW_DATA = {
   activeCase: {
@@ -50,6 +65,9 @@ export default function FamilyLawPortal() {
   const [data, setData] = useState(DEFAULT_FAMILY_LAW_DATA);
   const [activeTab, setActiveTab] = useState('forensics'); // 'forensics' | 'equalizer' | 'qdro' | 'affidavit'
   const [toastMsg, setToastMsg] = useState(null);
+  const [statementText, setStatementText] = useState('');
+  const [auditing, setAuditing] = useState(false);
+  const [auditSummary, setAuditSummary] = useState('');
 
   // Equalizer state
   const [splitRatioA, setSplitRatioA] = useState(50);
@@ -62,6 +80,48 @@ export default function FamilyLawPortal() {
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleRunForensicAudit = async (customText) => {
+    const textToScan = customText !== undefined ? customText : statementText;
+    if (!textToScan || !textToScan.trim()) {
+      showToast('⚠️ Please paste or load statement transactions first');
+      return;
+    }
+    setAuditing(true);
+    try {
+      const res = await fetch('/api/family-law/analyze-statements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caseId: data?.activeCase?.caseId || 'matter_8892',
+          statementText: textToScan,
+          market,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setData(prev => ({
+          ...prev,
+          activeCase: {
+            ...prev.activeCase,
+            forensicFlags: json.anomaliesFound,
+            anomaliesFoundCount: json.anomaliesFound?.length || 0,
+            anomaliesTotalValue: json.totalUndisclosedDetected || 0,
+            forensicAuditStatus: 'ANOMALIES_DETECTED',
+          }
+        }));
+        setAuditSummary(json.forensicAuditorSummary);
+        showToast(`✓ AI Forensic Audit Complete: ${json.anomaliesFound?.length || 0} Red Flags Detected!`);
+      } else {
+        showToast('❌ Audit failed: ' + (json.error || 'Server error'));
+      }
+    } catch (err) {
+      console.error('Forensic audit error:', err);
+      showToast('❌ Forensic audit request failed');
+    } finally {
+      setAuditing(false);
+    }
   };
 
   const fetchDashboard = async () => {
@@ -301,15 +361,110 @@ export default function FamilyLawPortal() {
         {/* TAB 1: FORENSICS */}
         {activeTab === 'forensics' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Input Statement Box */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <h3 className="text-h3" style={{ margin: 0 }}>Input Suspicious Transactions / Statement Ledger</h3>
+                  <p className="text-sm text-secondary" style={{ marginTop: 4 }}>
+                    Paste transaction text, ledger excerpts, or bank export rows to run Gemini AI forensic auditing.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      setStatementText(SAMPLE_FORENSIC_STATEMENT);
+                      showToast('📋 Loaded sample_data/forensic_divorce_statement.txt');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}
+                  >
+                    <FileText size={14} /> Load Sample Statement
+                  </button>
+                  <label className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', border: '1px solid var(--glass-border)' }}>
+                    <Upload size={14} /> Upload File (.txt / .csv)
+                    <input
+                      type="file"
+                      accept=".txt,.csv"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const t = await file.text();
+                          setStatementText(t);
+                          showToast(`📂 Loaded ${file.name}`);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <textarea
+                value={statementText}
+                onChange={e => setStatementText(e.target.value)}
+                placeholder="Paste bank statement rows or transaction ledger here (or click 'Load Sample Statement' above)..."
+                rows={6}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'var(--surface-raised)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: 'var(--radius)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'monospace',
+                  fontSize: '0.825rem',
+                  padding: '0.75rem 1rem',
+                  lineHeight: 1.5,
+                  resize: 'vertical'
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {statementText ? `${statementText.split('\n').filter(Boolean).length} lines ready for forensic analysis` : 'Supports checking accounts, brokerage statements, wire transfers & crypto deposits'}
+                </div>
+                <button
+                  onClick={() => handleRunForensicAudit(statementText)}
+                  disabled={auditing}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.65rem 1.5rem', fontWeight: 700 }}
+                >
+                  <Sparkles size={16} /> {auditing ? 'Auditing with Gemini Forensic AI...' : 'Run AI Forensic Audit'}
+                </button>
+              </div>
+            </div>
+
+            {/* AI Summary Banner if available */}
+            {auditSummary && (
+              <div style={{
+                padding: '1rem 1.25rem',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: 'var(--radius)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12
+              }}>
+                <AlertTriangle size={20} color="var(--red)" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <strong style={{ color: 'var(--red)', fontSize: '0.9rem' }}>Forensic Auditor Executive Assessment:</strong>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginTop: 4, lineHeight: 1.5 }}>
+                    {auditSummary}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h3 className="text-h3" style={{ margin: 0 }}>Gemini AI Forensic Account Analysis</h3>
                 <p className="text-sm text-secondary" style={{ marginTop: 4 }}>
-                  Audited 5 years of joint bank accounts, Schwab brokerages, and corporate LLC filings.
+                  Audited joint bank accounts, international wires, and digital asset transactions.
                 </p>
               </div>
-              <button onClick={() => showToast('✓ Forensic Audit Scan Refreshed: 1,840 Transactions Cleared')} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={15} /> Run Deep Re-Audit
+              <button onClick={() => handleRunForensicAudit(statementText || SAMPLE_FORENSIC_STATEMENT)} disabled={auditing} className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={14} /> Refresh Audit Scan
               </button>
             </div>
 
