@@ -49,43 +49,125 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
   const [emi, setEmi] = useState('');
 
   useEffect(() => {
-    if (!searchQ) {
+    if (!searchQ || searchQ.trim().length < 2) {
       setSearchResults([]);
       return;
     }
     const timer = setTimeout(() => {
-      fetch(`/api/market/search?q=${searchQ}${tab === 'Mutual Fund' ? '&type=MUTUALFUND' : ''}`)
-        .then(res => res.json())
-        .then(data => setSearchResults(data.results || []))
-        .catch(console.error);
+      if (tab === 'Mutual Fund') {
+        fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(searchQ)}`)
+          .then(res => res.json())
+          .then(data => {
+            const results = (data || []).slice(0, 8).map(d => ({
+              schemeCode: d.schemeCode,
+              schemeName: d.schemeName,
+              name: d.schemeName,
+              symbol: d.schemeCode,
+              typeDisp: 'Mutual Fund',
+            }));
+            setSearchResults(results);
+          })
+          .catch(() => {
+            fetch(`/api/market/search?q=${encodeURIComponent(searchQ)}&type=MUTUALFUND`)
+              .then(res => res.json())
+              .then(data => setSearchResults(data.results || []))
+              .catch(console.error);
+          });
+      } else {
+        fetch(`/api/market/search?q=${encodeURIComponent(searchQ)}`)
+          .then(res => res.json())
+          .then(data => setSearchResults(data.results || []))
+          .catch(console.error);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQ, tab]);
+
+  const handleSelectResult = async (r) => {
+    setSearchResults([]);
+    setLoading(true);
+    setSearchQ(r.symbol || r.shortname || r.name);
+
+    if (tab === 'Stock/ETF') {
+      try {
+        const res = await fetch(`/api/market/quote?symbols=${r.symbol}`);
+        const data = await res.json();
+        const q = data.quotes?.[0];
+        const ltp = q?.price || 0;
+        setSymbolData({
+          symbol: r.symbol,
+          name: q?.name || r.longname || r.shortname || r.symbol,
+          ltp: ltp,
+          changePct: q?.changePct || 0,
+          exchange: r.exchDisp || 'NSE',
+        });
+        if (!avgPrice && ltp > 0) {
+          setAvgPrice(ltp.toString());
+        }
+      } catch (err) {
+        setSymbolData({
+          symbol: r.symbol,
+          name: r.longname || r.shortname || r.symbol,
+          ltp: 0,
+          exchange: r.exchDisp || 'NSE',
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else if (tab === 'Mutual Fund') {
+      if (r.schemeCode) {
+        try {
+          const res = await fetch(`/api/market/nav/${r.schemeCode}`);
+          const data = await res.json();
+          const nav = data.data?.[0]?.nav || 0;
+          setSymbolData({
+            name: data.meta?.scheme_name || r.schemeName,
+            ltp: nav,
+            amc: data.meta?.fund_house || '',
+            category: data.meta?.scheme_category || 'Equity',
+          });
+          if (!avgNav && nav > 0) setAvgNav(nav.toString());
+        } catch {
+          setSymbolData({ name: r.schemeName, ltp: 0 });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setSymbolData({ name: r.longname || r.shortname || r.symbol, ltp: 0 });
+        setLoading(false);
+      }
+    }
+  };
 
   const handleSave = async () => {
     let holding = null;
     let type = '';
 
     if (tab === 'Stock/ETF') {
+      const livePrice = symbolData?.ltp || Number(avgPrice);
+      const buyPrice = Number(avgPrice) || livePrice;
+      const quantity = Number(qty) || 1;
       holding = {
         symbol: symbolData?.symbol || searchQ,
         name: symbolData?.name || searchQ,
-        qty: Number(qty),
-        avgCost: Number(avgPrice),
-        ltp: symbolData?.ltp || Number(avgPrice),
-        value: Number(qty) * (symbolData?.ltp || Number(avgPrice)),
-        pnl: (Number(qty) * (symbolData?.ltp || Number(avgPrice))) - (Number(qty) * Number(avgPrice)),
-        pnlPct: (((symbolData?.ltp || Number(avgPrice)) - Number(avgPrice)) / Number(avgPrice)) * 100,
+        qty: quantity,
+        avgCost: buyPrice,
+        ltp: livePrice,
+        value: quantity * livePrice,
+        pnl: (quantity * livePrice) - (quantity * buyPrice),
+        pnlPct: buyPrice > 0 ? (((livePrice - buyPrice) / buyPrice) * 100) : 0,
         holdingDays: purchaseDate ? Math.floor((Date.now() - new Date(purchaseDate).getTime())/(1000*3600*24)) : 0,
         taxType: purchaseDate ? (Math.floor((Date.now() - new Date(purchaseDate).getTime())/(1000*3600*24)) > 365 ? 'LTCG' : 'STCG') : 'STCG',
       };
       type = 'equities';
     } else if (tab === 'Mutual Fund') {
+      const nav = Number(avgNav) || (symbolData?.ltp || 0);
+      const u = Number(units) || 1;
       holding = {
         name: symbolData?.name || searchQ,
-        units: Number(units),
-        nav: Number(avgNav) || (symbolData?.ltp || 0),
-        value: Number(units) * (Number(avgNav) || (symbolData?.ltp || 0)),
+        units: u,
+        nav: nav,
+        value: u * nav,
         pnl: 0,
         pnlPct: 0,
         amc: symbolData?.amc || '',
@@ -165,8 +247,8 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
     
     // Toast
     const toast = document.createElement('div');
-    toast.textContent = `✓ ${holding.name || holding.bank || tab} added`;
-    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:8px 16px;border-radius:20px;z-index:9999;font-weight:600;';
+    toast.textContent = `✓ ${holding.name || holding.bank || tab} added to portfolio`;
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:10px 20px;border-radius:20px;z-index:9999;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 
@@ -175,8 +257,8 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
 
   return (
     <div style={{ padding: '1.5rem', background: 'var(--surface)', height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <h2 className="text-h2">Add Holding</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+        <h2 className="text-h2" style={{ margin: 0 }}>Add Holding</h2>
         {onCancel && <button className="btn btn-ghost btn-icon" onClick={onCancel}><X size={20} /></button>}
       </div>
 
@@ -184,7 +266,7 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
         {TABS.map(t => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => { setTab(t); setSymbolData(null); setSearchQ(''); setSearchResults([]); }}
             style={{
               padding: '0.5rem 1rem',
               background: tab === t ? 'var(--primary)' : 'var(--surface-raised)',
@@ -204,7 +286,9 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {(tab === 'Stock/ETF' || tab === 'Mutual Fund') && (
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Search {tab === 'Mutual Fund' ? 'Scheme Name' : 'Symbol'}</label>
+            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              Search {tab === 'Mutual Fund' ? 'Mutual Fund Scheme' : 'Stock or ETF (NSE / BSE / US)'}
+            </label>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text-muted)' }} />
               <input 
@@ -212,27 +296,55 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
                 value={searchQ} 
                 onChange={e => { setSearchQ(e.target.value); setSymbolData(null); }}
                 style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.25rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }}
-                placeholder={tab === 'Mutual Fund' ? 'e.g. Parag Parikh Flexi Cap' : 'e.g. RELIANCE'}
+                placeholder={tab === 'Mutual Fund' ? 'e.g. Parag Parikh Flexi Cap' : 'e.g. TCS, RELIANCE, INFY, AAPL'}
               />
               {searchResults.length > 0 && !symbolData && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', zIndex: 10, maxHeight: 200, overflowY: 'auto', borderRadius: 'var(--radius)', marginTop: 4 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', zIndex: 20, maxHeight: 220, overflowY: 'auto', borderRadius: 'var(--radius)', marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
                   {searchResults.map((r, i) => (
                     <div 
                       key={i} 
-                      onClick={() => { setSymbolData(r); setSearchQ(r.symbol || r.name); setSearchResults([]); }}
-                      style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--glass-border)' }}
+                      onClick={() => handleSelectResult(r)}
+                      style={{ padding: '0.6rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <div style={{ fontWeight: 600 }}>{r.symbol || r.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.exchange || r.amc} • ₹{r.ltp}</div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{r.symbol ? `${r.symbol} · ` : ''}{r.shortname || r.schemeName || r.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.longname || r.schemeName || r.exchDisp || ''}</div>
+                      </div>
+                      <span className="badge badge-surface" style={{ fontSize: '0.7rem' }}>{r.exchDisp || (r.schemeCode ? 'AMFI' : 'EQUITY')}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
+            {loading && (
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(99,102,241,0.08)', borderRadius: 'var(--radius)', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                ⏳ Fetching live Yahoo Finance market quote for <strong>{searchQ}</strong>…
+              </div>
+            )}
+
             {symbolData && (
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(99,102,241,0.1)', borderRadius: 'var(--radius)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                <div style={{ fontWeight: 600, color: 'var(--primary-light)' }}>{symbolData.name}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Last Price: ₹{symbolData.ltp}</div>
+              <div style={{ marginTop: '0.75rem', padding: '0.875rem', background: 'rgba(99,102,241,0.1)', borderRadius: 'var(--radius)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{symbolData.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {symbolData.symbol} · {symbolData.exchange || 'Live Market'}
+                    </div>
+                  </div>
+                  {symbolData.ltp > 0 && (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.2rem', color: 'var(--green)' }}>
+                        ₹{symbolData.ltp.toLocaleString('en-IN')}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        Live {tab === 'Mutual Fund' ? 'NAV' : 'Yahoo Quote'}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -241,15 +353,15 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
         {tab === 'Stock/ETF' && (
           <>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Quantity</label>
-              <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Quantity (Shares)</label>
+              <input type="number" placeholder="e.g. 25" value={qty} onChange={e => setQty(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Average Buy Price (₹)</label>
-              <input type="number" value={avgPrice} onChange={e => setAvgPrice(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Average Buy Price (₹ per share)</label>
+              <input type="number" placeholder="e.g. 2100" value={avgPrice} onChange={e => setAvgPrice(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Purchase Date (Optional)</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Purchase Date (Optional - for STCG/LTCG)</label>
               <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
             </div>
           </>
@@ -259,11 +371,11 @@ export default function AddHoldingForm({ onSave, onCancel, compact }) {
           <>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Units Held</label>
-              <input type="number" value={units} onChange={e => setUnits(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
+              <input type="number" placeholder="e.g. 150.5" value={units} onChange={e => setUnits(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Average NAV (₹, optional)</label>
-              <input type="number" value={avgNav} onChange={e => setAvgNav(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Average Purchase NAV (₹)</label>
+              <input type="number" placeholder="e.g. 75" value={avgNav} onChange={e => setAvgNav(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem', background: 'var(--surface-raised)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)' }} />
             </div>
           </>
         )}
