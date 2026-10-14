@@ -6,7 +6,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 const FROM = 'FinAgent <onboarding@resend.dev>';
-const OWNER_EMAIL = 'adityachowdhury1995@gmail.com';
+const OWNER_EMAIL = 'aditya.chowdhury.in@gmail.com';
 
 // In-memory advisor store (replace with Firestore when Firebase is live)
 const advisors = [

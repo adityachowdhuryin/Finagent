@@ -4,7 +4,7 @@
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = 'FinAgent Tax Bot <onboarding@resend.dev>';
-const OWNER_EMAIL = 'adityachowdhury1995@gmail.com';
+const OWNER_EMAIL = 'aditya.chowdhury.in@gmail.com';
 
 const PAIRED_SWAP_MAP = {
   'Large Cap': {

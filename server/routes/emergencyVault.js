@@ -4,7 +4,7 @@
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = 'FinAgent Vault <onboarding@resend.dev>';
-const OWNER_EMAIL = 'adityachowdhury1995@gmail.com';
+const OWNER_EMAIL = 'aditya.chowdhury.in@gmail.com';
 
 let vaultConfig = {
   userLastActiveAt: new Date().toISOString(),
@@ -13,13 +13,13 @@ let vaultConfig = {
   nominee: {
     name: 'Pooja Chowdhury',
     relationship: 'Spouse',
-    email: 'adityachowdhury1995@gmail.com', // fallback to owner for test delivery
+    email: 'aditya.chowdhury.in@gmail.com', // fallback to owner for test delivery
     phone: '+91 98765 43210',
   },
   secondaryContact: {
     name: 'Rahul Chowdhury',
     relationship: 'Brother',
-    email: 'adityachowdhury1995@gmail.com',
+    email: 'aditya.chowdhury.in@gmail.com',
   },
   lastPingAt: new Date().toISOString(),
 };

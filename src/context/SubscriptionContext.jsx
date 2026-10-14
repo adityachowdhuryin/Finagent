@@ -70,9 +70,9 @@ export function SubscriptionProvider({ children }) {
 
   // Dev bypass: VITE_DEV_MODE=true in .env.local gives everyone pro access
   // Also: the owner's email always gets pro (no Firestore needed)
-  const OWNER_EMAIL = 'adityachowdhury1995@gmail.com';
+  const OWNER_EMAILS = ['adityachowdhury1995@gmail.com', 'aditya.chowdhury.in@gmail.com'];
   const isDevBypass = import.meta.env.VITE_DEV_MODE === 'true'
-    || currentUser?.email === OWNER_EMAIL;
+    || OWNER_EMAILS.includes(currentUser?.email);
 
   const [tier, setTier] = useState(() => {
     if (isDemo || isDevBypass) return 'pro';

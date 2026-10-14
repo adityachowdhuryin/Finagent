@@ -48,7 +48,8 @@ async function dispatchRecommendation(req, res) {
     let emailStatus = 'SKIPPED';
     let emailError = null;
 
-    const targetEmail = clientEmail || process.env.TEST_NOTIFICATION_EMAIL || 'adityachowdhury1995@gmail.com';
+    const targetEmail = clientEmail || process.env.TEST_NOTIFICATION_EMAIL || 'aditya.chowdhury.in@gmail.com';
+    let resendMessageId = null;
 
     if (viaEmail && resendClient && targetEmail) {
       try {
@@ -92,13 +93,15 @@ async function dispatchRecommendation(req, res) {
         if (emailResult.error) {
           emailStatus = 'FAILED';
           emailError = emailResult.error.message;
+          console.warn('[AdvisorAdmin] Resend delivery error:', emailResult.error);
         } else {
           emailStatus = 'SENT';
+          resendMessageId = emailResult?.data?.id;
         }
       } catch (err) {
         emailStatus = 'FAILED';
         emailError = err.message;
-        console.warn('[AdvisorAdmin] Email send error:', err.message);
+        console.warn('[AdvisorAdmin] Email send exception:', err.message);
       }
     }
 
@@ -116,6 +119,7 @@ async function dispatchRecommendation(req, res) {
       viaWhatsApp,
       status: emailStatus,
       emailError,
+      resendId: resendMessageId,
       sentAt,
       market
     };
@@ -134,16 +138,27 @@ async function dispatchRecommendation(req, res) {
         clientName,
         targetEmail,
         title,
-        emailStatus
+        emailStatus,
+        resendMessageId
       },
       createdAt: sentAt
     });
 
+    if (emailStatus === 'FAILED') {
+      const isSandboxRestriction = emailError && emailError.includes('only send testing emails to your own email address');
+      return res.status(400).json({
+        success: false,
+        error: isSandboxRestriction
+          ? `Resend Sandbox Limit: Testing emails can only be sent to your registered account email (aditya.chowdhury.in@gmail.com). To send to other addresses, verify a custom domain at resend.com/domains.`
+          : `Email dispatch failed: ${emailError}`,
+        emailStatus: 'FAILED',
+        dispatch: dispatchRecord
+      });
+    }
+
     return res.json({
       success: true,
-      message: emailStatus === 'SENT' 
-        ? `Recommendation successfully dispatched via email to ${targetEmail} and logged to SEBI audit log!`
-        : `Recommendation approved and logged to SEBI audit log (Dispatch ID: ${dispatchId}).`,
+      message: `Recommendation successfully dispatched via Resend to ${targetEmail}!`,
       dispatch: dispatchRecord
     });
   } catch (err) {

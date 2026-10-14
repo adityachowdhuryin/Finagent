@@ -6,7 +6,7 @@ function SendToClientModal({ reco, onClose, onDispatched }) {
   const { dispatch } = useApp();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [clientEmail, setClientEmail] = useState(reco.clientEmail || 'adityachowdhury1995@gmail.com');
+  const [clientEmail, setClientEmail] = useState(reco.clientEmail || 'aditya.chowdhury.in@gmail.com');
   const [dispatchInfo, setDispatchInfo] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -92,8 +92,22 @@ function SendToClientModal({ reco, onClose, onDispatched }) {
                   fontSize: '0.85rem',
                   outline: 'none',
                 }}
-                placeholder="client@example.com"
+                placeholder="aditya.chowdhury.in@gmail.com"
               />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, flexWrap: 'wrap', gap: 4 }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  ⚡ Resend Sandbox: Live delivery pre-configured to <strong style={{ color: 'var(--text-primary)' }}>aditya.chowdhury.in@gmail.com</strong>
+                </span>
+                {clientEmail !== 'aditya.chowdhury.in@gmail.com' && (
+                  <button
+                    type="button"
+                    onClick={() => setClientEmail('aditya.chowdhury.in@gmail.com')}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  >
+                    Reset to verified email
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -108,7 +122,7 @@ function SendToClientModal({ reco, onClose, onDispatched }) {
             </div>
 
             {errorMsg && (
-              <div style={{ padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.1)', color: 'var(--red)', borderRadius: 'var(--radius)', fontSize: '0.8rem', marginBottom: '1rem', lineHeight: 1.5 }}>
                 {errorMsg}
               </div>
             )}
@@ -136,6 +150,12 @@ function SendToClientModal({ reco, onClose, onDispatched }) {
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
               {dispatchInfo?.message || `Recommendation transmitted to ${clientEmail}.`}
             </div>
+            {dispatchInfo?.dispatch?.resendId && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--green)', fontFamily: 'monospace', background: 'rgba(16, 185, 129, 0.1)', padding: '0.4rem 0.75rem', borderRadius: 4, display: 'inline-block', marginBottom: '0.5rem' }}>
+                Resend Message ID: {dispatchInfo.dispatch.resendId}
+              </div>
+            )}
+            <br />
             {dispatchInfo?.dispatch?.id && (
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', background: 'var(--surface-raised)', padding: '0.4rem 0.75rem', borderRadius: 4, display: 'inline-block' }}>
                 Audit Ref: {dispatchInfo.dispatch.id}
