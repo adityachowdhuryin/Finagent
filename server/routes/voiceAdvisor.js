@@ -62,7 +62,7 @@ async function respondToVoice(req, res) {
   // If Gemini API is available and query is complex, use Gemini
   if (geminiClient && process.env.GEMINI_API_KEY && !matchedPreset) {
     try {
-      const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = geminiClient.getGenerativeModel({ model: 'gemini-3-flash-preview' });
       const prompt = `You are FinAgent Voice Banker, a world-class private wealth advisor.
 The user is speaking aloud to you. Provide an intelligent, reassuring, and concise response.
 CRITICAL RULES FOR SPOKEN VOICE:

@@ -3,8 +3,63 @@ const fetch = require('node-fetch');
 const router = express.Router();
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const CHAT_MODEL = 'gemini-2.0-flash';
-const VISION_MODEL = 'gemini-1.5-pro';
+const CANDIDATE_MODELS = [
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-lite-latest',
+];
+
+// Helper to call Gemini with automatic model fallback cascading
+async function callGemini(payload, apiKey) {
+  let lastError = null;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const url = `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { ok: true, data, model };
+      }
+      const errText = await res.text();
+      console.warn(`[Gemini generateContent ${model} returned ${res.status}]`, errText.slice(0, 120));
+      lastError = new Error(`Model ${model} returned ${res.status}: ${errText}`);
+    } catch (err) {
+      console.warn(`[Gemini generateContent ${model} exception]`, err.message);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Gemini models failed');
+}
+
+// Helper to stream Gemini with automatic model fallback cascading
+async function streamGemini(payload, apiKey) {
+  let lastError = null;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const url = `${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        return { ok: true, res, model };
+      }
+      const errText = await res.text();
+      console.warn(`[Gemini stream ${model} returned ${res.status}]`, errText.slice(0, 120));
+      lastError = new Error(`Stream ${model} returned ${res.status}: ${errText}`);
+    } catch (err) {
+      console.warn(`[Gemini stream ${model} exception]`, err.message);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Gemini streaming models failed');
+}
 
 // System prompt that grounds Gemini in the FinAgent context
 const SYSTEM_PROMPT = `You are FinAgent AI — an expert Indian wealth advisor and financial co-pilot.
@@ -51,21 +106,10 @@ router.post('/chat', async (req, res) => {
   }));
 
   try {
-    const url = `${GEMINI_BASE}/${CHAT_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: geminiContents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-      }),
-    });
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('[Gemini Chat Error]', geminiRes.status, errText);
-      return res.status(geminiRes.status).json({ error: `Gemini API error: ${geminiRes.status}` });
-    }
+    const { res: geminiRes } = await streamGemini({
+      contents: geminiContents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+    }, apiKey);
 
     // Stream SSE from Gemini → SSE to frontend
     res.setHeader('Content-Type', 'text/event-stream');
@@ -142,27 +186,16 @@ Return a JSON object with this exact structure (fill what's present, null for mi
 Return ONLY valid JSON. No markdown, no explanation.`;
 
   try {
-    const url = `${GEMINI_BASE}/${VISION_MODEL}:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: imageBase64 } },
-          ],
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    });
+    const { data } = await callGemini({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: imageBase64 } },
+        ],
+      }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+    }, apiKey);
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      return res.status(geminiRes.status).json({ error: `Gemini Vision error: ${geminiRes.status}`, detail: errText });
-    }
-
-    const data = await geminiRes.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
     // Strip markdown code fences if Gemini adds them
@@ -189,22 +222,11 @@ router.post('/analyze', async (req, res) => {
   if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
   try {
-    const url = `${GEMINI_BASE}/${CHAT_MODEL}:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
-      }),
-    });
+    const { data } = await callGemini({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
+    }, apiKey);
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      return res.status(geminiRes.status).json({ error: `Gemini error: ${geminiRes.status}` });
-    }
-
-    const data = await geminiRes.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (responseFormat === 'json') {

@@ -126,7 +126,12 @@ export default function Cashflow() {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [aiInsight, setAiInsight] = useState(FALLBACK_INSIGHT);
+  const [aiInsight, setAiInsight] = useState(() => {
+    const cf = loadCashflow();
+    const keys = Object.keys(cf);
+    const lastKey = keys.length > 0 ? keys[keys.length - 1] : null;
+    return (lastKey && cf[lastKey]?.aiInsight) ? cf[lastKey].aiInsight : FALLBACK_INSIGHT;
+  });
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -143,7 +148,8 @@ export default function Cashflow() {
   }));
 
   // ── AI Insight ───────────────────────────────────────────────────────────
-  const generateInsight = useCallback(async (result) => {
+  const generateInsight = useCallback(async (result, targetMonth) => {
+    const monthKey = targetMonth || activeMonth;
     setLoadingInsight(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/ai/analyze`, {
@@ -155,13 +161,37 @@ export default function Cashflow() {
         }),
       });
       const json = await res.json();
-      setAiInsight(json.data || FALLBACK_INSIGHT);
-    } catch {
+      const insight = (json.success && json.data) ? json.data : (json.data || FALLBACK_INSIGHT);
+      setAiInsight(insight);
+
+      if (monthKey) {
+        setCashflowData(prev => {
+          const currentMonthData = prev[monthKey] || result;
+          const updatedMonthData = { ...currentMonthData, aiInsight: insight };
+          const updatedStorage = saveCashflow(monthKey, updatedMonthData);
+          return updatedStorage;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to generate insight:', err);
       setAiInsight(FALLBACK_INSIGHT);
     } finally {
       setLoadingInsight(false);
     }
-  }, []);
+  }, [activeMonth]);
+
+  // Sync AI insight when active month changes
+  React.useEffect(() => {
+    if (activeMonth && cashflowData[activeMonth]) {
+      if (cashflowData[activeMonth].aiInsight) {
+        setAiInsight(cashflowData[activeMonth].aiInsight);
+      } else {
+        generateInsight(cashflowData[activeMonth], activeMonth);
+      }
+    } else {
+      setAiInsight(FALLBACK_INSIGHT);
+    }
+  }, [activeMonth]);
 
   // ── File handler ──────────────────────────────────────────────────────────
   const handleFile = useCallback(async (file) => {
@@ -207,7 +237,7 @@ export default function Cashflow() {
       setActiveMonth(monthKey);
 
       // AI nudge
-      generateInsight(result);
+      generateInsight(result, monthKey);
 
     } catch (err) {
       console.error('Cashflow parse error:', err);
@@ -486,11 +516,13 @@ export default function Cashflow() {
               <span style={{ fontSize: 20 }}>🤖</span>
               <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary-light)' }}>Gemini Analysis</span>
             </div>
-            <button className="btn btn-sm btn-ghost" onClick={() => data && generateInsight(data)} disabled={loadingInsight}>
+            <button className="btn btn-sm btn-ghost" onClick={() => data && generateInsight(data, activeMonth)} disabled={loadingInsight}>
               {loadingInsight ? '⏳ Analyzing…' : '🔄 Refresh'}
             </button>
           </div>
-          <div style={styles.insightText}>"{aiInsight}"</div>
+          <div style={styles.insightText}>
+            {loadingInsight ? '⏳ Analyzing your cashflow with Gemini AI...' : (aiInsight === FALLBACK_INSIGHT ? aiInsight : `"${aiInsight}"`)}
+          </div>
         </div>
       </div>
     </div>

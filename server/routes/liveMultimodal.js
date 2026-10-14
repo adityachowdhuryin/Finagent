@@ -5,7 +5,7 @@
 const fetch = require('node-fetch');
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const VISION_MODEL = 'gemini-2.0-flash';
+const VISION_MODEL = 'gemini-3-flash-preview';
 
 async function analyzeFrame(req, res) {
   const {

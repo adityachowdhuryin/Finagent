@@ -1,7 +1,12 @@
 const fetch = require('node-fetch');
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const VISION_MODEL = 'gemini-1.5-flash';
+const CANDIDATE_MODELS = [
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-lite-latest',
+];
 
 const CASHFLOW_PROMPT = `You are a financial data extractor. Analyze this bank statement (PDF or image) and extract cashflow data.
 
@@ -25,6 +30,32 @@ Return ONLY valid JSON with this structure:
 }
 Only include breakdown categories with amount > 0. Return ONLY the JSON, no explanation.`;
 
+// Helper to call Gemini with automatic model fallback cascading
+async function callGemini(payload, apiKey) {
+  let lastError = null;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const url = `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { ok: true, data, model };
+      }
+      const errText = await res.text();
+      console.warn(`[Cashflow Gemini ${model} returned ${res.status}]`, errText.slice(0, 120));
+      lastError = new Error(`Model ${model} returned ${res.status}: ${errText}`);
+    } catch (err) {
+      console.warn(`[Cashflow Gemini ${model} exception]`, err.message);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Gemini models failed');
+}
+
 /**
  * POST /api/cashflow/analyze
  * Body: { base64: string, mimeType: string, month: string }
@@ -42,31 +73,17 @@ async function analyzeCashflow(req, res) {
   }
 
   try {
-    const url = `${GEMINI_BASE}/${VISION_MODEL}:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: CASHFLOW_PROMPT },
-            { inlineData: { mimeType, data: base64 } },
-          ],
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    });
+    const payload = {
+      contents: [{
+        parts: [
+          { text: CASHFLOW_PROMPT },
+          { inlineData: { mimeType, data: base64 } },
+        ],
+      }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+    };
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('[Cashflow Vision Error]', geminiRes.status, errText);
-      return res.status(geminiRes.status).json({
-        success: false,
-        error: `Gemini Vision error: ${geminiRes.status}`,
-      });
-    }
-
-    const data = await geminiRes.json();
+    const { data } = await callGemini(payload, apiKey);
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
     // Strip markdown code fences if Gemini adds them

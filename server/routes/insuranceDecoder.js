@@ -74,7 +74,7 @@ async function decodeInsurance(req, res) {
     // If Gemini is configured and file is present, analyze using Gemini 1.5 Flash
     if (genAI && file.buffer) {
       try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
         const base64Pdf = file.buffer.toString('base64');
 
         const prompt = `

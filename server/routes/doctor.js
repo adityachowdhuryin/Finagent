@@ -131,7 +131,7 @@ async function analyzePortfolio(req, res) {
 
   // Use Gemini to generate one additional personalized insight
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
     const prompt = `You are a financial advisor AI. Analyze this Indian investor's portfolio and generate ONE additional personalized alert not already covered by these existing alerts: ${JSON.stringify(alerts.map(a => a.type))}.
 
 Portfolio summary:

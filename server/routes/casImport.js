@@ -38,7 +38,7 @@ Return ONLY valid JSON in this exact format:
 }`;
 
 async function extractFromPDF(pdfBase64) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
   const result = await model.generateContent([
     { inlineData: { mimeType: 'application/pdf', data: pdfBase64 } },
     CAS_EXTRACTION_PROMPT,

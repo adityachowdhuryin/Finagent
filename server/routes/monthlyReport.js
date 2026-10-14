@@ -129,7 +129,7 @@ async function sendNow(req, res) {
     // Generate AI insight
     let aiInsight = null;
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
       const prompt = `Write a 2-3 sentence personalized financial insight for an Indian investor. Net worth: ₹${((portfolio.netWorth?.total || 0)/100000).toFixed(1)}L, Risk profile: ${portfolio.user?.riskProfile || 'Moderate'}, Health score: ${portfolio.healthScore?.overall || 0}/100, MF holdings: ${(portfolio.holdings?.mutualFunds || []).length}, Goals: ${(portfolio.goals || []).length}. Be specific, actionable, and encouraging. No generic advice.`;
       const result = await model.generateContent(prompt);
       aiInsight = result.response.text().trim();

@@ -68,7 +68,7 @@ async function getSIPRecommendations(req, res) {
   const pe = marketData?.niftyPE || 22;
   const repoRate = marketData?.repoRate || 6.5;
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
   const marketContext =
     signal === 'CHEAP'

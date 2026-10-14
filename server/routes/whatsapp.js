@@ -57,7 +57,7 @@ async function sendWhatsApp(to, body) {
 
 async function classifyIntent(message) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
     const prompt = `Classify this WhatsApp message from an Indian investor into ONE of these intents:
 PORTFOLIO_SUMMARY, STOCK_ADVICE, FIRE_QUERY, ADD_HOLDING, ADD_GOAL, HEALTH_SCORE, CASHFLOW_SUMMARY, HELP_MENU, GENERAL_ADVICE
 
@@ -72,7 +72,7 @@ Return ONLY the intent name, nothing else.`;
 }
 
 async function handleIntent(intent, message, session) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
   const portfolio = session?.portfolioSnapshot;
 
   switch (intent) {
