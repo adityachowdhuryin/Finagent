@@ -28,7 +28,32 @@ export default function TaxHarvester() {
     setSelected(s);
   };
 
-  const selectedLosses = harvestablePositions
+  const realLossPositions = [
+    ...(state?.consumer?.holdings?.equities || [])
+      .filter(eq => (eq.pnl || 0) < 0)
+      .map(eq => ({
+        holding: eq.name || eq.symbol,
+        loss: eq.pnl,
+        type: (eq.holdingDays || 0) > 365 ? 'LTCG' : 'STCG',
+        holdingDays: eq.holdingDays || 120,
+        action: 'Sell & replace with similar',
+        washSaleRisk: false,
+      })),
+    ...(state?.consumer?.holdings?.mutualFunds || [])
+      .filter(mf => (mf.pnl || 0) < 0)
+      .map(mf => ({
+        holding: (mf.name || '').replace(' Direct Growth', ''),
+        loss: mf.pnl,
+        type: (mf.holdingDays || 400) > 365 ? 'LTCG' : 'STCG',
+        holdingDays: mf.holdingDays || 400,
+        action: 'Sell & rebuy after 30 days',
+        washSaleRisk: false,
+      })),
+  ];
+
+  const activeHarvestPositions = realLossPositions.length > 0 ? realLossPositions : harvestablePositions;
+
+  const selectedLosses = activeHarvestPositions
     .filter((_, i) => selected.has(String(i)))
     .map(h => ({ loss: h.loss, type: h.type }));
 
@@ -269,7 +294,7 @@ Generate a numbered transaction sequence. Return ONLY valid JSON:
               <h2 className="text-h2" style={{ marginBottom: '0.875rem' }}>Harvestable Positions</h2>
               <p className="text-sm text-secondary" style={{ marginBottom: '1rem' }}>Select positions to harvest. Deselect to exclude.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {harvestablePositions.map((pos, i) => (
+                {activeHarvestPositions.map((pos, i) => (
                   <div
                     key={i}
                     onClick={() => toggleSelect(i)}

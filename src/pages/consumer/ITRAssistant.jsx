@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
+import {
+  calcNewRegimeTax,
+  calcOldRegimeTax,
+  findBreakevenDeductions,
+  TAX_RATES,
+} from '../../utils/taxEngine';
 
 // ── Static fallback capital gains ────────────────────────────────────────────
 const CAPITAL_GAINS_FALLBACK = [
@@ -35,33 +41,10 @@ const CAPITAL_GAINS_FALLBACK = [
   },
 ];
 
-const LTCG_EXEMPTION = 125000;
+const LTCG_EXEMPTION = TAX_RATES?.LTCG_EXEMPTION || 125000;
 
 const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
 const fmtN = (n) => Math.abs(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 3 });
-
-// ── Tax computation helpers ──────────────────────────────────────────────────
-
-function calcOldRegimeTax(taxableIncome) {
-  let tax = 0;
-  if (taxableIncome <= 250000) tax = 0;
-  else if (taxableIncome <= 500000) tax = (taxableIncome - 250000) * 0.05;
-  else if (taxableIncome <= 1000000) tax = 12500 + (taxableIncome - 500000) * 0.20;
-  else tax = 112500 + (taxableIncome - 1000000) * 0.30;
-  return Math.round(tax * 1.04); // 4% cess
-}
-
-function calcNewRegimeTax(taxableIncome) {
-  // FY 2025-26 new regime slabs
-  let tax = 0;
-  if (taxableIncome <= 300000) tax = 0;
-  else if (taxableIncome <= 700000) tax = (taxableIncome - 300000) * 0.05;
-  else if (taxableIncome <= 1000000) tax = 20000 + (taxableIncome - 700000) * 0.10;
-  else if (taxableIncome <= 1200000) tax = 50000 + (taxableIncome - 1000000) * 0.15;
-  else if (taxableIncome <= 1500000) tax = 80000 + (taxableIncome - 1200000) * 0.20;
-  else tax = 140000 + (taxableIncome - 1500000) * 0.30;
-  return Math.round(tax * 1.04); // 4% cess
-}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -75,6 +58,7 @@ export default function ITRAssistant() {
   const [emailValue, setEmailValue] = useState('');
   const [toast, setToast] = useState('');
   const [regime, setRegime] = useState('new');
+  const [isSalaried, setIsSalaried] = useState(true);
   const [otherIncome, setOtherIncome] = useState({
     salary: user?.income || 1200000,
     rental: 0,
@@ -85,6 +69,29 @@ export default function ITRAssistant() {
 
   // ── Top-level tab state ────────────────────────────────────────────────
   const [taxTab, setTaxTab] = useState('summary');
+
+  // ── Dynamic Deductions Input State ─────────────────────────────────────
+  const [deductionsInput, setDeductionsInput] = useState(() => {
+    const elssInvestedInit = (holdings.mutualFunds || [])
+      .filter(mf => (mf.category || '').toLowerCase().includes('elss') || (mf.name || '').toLowerCase().includes('elss'))
+      .reduce((s, mf) => s + ((mf.value || 0) - (mf.pnl || 0)), 0);
+    const epfEmployeeContribInit = holdings.epf?.employeeContribution || 0;
+    const fdTaxSavingInit = (holdings.fixedDeposits || [])
+      .filter(fd => (fd.daysRemaining || 0) > 365 * 4)
+      .reduce((s, fd) => s + (fd.amount || 0), 0);
+    const insurancePremiumInit = (holdings.insurance || []).reduce((s, i) => s + (i.premium || 0), 0);
+
+    const calc80C = epfEmployeeContribInit + elssInvestedInit + fdTaxSavingInit;
+    const hasData = calc80C > 0 || insurancePremiumInit > 0;
+
+    return {
+      sec80C: hasData ? Math.min(150000, calc80C) : 146500,
+      sec80D: hasData ? Math.min(25000, insurancePremiumInit) : 25000,
+      sec80CCD: 50000,
+      sec24b: 0,
+      hra: 144000,
+    };
+  });
 
   // ── New tab state ──────────────────────────────────────────────────────
   const [transactions, setTransactions] = useState(() => {
@@ -130,53 +137,44 @@ export default function ITRAssistant() {
 
   const capitalGains = computedGains.length > 0 ? computedGains : CAPITAL_GAINS_FALLBACK;
 
-  // ── Compute deductions from real holdings ──────────────────────────────
-  const elssInvested = (holdings.mutualFunds || [])
-    .filter(mf => (mf.category || '').toLowerCase().includes('elss') || (mf.name || '').toLowerCase().includes('elss'))
-    .reduce((s, mf) => s + ((mf.value || 0) - (mf.pnl || 0)), 0);
-
-  const epfEmployeeContrib = holdings.epf?.employeeContribution || 0;
-
-  const fdTaxSaving = (holdings.fixedDeposits || [])
-    .filter(fd => fd.daysRemaining > 365 * 4) // rough 5-year FD proxy
-    .reduce((s, fd) => s + (fd.amount || 0), 0);
-
-  const insurancePremium = (holdings.insurance || []).reduce((s, i) => s + (i.premium || 0), 0);
-
-  const section80CUsed = Math.min(150000, epfEmployeeContrib + elssInvested + fdTaxSaving);
-
-  const deductions = [
-    { section: '80C', label: 'EPF + ELSS + Tax-saving FD', used: section80CUsed, limit: 150000 },
-    { section: '80D', label: 'Health Insurance Premium', used: Math.min(50000, insurancePremium), limit: 50000 },
-    { section: '80CCD(1B)', label: 'NPS Additional Contribution', used: 0, limit: 50000 },
-    { section: 'HRA', label: 'House Rent Allowance', used: 0, limit: null },
-  ];
-
-  // Use computed deductions if there's real data, otherwise show informative defaults
-  const hasRealData = epfEmployeeContrib > 0 || elssInvested > 0 || insurancePremium > 0;
-  const finalDeductions = hasRealData ? deductions : [
-    { section: '80C', label: 'PPF + ELSS + Life Insurance', used: 146500, limit: 150000 },
-    { section: '80D', label: 'Health Insurance Premium', used: 12500, limit: 25000 },
-    { section: '80CCD(1B)', label: 'NPS Additional Contribution', used: 0, limit: 50000 },
-    { section: 'HRA', label: 'House Rent Allowance', used: 144000, limit: null },
-  ];
-
   // ── Income computation ─────────────────────────────────────────────────
   const totalIncome = Object.values(otherIncome).reduce((s, v) => s + (Number(v) || 0), 0);
   const fdInterest = (holdings.fixedDeposits || []).reduce((s, fd) => s + (fd.interest || 0), 0);
   const totalIncomeWithFD = totalIncome + fdInterest;
 
-  // ── Tax computation (both regimes) ─────────────────────────────────────
-  const totalDeductionsOld = finalDeductions.reduce((s, d) => s + d.used, 0);
-  const oldRegimeDeductionsTotal = totalDeductionsOld + 50000; // 50k std deduction
-  const oldRegimeTaxable = Math.max(0, totalIncomeWithFD - oldRegimeDeductionsTotal);
-  const oldRegimeTax = calcOldRegimeTax(oldRegimeTaxable);
+  // ── Chapter VI-A Deductions computation ────────────────────────────────
+  const claimed80C = Math.min(150000, Math.max(0, Number(deductionsInput.sec80C) || 0));
+  const claimed80D = Math.min(100000, Math.max(0, Number(deductionsInput.sec80D) || 0));
+  const claimed80CCD = Math.min(50000, Math.max(0, Number(deductionsInput.sec80CCD) || 0));
+  const claimed24b = Math.min(200000, Math.max(0, Number(deductionsInput.sec24b) || 0));
+  const claimedHRA = Math.max(0, Number(deductionsInput.hra) || 0);
 
-  const newRegimeTaxable = Math.max(0, totalIncomeWithFD - 75000); // 75k std deduction FY26
+  const finalDeductionsList = [
+    { key: 'sec80C', section: '80C', label: 'EPF + ELSS + PPF + Life Insurance', used: claimed80C, limit: 150000 },
+    { key: 'sec80D', section: '80D', label: 'Health Insurance Premium (Self & Parents)', used: claimed80D, limit: 100000 },
+    { key: 'sec80CCD', section: '80CCD(1B)', label: 'NPS Additional Contribution', used: claimed80CCD, limit: 50000 },
+    { key: 'sec24b', section: '24(b)', label: 'Home Loan Interest (Loss on House Property)', used: claimed24b, limit: 200000 },
+    { key: 'hra', section: 'HRA / 10(13A)', label: 'House Rent Allowance / Statutory Exemptions', used: claimedHRA, limit: null },
+  ];
+
+  // Standard deductions
+  const stdOld = isSalaried ? (TAX_RATES?.STD_DEDUCTION_OLD || 50000) : 0;
+  const stdNew = isSalaried ? (TAX_RATES?.STD_DEDUCTION_NEW || 75000) : 0;
+
+  const nonStdDeductionsTotal = claimed80C + claimed80D + claimed80CCD + claimed24b + claimedHRA;
+  const oldRegimeDeductionsTotal = nonStdDeductionsTotal + stdOld;
+  const oldRegimeTaxable = Math.max(0, totalIncomeWithFD - oldRegimeDeductionsTotal);
+  const oldRegimeTax = calcOldRegimeTax(oldRegimeTaxable, user?.age || 30);
+
+  const newRegimeTaxable = Math.max(0, totalIncomeWithFD - stdNew);
   const newRegimeTax = calcNewRegimeTax(newRegimeTaxable);
 
   const recommendedRegime = oldRegimeTax <= newRegimeTax ? 'old' : 'new';
   const taxSaving = Math.abs(oldRegimeTax - newRegimeTax);
+
+  // Exact breakeven deduction calculation
+  const breakeven = findBreakevenDeductions(totalIncomeWithFD, isSalaried, user?.age || 30);
+  const deductionGap = breakeven.extraDeductionsExclStd - nonStdDeductionsTotal;
 
   // ── Capital gains summary ──────────────────────────────────────────────
   const totalLTCG = capitalGains.filter(g => g.type === 'LTCG').reduce((s, g) => s + g.gainLoss, 0);
@@ -188,6 +186,77 @@ export default function ITRAssistant() {
     setTimeout(() => setToast(''), 3000);
   };
 
+  // ── Synthetic FIFO lots generator ───────────────────────────────────────
+  const generateLotsFromPortfolio = useCallback(() => {
+    const mfList = (holdings.mutualFunds && holdings.mutualFunds.length > 0)
+      ? holdings.mutualFunds
+      : [
+          { name: 'Parag Parikh Flexi Cap Fund Direct Growth', nav: 82.5, units: 1200, value: 99000 },
+          { name: 'Mirae Asset Large Cap Fund Direct Growth', nav: 114.2, units: 800, value: 91360 },
+          { name: 'HDFC Mid-Cap Opportunities Fund Direct Growth', nav: 168.0, units: 500, value: 84000 },
+        ];
+
+    const synthetic = [];
+    const now = new Date();
+
+    mfList.forEach((fund, fundIdx) => {
+      const fundName = fund.name || `Fund #${fundIdx + 1}`;
+      const baseNav = fund.nav || 100;
+      const totalUnits = fund.units || 1000;
+      const monthlyUnits = +(totalUnits / 14).toFixed(3);
+
+      // 12 monthly purchases starting 18 months ago
+      for (let m = 18; m >= 6; m--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - m, 5 + (fundIdx * 3));
+        const dateStr = d.toISOString().split('T')[0];
+        const factor = 0.80 + ((18 - m) / 18) * 0.18;
+        const nav = +(baseNav * factor).toFixed(2);
+        synthetic.push({
+          date: dateStr,
+          assetName: fundName,
+          type: 'SIP',
+          units: monthlyUnits,
+          nav,
+          amount: Math.round(monthlyUnits * nav),
+        });
+      }
+
+      // 1 partial redemption 2 months ago (LTCG / STCG mix)
+      const redeemDate = new Date(now.getFullYear(), now.getMonth() - 2, 14);
+      const redeemUnits = +(monthlyUnits * 3.5).toFixed(3);
+      const saleNav = +(baseNav * 1.05).toFixed(2);
+      synthetic.push({
+        date: redeemDate.toISOString().split('T')[0],
+        assetName: fundName,
+        type: 'Redemption',
+        units: redeemUnits,
+        nav: saleNav,
+        amount: Math.round(redeemUnits * saleNav),
+      });
+    });
+
+    setTransactions(synthetic);
+    localStorage.setItem('finagent_transactions_v1', JSON.stringify(synthetic));
+    setLots(null);
+    showToast(`⚡ Generated ${synthetic.length} transactions from portfolio holdings!`);
+
+    // Immediate FIFO calculation
+    setTimeout(() => {
+      fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/tax/compute-lots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: synthetic }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          setLots(data.lots || []);
+          setLotSummary(data.summary);
+          showToast('✅ Realized FIFO Tax Lots & Schedule CG computed!');
+        })
+        .catch(err => console.error(err));
+    }, 200);
+  }, [holdings.mutualFunds]);
+
   // ── Email handler ──────────────────────────────────────────────────────
   async function handleEmailSend() {
     try {
@@ -197,7 +266,15 @@ export default function ITRAssistant() {
         body: JSON.stringify({
           to: emailValue || user?.email,
           clientName: user?.name || 'Investor',
-          year: '2025-26',
+          year: fy,
+          grossIncome: totalIncomeWithFD,
+          oldRegimeTax,
+          newRegimeTax,
+          recommendedRegime,
+          taxSaving,
+          totalLTCG,
+          totalSTCG,
+          taxableLTCG,
         }),
       });
       showToast('📧 ITR Summary sent to ' + (emailValue || user?.email));
@@ -407,6 +484,36 @@ export default function ITRAssistant() {
           <div style={styles.section}>
             <div style={styles.sectionTitle}>💼 Income Sources</div>
             <div style={styles.card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>Taxpayer Profile:</span>
+                <div style={{ display: 'flex', background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: 3, border: '1px solid var(--glass-border)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsSalaried(true)}
+                    style={{
+                      padding: '5px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                      background: isSalaried ? 'var(--primary)' : 'transparent',
+                      color: isSalaried ? '#fff' : 'var(--text-secondary)',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    💼 Salaried (₹75k New / ₹50k Old Std. Ded.)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSalaried(false)}
+                    style={{
+                      padding: '5px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                      background: !isSalaried ? 'var(--primary)' : 'transparent',
+                      color: !isSalaried ? '#fff' : 'var(--text-secondary)',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    🏢 Non-Salaried / Business (No Std. Ded.)
+                  </button>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                 {[['salary', 'Salary / CTC'], ['rental', 'Rental Income'], ['crypto', 'Crypto Gains'], ['business', 'Business Income'], ['other', 'Other Income']].map(([key, label]) => (
                   <div key={key}>
@@ -491,26 +598,45 @@ export default function ITRAssistant() {
 
           {/* Section 2: Deductions */}
           <div style={styles.section}>
-            <div style={styles.sectionTitle}>📋 Deductions Tracker</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div style={styles.sectionTitle}>📋 Chapter VI-A Deductions Tracker (Old Regime)</div>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Interactive: edit amounts to see live tax & breakeven impact</span>
+            </div>
             <div style={styles.card}>
-              {finalDeductions.map((d, i) => {
-                const pct = d.limit ? Math.round((d.used / d.limit) * 100) : null;
+              {finalDeductionsList.map((d, i) => {
+                const pct = d.limit ? Math.min(100, Math.round((d.used / d.limit) * 100)) : null;
                 return (
-                  <div key={i} style={{ ...styles.deductionRow, borderBottom: i < finalDeductions.length - 1 ? '1px solid var(--glass-border)' : 'none', paddingBottom: i < finalDeductions.length - 1 ? 18 : 0 }}>
+                  <div key={d.key} style={{ ...styles.deductionRow, borderBottom: i < finalDeductionsList.length - 1 ? '1px solid var(--glass-border)' : 'none', paddingBottom: i < finalDeductionsList.length - 1 ? 16 : 0 }}>
                     <div style={styles.deductionLeft}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Section {d.section}</span>
-                        <span style={{ fontSize: 13, color: d.used === 0 ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: 600 }}>
-                          {fmt(d.used)}{d.limit ? ` / ${fmt(d.limit)}` : ''}
-                        </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                        <div>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Section {d.section}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 8 }}>{d.label}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>₹</span>
+                          <input
+                            type="number"
+                            value={deductionsInput[d.key]}
+                            onChange={e => setDeductionsInput(prev => ({ ...prev, [d.key]: e.target.value }))}
+                            style={{
+                              width: 110, padding: '4px 8px', borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--glass-border)', background: 'var(--surface-raised)',
+                              color: 'var(--text-primary)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, fontSize: 13,
+                              textAlign: 'right'
+                            }}
+                          />
+                          {d.limit && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>/ {fmt(d.limit)}</span>}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: pct !== null ? 6 : 0 }}>{d.label}</div>
                       {pct !== null && (
                         <>
                           <div style={styles.progressWrap}>
                             <div style={{ ...styles.progressFill, width: `${pct}%`, background: pct >= 90 ? 'var(--green)' : pct === 0 ? 'var(--red)' : 'var(--primary)' }} />
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{pct}% utilized{pct < 100 && d.limit ? ` — ₹${(d.limit - d.used).toLocaleString('en-IN')} remaining` : ''}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                            {pct}% utilized{pct < 100 && d.limit ? ` — ₹${(d.limit - d.used).toLocaleString('en-IN')} remaining cap` : ' — statutory cap reached'}
+                          </div>
                         </>
                       )}
                     </div>
@@ -518,16 +644,19 @@ export default function ITRAssistant() {
                       {d.used === 0
                         ? <span style={{ ...styles.badge, background: 'rgba(239,68,68,0.12)', color: 'var(--red)' }}>Unused</span>
                         : pct >= 90
-                        ? <span style={{ ...styles.badge, background: 'rgba(34,197,94,0.12)', color: 'var(--green)' }}>Optimized</span>
-                        : <span style={{ ...styles.badge, background: 'rgba(99,102,241,0.15)', color: 'var(--primary-light)' }}>Partial</span>
+                        ? <span style={{ ...styles.badge, background: 'rgba(34,197,94,0.12)', color: 'var(--green)' }}>Maxed</span>
+                        : <span style={{ ...styles.badge, background: 'rgba(99,102,241,0.15)', color: 'var(--primary-light)' }}>Active</span>
                       }
                     </div>
                   </div>
                 );
               })}
-              <div style={{ marginTop: 18, padding: '12px 16px', background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Total Deductions</span>
-                <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 16 }}>{fmt(finalDeductions.reduce((s, d) => s + d.used, 0))}</span>
+              <div style={{ marginTop: 18, padding: '12px 16px', background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Total Deductions (Old Regime)</span>
+                  {isSalaried && <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 8 }}>(includes ₹50,000 standard deduction)</span>}
+                </div>
+                <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 16 }}>{fmt(oldRegimeDeductionsTotal)}</span>
               </div>
             </div>
           </div>
@@ -546,32 +675,56 @@ export default function ITRAssistant() {
                     ₹{oldRegimeTax.toLocaleString('en-IN')}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Taxable: ₹{oldRegimeTaxable.toLocaleString('en-IN')}</div>
-                  {oldRegimeTax <= newRegimeTax && <div style={{ marginTop: 6, fontSize: 11, background: 'var(--green)', color: '#fff', display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>BETTER</div>}
+                  {oldRegimeTax <= newRegimeTax && <div style={{ marginTop: 6, fontSize: 11, background: 'var(--green)', color: '#fff', display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>RECOMMENDED</div>}
                 </div>
                 <div
                   style={{ padding: '1rem', background: regime === 'new' ? 'rgba(99,102,241,0.1)' : 'var(--surface-raised)', borderRadius: 'var(--radius)', border: regime === 'new' ? '1px solid var(--primary)' : '1px solid transparent', cursor: 'pointer' }}
                   onClick={() => setRegime('new')}
                 >
-                  <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>New Regime</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>New Regime (u/s 115BAC)</div>
                   <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.5rem', fontWeight: 700, color: newRegimeTax <= oldRegimeTax ? 'var(--green)' : 'var(--text-primary)' }}>
                     ₹{newRegimeTax.toLocaleString('en-IN')}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Taxable: ₹{newRegimeTaxable.toLocaleString('en-IN')}</div>
-                  {newRegimeTax <= oldRegimeTax && <div style={{ marginTop: 6, fontSize: 11, background: 'var(--green)', color: '#fff', display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>BETTER</div>}
+                  {newRegimeTax <= oldRegimeTax && <div style={{ marginTop: 6, fontSize: 11, background: 'var(--green)', color: '#fff', display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>RECOMMENDED</div>}
                 </div>
               </div>
               <div style={{ padding: '0.875rem', background: 'rgba(16,185,129,0.08)', borderRadius: 'var(--radius)', textAlign: 'center' }}>
                 <span style={{ fontWeight: 700, color: 'var(--green)' }}>
-                  💡 {recommendedRegime === 'old' ? 'Old' : 'New'} Regime saves you ₹{taxSaving.toLocaleString('en-IN')} this year
+                  💡 {recommendedRegime === 'old' ? 'Old' : 'New'} Regime saves you ₹{taxSaving.toLocaleString('en-IN')} this financial year
                 </span>
+              </div>
+
+              {/* Breakeven Threshold Card */}
+              <div style={{
+                marginTop: 16, padding: '16px', borderRadius: 'var(--radius)',
+                background: deductionGap <= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(99,102,241,0.08)',
+                border: `1px solid ${deductionGap <= 0 ? 'rgba(34,197,94,0.3)' : 'rgba(99,102,241,0.3)'}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 18 }}>🎯</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>
+                    Regime Breakeven Threshold Analysis
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  For your gross income of <strong>{fmt(totalIncomeWithFD)}</strong>, the breakeven deduction threshold is <strong>{fmt(breakeven.extraDeductionsExclStd)}</strong> under Chapter VI-A (80C, 80D, 24b, HRA).
+                </div>
+                <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: deductionGap <= 0 ? 'var(--green)' : 'var(--gold)' }}>
+                  {deductionGap <= 0 ? (
+                    `✅ You currently claim ₹${nonStdDeductionsTotal.toLocaleString('en-IN')}, exceeding the breakeven target by ₹${Math.abs(deductionGap).toLocaleString('en-IN')}. Old Regime is your optimal statutory choice!`
+                  ) : (
+                    `⚡ You currently claim ₹${nonStdDeductionsTotal.toLocaleString('en-IN')}. You need an additional ₹${deductionGap.toLocaleString('en-IN')} in eligible deductions for Old Regime to beat New Regime.`
+                  )}
+                </div>
               </div>
 
               {/* Detailed breakdown for selected regime */}
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>{regime === 'new' ? 'New Regime (FY 2025-26)' : 'Old Regime'} — Breakdown</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>{regime === 'new' ? 'New Regime (FY 2025-26 u/s 115BAC)' : 'Old Regime'} — Breakdown</div>
                 {[
                   { label: 'Gross Total Income', value: fmt(totalIncomeWithFD) },
-                  { label: 'Total Deductions', value: regime === 'old' ? `- ${fmt(totalDeductionsOld + 50000)}` : '- ₹75,000 (Standard)' },
+                  { label: 'Total Deductions', value: regime === 'old' ? `- ${fmt(oldRegimeDeductionsTotal)}` : (isSalaried ? '- ₹75,000 (Standard)' : '₹0') },
                   { label: 'Taxable Income', value: fmt(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) },
                   { label: 'Income Tax', value: fmt(Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) / 1.04)) },
                   { label: 'Health & Education Cess (4%)', value: fmt(Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) / 1.04 * 0.04)) },
@@ -618,7 +771,12 @@ export default function ITRAssistant() {
       {taxTab === 'transactions' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="card">
-            <h3 className="text-h3" style={{ marginBottom: '0.75rem' }}>Add Transaction</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: 8 }}>
+              <h3 className="text-h3" style={{ margin: 0 }}>Add Transaction</h3>
+              <button className="btn btn-primary btn-sm" onClick={generateLotsFromPortfolio}>
+                ⚡ Generate Lots from Current Portfolio
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
               {[['date', 'Date', 'date', ''], ['assetName', 'Fund/Stock', 'text', 'Mirae Asset Largecap'], ['type', 'Type', 'select', ''], ['units', 'Units', 'number', '100'], ['nav', 'NAV/Price', 'number', '75.5'], ['amount', 'Amount ₹', 'number', '']].map(([key, label, type, placeholder]) => (
                 <div key={key}>
@@ -716,7 +874,10 @@ export default function ITRAssistant() {
             <div className="card" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📋</div>
               <div style={{ fontWeight: 600 }}>No transactions yet</div>
-              <div className="text-sm" style={{ marginTop: 4 }}>Import your CAS PDF to auto-populate, or add manually above</div>
+              <div className="text-sm" style={{ marginTop: 4, marginBottom: 14 }}>Import your CAS PDF or synthesize transactions from your current portfolio</div>
+              <button className="btn btn-primary btn-sm" onClick={generateLotsFromPortfolio}>
+                ⚡ Generate Lots from Current Portfolio
+              </button>
             </div>
           )}
         </div>
@@ -746,11 +907,16 @@ export default function ITRAssistant() {
 
           {/* Lots table / states */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 className="text-h3">Realised FIFO Lots</h3>
-              <button className="btn btn-primary btn-sm" onClick={() => { setLots(null); computeLotsFromServer(); }}>
-                {loadingLots ? '⏳ Computing…' : '↻ Recompute'}
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: 8 }}>
+              <h3 className="text-h3" style={{ margin: 0 }}>Realised FIFO Lots</h3>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-secondary btn-sm" onClick={generateLotsFromPortfolio} title="Auto-generate SIP lots and redemptions from portfolio holdings">
+                  ⚡ Generate from Portfolio
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={() => { setLots(null); computeLotsFromServer(); }}>
+                  {loadingLots ? '⏳ Computing…' : '↻ Recompute'}
+                </button>
+              </div>
             </div>
 
             {loadingLots && (
@@ -764,12 +930,12 @@ export default function ITRAssistant() {
               <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📂</div>
                 <div style={{ fontWeight: 600 }}>No transactions found</div>
-                <div className="text-sm" style={{ marginTop: 4 }}>
-                  Add transactions in the{' '}
-                  <button onClick={() => setTaxTab('transactions')} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: 'inherit', padding: 0 }}>
-                    Transaction History
-                  </button>{' '}tab first.
+                <div className="text-sm" style={{ marginTop: 4, marginBottom: 14 }}>
+                  Synthesize transactions directly from your mutual fund holdings to test FIFO lots and Schedule CG:
                 </div>
+                <button className="btn btn-primary btn-sm" onClick={generateLotsFromPortfolio}>
+                  ⚡ Generate Lots from Current Portfolio
+                </button>
               </div>
             )}
 

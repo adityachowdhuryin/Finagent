@@ -91,9 +91,13 @@ module.exports.portalInvite = async (req, res) => {
 
 // POST /api/email/itr — send ITR summary to CA
 module.exports.itr = async (req, res) => {
-  const { to, clientName, year, pdfBase64 } = req.body;
+  const { to, clientName, year, pdfBase64, oldTax, newTax, recommended, savings, gross, ltcg, stcg } = req.body;
   try {
-    const result = await sendEmail({ to, subject: `ITR Summary FY ${year} — ${clientName} (via FinAgent)`, html: itrTemplate(clientName, year) });
+    const result = await sendEmail({
+      to,
+      subject: `ITR Summary FY ${year} — ${clientName} (via FinAgent)`,
+      html: itrTemplate(clientName, year, { oldTax, newTax, recommended, savings, gross, ltcg, stcg }),
+    });
     res.json(result);
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
@@ -165,15 +169,34 @@ function portalInviteTemplate(clientName, advisorName, magicLink) {
     <p style="color: #64748b; font-size: 12px;">This link is for your use only. Do not share it with others.</p>`);
 }
 
-function itrTemplate(clientName, year) {
-  return base(`<h2>ITR Summary FY ${year}</h2>
-    <p>The attached document contains the tax return summary for <span class="highlight">${clientName}</span> for FY ${year}, prepared via FinAgent.</p>
-    <p>The summary includes:</p>
+function itrTemplate(clientName, year, details = {}) {
+  const { oldTax, newTax, recommended, savings, gross, ltcg, stcg } = details;
+  return base(`<h2>ITR-2 Tax Assessment FY ${year}</h2>
+    <p>Dear <span class="highlight">${clientName}</span> / Tax Advisor,</p>
+    <p>Here is the official income tax assessment computed via FinAgent Tax Engine for FY ${year}:</p>
+    <div style="background: rgba(99,102,241,0.1); border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid rgba(99,102,241,0.3);">
+      <div style="margin-bottom: 8px;">
+        <span style="color: #94a3b8;">Gross Total Income:</span>
+        <strong style="color: #fff; float: right;">₹${Number(gross || 0).toLocaleString('en-IN')}</strong>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <span style="color: #94a3b8;">New Regime Tax (Sec 115BAC):</span>
+        <strong style="color: ${recommended === 'new' ? '#10b981' : '#fff'}; float: right;">₹${Number(newTax || 0).toLocaleString('en-IN')}</strong>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <span style="color: #94a3b8;">Old Regime Tax:</span>
+        <strong style="color: ${recommended === 'old' ? '#10b981' : '#fff'}; float: right;">₹${Number(oldTax || 0).toLocaleString('en-IN')}</strong>
+      </div>
+      <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); color: #10b981; font-weight: 700; margin-top: 8px;">
+        💡 Recommendation: ${recommended === 'old' ? 'Old' : 'New'} Regime saves you ₹${Number(savings || 0).toLocaleString('en-IN')}
+      </div>
+    </div>
+    <p><strong>Capital Gains Assessment:</strong></p>
     <ul style="color: #cbd5e1; line-height: 2;">
-      <li>Capital gains (STCG + LTCG) from all holdings</li>
-      <li>Section 80C, 80D, 80CCD deductions</li>
-      <li>Estimated tax liability (Old vs New regime)</li>
-    </ul>`);
+      <li>LTCG (12.5% above ₹1.25L exemption): ₹${Number(ltcg || 0).toLocaleString('en-IN')}</li>
+      <li>STCG (flat 20%): ₹${Number(stcg || 0).toLocaleString('en-IN')}</li>
+    </ul>
+    <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Generated automatically by FinAgent Tax Engine under the Finance Act 2024 statutory tax framework.</p>`);
 }
 
 // Generic send — used by SIP Optimizer, Watchlist alerts, Portfolio Doctor digest
