@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   calcNewRegimeTax,
   calcOldRegimeTax,
@@ -262,189 +263,547 @@ export default function ITRAssistant() {
   const buildTaxPDFDoc = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
-    let y = 14;
-
-    // Header Background Banner
-    doc.setFillColor(30, 27, 75); // Dark Indigo
-    doc.rect(0, 0, pageWidth, 28, 'F');
-
-    // Header Title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text('FINAGENT TAX INTELLIGENCE', margin, 12);
-
-    // Subtitle & Metadata
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(199, 210, 254);
-    doc.text(`Official Income Tax Assessment & Capital Gains Summary · ${fy}`, margin, 18);
+    const contentWidth = pageWidth - (margin * 2);
     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    doc.text(`Generated: ${dateStr}`, pageWidth - margin - 35, 18);
+    const cleanPAN = (userInfo.pan || user?.pan || 'ABCDE1234F').toUpperCase();
+    const taxpayerName = user?.name || userInfo.name || 'Aditya Chowdhury';
+    const ayStr = userInfo.ay || '2026-27';
+    const cleanFY = fy || 'FY 2025-26';
 
-    y = 35;
+    const fmtCurr = (n) => {
+      if (n === null || n === undefined || isNaN(n)) return 'Rs. 0';
+      const num = Math.round(n);
+      return `${num < 0 ? '-' : ''}Rs. ${Math.abs(num).toLocaleString('en-IN')}`;
+    };
 
-    // Taxpayer Information Card
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(margin, y, pageWidth - (margin * 2), 22, 2, 2, 'FD');
+    const stcgTax = Math.round(totalSTCG * 0.20);
+    const ltcgTax = Math.round(taxableLTCG * 0.125);
+    const totalCGTax = stcgTax + ltcgTax;
 
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text('TAXPAYER NAME', margin + 6, y + 7);
-    doc.text('PAN', margin + 62, y + 7);
-    doc.text('ASSESSMENT YEAR', margin + 112, y + 7);
-    doc.text('EMPLOYMENT TYPE', margin + 150, y + 7);
+    // ═══════════════════════════════════════════════════════════════════════
+    // PAGE 1: EXECUTIVE TAX ASSESSMENT & REGIME OPTIMIZER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Top Header Banner
+    doc.setFillColor(30, 27, 75);
+    doc.rect(0, 0, pageWidth, 26, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text(user?.name || userInfo.name || 'Aditya Chowdhury', margin + 6, y + 15);
-    doc.text(userInfo.pan || 'ABCDE1234F', margin + 62, y + 15);
-    doc.text(userInfo.ay || '2026-27', margin + 112, y + 15);
-    doc.text(isSalaried ? 'Salaried (₹75k Std Ded)' : 'Non-Salaried / Business', margin + 150, y + 15);
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.text('FINAGENT TAX INTELLIGENCE', margin, 11);
 
-    y += 28;
-
-    // 1. Regime Comparison
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(30, 41, 59);
-    doc.text('1. Income Tax Regime Comparison (Old vs New u/s 115BAC)', margin, y);
-    y += 5;
-
-    const colW = (pageWidth - (margin * 2)) / 3;
-    doc.setFillColor(241, 245, 249);
-    doc.rect(margin, y, pageWidth - (margin * 2), 7, 'F');
-    doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
-    doc.text('METRIC', margin + 4, y + 4.8);
-    doc.text('OLD REGIME', margin + colW + 4, y + 4.8);
-    doc.text('NEW REGIME (115BAC)', margin + (colW * 2) + 4, y + 4.8);
-    y += 7;
-
-    const regimeRows = [
-      ['Gross Total Income', fmt(totalIncomeWithFD), fmt(totalIncomeWithFD)],
-      ['Standard Deduction', fmt(stdOld), fmt(stdNew)],
-      ['Chapter VI-A / Other Deductions', fmt(nonStdDeductionsTotal), 'Nil (Ineligible)'],
-      ['Total Taxable Income', fmt(oldRegimeTaxable), fmt(newRegimeTaxable)],
-      ['Basic Tax Payable', fmt(Math.round(oldRegimeTax / 1.04)), fmt(Math.round(newRegimeTax / 1.04))],
-      ['Health & Education Cess (4%)', fmt(Math.round(oldRegimeTax / 1.04 * 0.04)), fmt(Math.round(newRegimeTax / 1.04 * 0.04))],
-      ['Total Tax Liability', fmt(oldRegimeTax), fmt(newRegimeTax)],
-    ];
-
-    regimeRows.forEach(([metric, oldVal, newVal], idx) => {
-      const isLast = idx === regimeRows.length - 1;
-      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
-      doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
-      doc.setFont('helvetica', isLast ? 'bold' : 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(isLast ? 15 : 51, 65, 85);
-      doc.text(metric, margin + 4, y + 4.5);
-      doc.text(oldVal, margin + colW + 4, y + 4.5);
-      doc.text(newVal, margin + (colW * 2) + 4, y + 4.5);
-      y += 6.5;
-    });
-
-    // Recommendation Banner
-    y += 3;
-    doc.setFillColor(236, 253, 245);
-    doc.setDrawColor(16, 185, 129);
-    doc.roundedRect(margin, y, pageWidth - (margin * 2), 10, 1.5, 1.5, 'FD');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(4, 120, 87);
-    doc.text(
-      `STATUTORY RECOMMENDATION: ${recommendedRegime === 'old' ? 'Old Regime' : 'New Regime'} saves ₹${taxSaving.toLocaleString('en-IN')} annually. (Breakeven Threshold: ₹${breakeven.extraDeductionsExclStd.toLocaleString('en-IN')})`,
-      margin + 4,
-      y + 6.5
-    );
+    doc.setTextColor(199, 210, 254);
+    doc.text(`Official Income Tax Assessment & Regime Optimization Report · ${cleanFY} (AY ${ayStr})`, margin, 18);
 
-    y += 16;
+    doc.setFontSize(8);
+    doc.setTextColor(224, 231, 255);
+    doc.text(`Generated: ${dateStr}`, pageWidth - margin, 18, { align: 'right' });
 
-    // 2. Capital Gains Schedule
+    let y = 32;
+
+    // Section 1: Taxpayer Profile Card (2 rows x 3 columns)
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(margin, y, contentWidth, 24, 2, 2, 'FD');
+
+    const col1 = margin + 5;
+    const col2 = margin + 66;
+    const col3 = margin + 128;
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(30, 41, 59);
-    doc.text('2. Capital Gains Summary & Positions', margin, y);
-    y += 5;
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('TAXPAYER NAME', col1, y + 5.5);
+    doc.text('PAN NUMBER', col2, y + 5.5);
+    doc.text('ASSESSMENT YEAR', col3, y + 5.5);
 
-    // Table Header
-    doc.setFillColor(241, 245, 249);
-    doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
-    doc.setFontSize(7.5);
-    doc.setTextColor(71, 85, 105);
-    doc.text('ASSET', margin + 3, y + 4.5);
-    doc.text('PURCHASE', margin + 55, y + 4.5);
-    doc.text('SALE', margin + 78, y + 4.5);
-    doc.text('COST', margin + 98, y + 4.5);
-    doc.text('PROCEEDS', margin + 118, y + 4.5);
-    doc.text('GAIN/LOSS', margin + 140, y + 4.5);
-    doc.text('TYPE (TAX)', margin + 162, y + 4.5);
-    y += 6.5;
-
-    capitalGains.forEach((cg, idx) => {
-      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
-      doc.rect(margin, y, pageWidth - (margin * 2), 6, 'F');
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(51, 65, 85);
-      doc.text(String(cg.asset || '').substring(0, 28), margin + 3, y + 4.2);
-      doc.text(String(cg.purchaseDate || '—'), margin + 55, y + 4.2);
-      doc.text(String(cg.saleDate || '—'), margin + 78, y + 4.2);
-      doc.text(fmt(cg.purchasePrice), margin + 98, y + 4.2);
-      doc.text(fmt(cg.salePrice), margin + 118, y + 4.2);
-
-      const isPositive = (cg.gainLoss || 0) >= 0;
-      doc.setTextColor(isPositive ? 4 : 220, isPositive ? 120 : 38, isPositive ? 87 : 38);
-      doc.text((isPositive ? '+' : '') + fmt(cg.gainLoss), margin + 140, y + 4.2);
-
-      doc.setTextColor(51, 65, 85);
-      doc.text(`${cg.type} (${cg.taxRate})`, margin + 162, y + 4.2);
-      y += 6;
-    });
-
-    // CG Summary Line
-    y += 2;
-    doc.setFillColor(241, 245, 249);
-    doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
+    doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text(
-      `TOTAL LTCG: ${fmt(totalLTCG)} (Exemption u/s 112A: ₹1.25L · Taxable: ${fmt(taxableLTCG)} @ 12.5%) · TOTAL STCG: ${fmt(totalSTCG)} @ 20%`,
-      margin + 4,
-      y + 4.5
-    );
+    doc.text(taxpayerName, col1, y + 10.5);
+    doc.text(cleanPAN, col2, y + 10.5);
+    doc.text(`AY ${ayStr} (${cleanFY})`, col3, y + 10.5);
 
-    y += 14;
-
-    // 3. Deductions Breakdown
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(30, 41, 59);
-    doc.text('3. Chapter VI-A Deductions Claimed (Old Regime)', margin, y);
-    y += 5;
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('RESIDENTIAL STATUS', col1, y + 16.5);
+    doc.text('EMPLOYMENT CATEGORY', col2, y + 16.5);
+    doc.text('FILING JURISDICTION', col3, y + 16.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(51, 65, 85);
-    finalDeductionsList.forEach((d) => {
-      doc.text(`• Section ${d.section} (${d.label}): ${fmt(d.used)}${d.limit ? ` / Cap: ${fmt(d.limit)}` : ''}`, margin + 4, y);
-      y += 4.8;
+    doc.text('Resident Individual (ROR)', col1, y + 21);
+    doc.text(isSalaried ? 'Salaried (Sec 16(ia) Eligible)' : 'Non-Salaried / Business', col2, y + 21);
+    doc.text('ITR-2 / incometax.gov.in', col3, y + 21);
+
+    y += 29;
+
+    // Section 2: Statutory Regime Recommendation Box
+    const isOldBetter = recommendedRegime === 'old';
+    const recBgColor = isOldBetter ? [240, 253, 244] : [238, 242, 255];
+    const recBorderColor = isOldBetter ? [34, 197, 94] : [99, 102, 241];
+    const recTextColor = isOldBetter ? [21, 128, 61] : [67, 56, 202];
+
+    doc.setFillColor(...recBgColor);
+    doc.setDrawColor(...recBorderColor);
+    doc.roundedRect(margin, y, contentWidth, 23, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...recTextColor);
+    doc.text(
+      `STATUTORY RECOMMENDATION: ${isOldBetter ? 'OLD TAX REGIME' : 'NEW TAX REGIME (u/s 115BAC)'}`,
+      margin + 5,
+      y + 6
+    );
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(
+      `Net Annual Savings: ${fmtCurr(taxSaving)}`,
+      pageWidth - margin - 5,
+      y + 6,
+      { align: 'right' }
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(51, 65, 85);
+    doc.text(
+      `• Tax Liability: ${fmtCurr(newRegimeTax)} under New Regime vs ${fmtCurr(oldRegimeTax)} under Old Regime. Choosing ${isOldBetter ? 'Old' : 'New'} Regime preserves capital.`,
+      margin + 5,
+      y + 11.5
+    );
+    doc.text(
+      `• Breakeven Deduction Target: For your gross income of ${fmtCurr(totalIncomeWithFD)}, the Chapter VI-A breakeven point is ${fmtCurr(breakeven.extraDeductionsExclStd)}.`,
+      margin + 5,
+      y + 16
+    );
+    doc.text(
+      `• Deduction Status: You claim ${fmtCurr(nonStdDeductionsTotal)} in non-standard deductions (${deductionGap <= 0 ? 'Exceeds breakeven by ' + fmtCurr(Math.abs(deductionGap)) : 'Shortfall of ' + fmtCurr(deductionGap) + ' to favor Old Regime'}).`,
+      margin + 5,
+      y + 20.5
+    );
+
+    y += 28;
+
+    // Section 3: Income & Regime Comparison Table
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('1. Income Tax Regime Comparison (Old vs New u/s 115BAC)', margin, y);
+    y += 3;
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['STATUTORY HEAD / PARTICULARS', 'OLD REGIME (INR)', 'NEW REGIME (115BAC) (INR)']],
+      body: [
+        ['Gross Total Income (Salary & FD Interest)', fmtCurr(totalIncomeWithFD), fmtCurr(totalIncomeWithFD)],
+        ['Less: Standard Deduction u/s 16(ia)', fmtCurr(stdOld), fmtCurr(stdNew)],
+        ['Less: Chapter VI-A Deductions (80C, 80D, 24b)', fmtCurr(nonStdDeductionsTotal), 'Nil (Ineligible)'],
+        ['Total Net Taxable Income', fmtCurr(oldRegimeTaxable), fmtCurr(newRegimeTaxable)],
+        ['Basic Income Tax (Slab Rates)', fmtCurr(Math.round(oldRegimeTax / 1.04)), fmtCurr(Math.round(newRegimeTax / 1.04))],
+        ['Add: Capital Gains Tax (Schedule CG from Page 2)', fmtCurr(totalCGTax), fmtCurr(totalCGTax)],
+        ['Add: Health & Education Cess (4%)', fmtCurr(Math.round((oldRegimeTax + totalCGTax) * 0.04)), fmtCurr(Math.round((newRegimeTax + totalCGTax) * 0.04))],
+        ['Total Final Tax Liability Payable', fmtCurr(oldRegimeTax + Math.round(totalCGTax * 1.04)), fmtCurr(newRegimeTax + Math.round(totalCGTax * 1.04))],
+        ['Effective Tax Rate (% of Gross Income)', `${(((oldRegimeTax + Math.round(totalCGTax * 1.04)) / (totalIncomeWithFD || 1)) * 100).toFixed(2)}%`, `${(((newRegimeTax + Math.round(totalCGTax * 1.04)) / (totalIncomeWithFD || 1)) * 100).toFixed(2)}%`],
+      ],
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 7.5,
+        cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 },
+        textColor: [51, 65, 85],
+        lineColor: [226, 232, 240],
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+      },
+      columnStyles: {
+        0: { cellWidth: 82 },
+        1: { cellWidth: 50, halign: 'right' },
+        2: { cellWidth: 50, halign: 'right' },
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      didParseCell: (data) => {
+        if (data.row.index === 7) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [241, 245, 249];
+          if (data.column.index > 0) {
+            data.cell.styles.textColor = [185, 28, 28];
+          }
+        }
+      },
     });
 
-    y += 6;
-    doc.setFont('helvetica', 'italic');
+    y = doc.lastAutoTable.finalY + 8;
+
+    // Section 4: Advance Tax Schedule
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('2. Advance Tax Payment Schedule (u/s 208)', margin, y);
+    y += 3;
+
+    const chosenFinalTax = (isOldBetter ? oldRegimeTax : newRegimeTax) + Math.round(totalCGTax * 1.04);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['INSTALLMENT', 'STATUTORY DUE DATE', 'CUMULATIVE %', 'ESTIMATED DUE AMOUNT (INR)']],
+      body: [
+        ['1st Installment', 'On or before 15-Jun-2025', '15% of Net Tax', fmtCurr(Math.round(chosenFinalTax * 0.15))],
+        ['2nd Installment', 'On or before 15-Sep-2025', '45% of Net Tax', fmtCurr(Math.round(chosenFinalTax * 0.45))],
+        ['3rd Installment', 'On or before 15-Dec-2025', '75% of Net Tax', fmtCurr(Math.round(chosenFinalTax * 0.75))],
+        ['4th Installment', 'On or before 15-Mar-2026', '100% of Net Tax', fmtCurr(chosenFinalTax)],
+      ],
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 7.5,
+        cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
+        textColor: [51, 65, 85],
+        lineColor: [226, 232, 240],
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: [71, 85, 105],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+      },
+      columnStyles: {
+        0: { cellWidth: 42 },
+        1: { cellWidth: 54 },
+        2: { cellWidth: 42 },
+        3: { cellWidth: 44, halign: 'right' },
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PAGE 2: SCHEDULE CG — CAPITAL GAINS & POSITION AUDIT
+    // ═══════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    doc.setFillColor(30, 27, 75);
+    doc.rect(0, 0, pageWidth, 20, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text('SCHEDULE CG — CAPITAL GAINS & POSITION AUDIT TRAIL', margin, 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(199, 210, 254);
+    doc.text(`Taxpayer: ${taxpayerName} · PAN: ${cleanPAN} · ${cleanFY} (AY ${ayStr})`, margin, 15);
+    doc.text('Section 112A & 111A Statutory Audit', pageWidth - margin, 15, { align: 'right' });
+
+    y = 25;
+    const cardW = (contentWidth - 6) / 3;
+
+    // Card 1: LTCG
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(margin, y, cardW, 19, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
-    doc.setTextColor(148, 163, 184);
-    doc.text(
-      'Disclaimer: This summary is generated under the provisions of the Indian Income Tax Act, 1961 (as amended by Finance Act 2024). Please verify all details with your Chartered Accountant before filing on incometax.gov.in.',
-      margin,
-      y,
-      { maxWidth: pageWidth - (margin * 2) }
-    );
+    doc.setTextColor(100, 116, 139);
+    doc.text('TOTAL LTCG (GROSS)', margin + 3.5, y + 4.5);
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(fmtCurr(totalLTCG), margin + 3.5, y + 9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Exemption u/s 112A: Rs. 1,25,000`, margin + 3.5, y + 14);
+    doc.text(`Taxable: ${fmtCurr(taxableLTCG)} @ 12.5%`, margin + 3.5, y + 17.5);
+
+    // Card 2: STCG
+    const card2X = margin + cardW + 3;
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(card2X, y, cardW, 19, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('TOTAL STCG (FLAT 20%)', card2X + 3.5, y + 4.5);
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(fmtCurr(totalSTCG), card2X + 3.5, y + 9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Tax Rate: Section 111A (Flat 20%)`, card2X + 3.5, y + 14);
+    doc.text(`STCG Tax: ${fmtCurr(stcgTax)}`, card2X + 3.5, y + 17.5);
+
+    // Card 3: Total CG Tax
+    const card3X = margin + (cardW * 2) + 6;
+    doc.setFillColor(238, 242, 255);
+    doc.setDrawColor(99, 102, 241);
+    doc.roundedRect(card3X, y, cardW, 19, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(67, 56, 202);
+    doc.text('NET CAPITAL GAINS TAX', card3X + 3.5, y + 4.5);
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(fmtCurr(totalCGTax), card3X + 3.5, y + 9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Plus: 4% Health & Education Cess`, card3X + 3.5, y + 14);
+    doc.text(`Total: ${fmtCurr(Math.round(totalCGTax * 1.04))}`, card3X + 3.5, y + 17.5);
+
+    y += 24;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Detailed Realised Positions & Schedule CG Breakdown', margin, y);
+    y += 3;
+
+    const cgTableRows = capitalGains.map((cg, idx) => {
+      const isGain = (cg.gainLoss || 0) >= 0;
+      const absGain = Math.abs(Math.round(cg.gainLoss || 0)).toLocaleString('en-IN');
+      const gainStr = `${isGain ? '+' : '-'}Rs. ${absGain}`;
+      const holdingDesc = cg.purchaseDate && cg.purchaseDate !== '—'
+        ? `${cg.purchaseDate} to ${cg.saleDate || 'Present'}`
+        : (cg.type === 'LTCG' ? 'Long Term (>12m)' : 'Short Term (<=12m)');
+
+      return [
+        String(idx + 1),
+        String(cg.asset || 'Securities Holding'),
+        holdingDesc,
+        fmtCurr(cg.purchasePrice),
+        fmtCurr(cg.salePrice),
+        gainStr,
+        `${cg.type} (${cg.taxRate || (cg.type === 'LTCG' ? '12.5%' : '20%')})`,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin, top: 24, bottom: 18 },
+      head: [['#', 'ASSET / SECURITY NAME', 'HOLDING PERIOD', 'COST BASIS (INR)', 'PROCEEDS (INR)', 'GAIN / LOSS (INR)', 'TAX TYPE']],
+      body: cgTableRows,
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 7,
+        cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
+        textColor: [51, 65, 85],
+        lineColor: [226, 232, 240],
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7,
+      },
+      columnStyles: {
+        0: { cellWidth: 9, halign: 'center' },
+        1: { cellWidth: 48 },
+        2: { cellWidth: 34 },
+        3: { cellWidth: 24, halign: 'right' },
+        4: { cellWidth: 24, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' },
+        6: { cellWidth: 18, halign: 'center' },
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 5) {
+          const val = data.cell.raw;
+          if (String(val).startsWith('+')) {
+            data.cell.styles.textColor = [21, 128, 61];
+            data.cell.styles.fontStyle = 'bold';
+          } else if (String(val).startsWith('-')) {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PAGE 3: SCHEDULE VIA DEDUCTIONS & COMPLIANCE VERIFICATION
+    // ═══════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    doc.setFillColor(30, 27, 75);
+    doc.rect(0, 0, pageWidth, 20, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text('SCHEDULE VIA — DEDUCTIONS & STATUTORY AUDIT', margin, 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(199, 210, 254);
+    doc.text(`Taxpayer: ${taxpayerName} · PAN: ${cleanPAN} · ${cleanFY} (AY ${ayStr})`, margin, 15);
+    doc.text('Chapter VI-A / Section 10 Exemptions', pageWidth - margin, 15, { align: 'right' });
+
+    y = 26;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('1. Chapter VI-A & Other Allowable Deductions (Old Regime)', margin, y);
+    y += 3;
+
+    const deductionsRows = finalDeductionsList.map(d => [
+      d.section,
+      d.label,
+      fmtCurr(d.used),
+      d.limit ? fmtCurr(d.limit) : 'Statutory / No Cap',
+      fmtCurr(d.used),
+    ]);
+
+    deductionsRows.push([
+      '16(ia)',
+      'Standard Deduction (Salaried Taxpayers)',
+      fmtCurr(stdOld),
+      'Rs. 50,000',
+      fmtCurr(stdOld),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['SECTION', 'ELIGIBLE PARTICULARS / SCHEME', 'CLAIMED (INR)', 'STATUTORY CAP', 'ALLOWABLE (INR)']],
+      body: deductionsRows,
+      foot: [['TOTAL', 'Total Chapter VI-A + Standard Deductions Claimed', fmtCurr(oldRegimeDeductionsTotal), '—', fmtCurr(oldRegimeDeductionsTotal)]],
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 7.5,
+        cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 },
+        textColor: [51, 65, 85],
+        lineColor: [226, 232, 240],
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+      },
+      footStyles: {
+        fillColor: [241, 245, 249],
+        textColor: [15, 23, 42],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+      },
+      columnStyles: {
+        0: { cellWidth: 26 },
+        1: { cellWidth: 76 },
+        2: { cellWidth: 26, halign: 'right' },
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 26, halign: 'right' },
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 9;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('2. Pre-Filing Statutory Compliance & Audit Checklist', margin, y);
+    y += 4;
+
+    const checklist = [
+      'Annual Information Statement (AIS) & Taxpayer Information Summary (TIS) reconciled against actual transactions.',
+      'Form 26AS Tax Credit Statement verified for all TDS deductions on salary, FD interest, and mutual fund redemptions.',
+      'Bank Account validated and pre-verified on incometax.gov.in for direct electronic refund remittance.',
+      'Schedule FA (Foreign Assets & Accounts) verified and confirmed nil / reported as required under Black Money Act.',
+    ];
+
+    checklist.forEach((item) => {
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(margin, y, contentWidth, 7, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(34, 197, 94);
+      doc.text('[COMPLIANT]', margin + 3, y + 4.8);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(51, 65, 85);
+      doc.text(item, margin + 26, y + 4.8);
+      y += 8.5;
+    });
+
+    y += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('3. Verification & Authentication', margin, y);
+    y += 4;
+
+    const signBoxW = (contentWidth - 6) / 2;
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(margin, y, signBoxW, 30, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('TAXPAYER DECLARATION', margin + 4, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text('I declare that the information furnished in this summary', margin + 4, y + 9);
+    doc.text('is true, correct, and complete in accordance with the IT Act.', margin + 4, y + 12.5);
+    doc.text(`Taxpayer: ${taxpayerName}`, margin + 4, y + 20);
+    doc.text(`Date: ${dateStr}  |  Place: India`, margin + 4, y + 25);
+
+    const caBoxX = margin + signBoxW + 6;
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(caBoxX, y, signBoxW, 30, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('CHARTERED ACCOUNTANT / TAX PREPARER', caBoxX + 4, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text('Verified with available investment receipts, Form 16,', caBoxX + 4, y + 9);
+    doc.text('and broker capital gains statements for ITR-2 filing.', caBoxX + 4, y + 12.5);
+    doc.text('Prepared by: FinAgent Tax Engine', caBoxX + 4, y + 20);
+    doc.text('Membership No. / FRN: _____________', caBoxX + 4, y + 25);
+
+    // Footers
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`FinAgent Tax Engine · ${cleanFY} (AY ${ayStr}) · Governed by Finance Act 2024`, margin, pageHeight - 5.5);
+      doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 5.5, { align: 'right' });
+    }
 
     return doc;
   };
