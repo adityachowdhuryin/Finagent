@@ -91,15 +91,78 @@ module.exports.portalInvite = async (req, res) => {
 
 // POST /api/email/itr — send ITR summary to CA
 module.exports.itr = async (req, res) => {
-  const { to, clientName, year, pdfBase64, oldTax, newTax, recommended, savings, gross, ltcg, stcg } = req.body;
+  const {
+    to,
+    clientName = 'Investor',
+    year = '2025-26',
+    pdfBase64,
+    oldTax,
+    oldRegimeTax,
+    newTax,
+    newRegimeTax,
+    recommended,
+    recommendedRegime,
+    savings,
+    taxSaving,
+    gross,
+    grossIncome,
+    ltcg,
+    totalLTCG,
+    taxableLTCG,
+    stcg,
+    totalSTCG,
+  } = req.body;
+
+  const cleanYear = String(year || '2025-26').replace(/^FY\s+/i, '');
+  const grossVal = gross ?? grossIncome ?? 0;
+  const oldTaxVal = oldTax ?? oldRegimeTax ?? 0;
+  const newTaxVal = newTax ?? newRegimeTax ?? 0;
+  const recommendedVal = recommended ?? recommendedRegime ?? 'new';
+  const savingsVal = savings ?? taxSaving ?? Math.abs(oldTaxVal - newTaxVal);
+  const ltcgVal = ltcg ?? taxableLTCG ?? totalLTCG ?? 0;
+  const stcgVal = stcg ?? totalSTCG ?? 0;
+
   try {
-    const result = await sendEmail({
-      to,
-      subject: `ITR Summary FY ${year} — ${clientName} (via FinAgent)`,
-      html: itrTemplate(clientName, year, { oldTax, newTax, recommended, savings, gross, ltcg, stcg }),
+    const emailPayload = {
+      from: FROM,
+      to: Array.isArray(to) ? to : [to],
+      subject: `ITR Summary FY ${cleanYear} — ${clientName} (via FinAgent)`,
+      html: itrTemplate(clientName, cleanYear, {
+        oldTax: oldTaxVal,
+        newTax: newTaxVal,
+        recommended: recommendedVal,
+        savings: savingsVal,
+        gross: grossVal,
+        ltcg: ltcgVal,
+        stcg: stcgVal,
+      }),
+    };
+
+    if (pdfBase64 && process.env.RESEND_API_KEY) {
+      emailPayload.attachments = [
+        {
+          filename: `ITR2_Tax_Summary_FY${cleanYear.replace(/\s+/g, '_')}.pdf`,
+          content: pdfBase64,
+        },
+      ];
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`[Email] Would send ITR to ${to}`);
+      return res.json({ success: true, simulated: true });
+    }
+
+    const r = await fetch(`${API_BASE}/emails`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(emailPayload),
     });
-    res.json(result);
-  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.message || 'Resend error');
+    res.json({ success: true, id: data.id });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 // ── Email Templates ─────────────────────────────────────────────────────────
@@ -171,9 +234,10 @@ function portalInviteTemplate(clientName, advisorName, magicLink) {
 
 function itrTemplate(clientName, year, details = {}) {
   const { oldTax, newTax, recommended, savings, gross, ltcg, stcg } = details;
-  return base(`<h2>ITR-2 Tax Assessment FY ${year}</h2>
+  const cleanYear = String(year || '2025-26').replace(/^FY\s+/i, '');
+  return base(`<h2>ITR-2 Tax Assessment FY ${cleanYear}</h2>
     <p>Dear <span class="highlight">${clientName}</span> / Tax Advisor,</p>
-    <p>Here is the official income tax assessment computed via FinAgent Tax Engine for FY ${year}:</p>
+    <p>Here is the official income tax assessment computed via FinAgent Tax Engine for FY ${cleanYear}:</p>
     <div style="background: rgba(99,102,241,0.1); border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid rgba(99,102,241,0.3);">
       <div style="margin-bottom: 8px;">
         <span style="color: #94a3b8;">Gross Total Income:</span>

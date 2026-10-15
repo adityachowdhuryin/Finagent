@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
+import { jsPDF } from 'jspdf';
 import {
   calcNewRegimeTax,
   calcOldRegimeTax,
@@ -257,24 +258,343 @@ export default function ITRAssistant() {
     }, 200);
   }, [holdings.mutualFunds]);
 
+  // ── PDF Document Builder ───────────────────────────────────────────────
+  const buildTaxPDFDoc = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    let y = 14;
+
+    // Header Background Banner
+    doc.setFillColor(30, 27, 75); // Dark Indigo
+    doc.rect(0, 0, pageWidth, 28, 'F');
+
+    // Header Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('FINAGENT TAX INTELLIGENCE', margin, 12);
+
+    // Subtitle & Metadata
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(199, 210, 254);
+    doc.text(`Official Income Tax Assessment & Capital Gains Summary · ${fy}`, margin, 18);
+    const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    doc.text(`Generated: ${dateStr}`, pageWidth - margin - 35, 18);
+
+    y = 35;
+
+    // Taxpayer Information Card
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(margin, y, pageWidth - (margin * 2), 22, 2, 2, 'FD');
+
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('TAXPAYER NAME', margin + 6, y + 7);
+    doc.text('PAN', margin + 62, y + 7);
+    doc.text('ASSESSMENT YEAR', margin + 112, y + 7);
+    doc.text('EMPLOYMENT TYPE', margin + 150, y + 7);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(user?.name || userInfo.name || 'Aditya Chowdhury', margin + 6, y + 15);
+    doc.text(userInfo.pan || 'ABCDE1234F', margin + 62, y + 15);
+    doc.text(userInfo.ay || '2026-27', margin + 112, y + 15);
+    doc.text(isSalaried ? 'Salaried (₹75k Std Ded)' : 'Non-Salaried / Business', margin + 150, y + 15);
+
+    y += 28;
+
+    // 1. Regime Comparison
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('1. Income Tax Regime Comparison (Old vs New u/s 115BAC)', margin, y);
+    y += 5;
+
+    const colW = (pageWidth - (margin * 2)) / 3;
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, pageWidth - (margin * 2), 7, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text('METRIC', margin + 4, y + 4.8);
+    doc.text('OLD REGIME', margin + colW + 4, y + 4.8);
+    doc.text('NEW REGIME (115BAC)', margin + (colW * 2) + 4, y + 4.8);
+    y += 7;
+
+    const regimeRows = [
+      ['Gross Total Income', fmt(totalIncomeWithFD), fmt(totalIncomeWithFD)],
+      ['Standard Deduction', fmt(stdOld), fmt(stdNew)],
+      ['Chapter VI-A / Other Deductions', fmt(nonStdDeductionsTotal), 'Nil (Ineligible)'],
+      ['Total Taxable Income', fmt(oldRegimeTaxable), fmt(newRegimeTaxable)],
+      ['Basic Tax Payable', fmt(Math.round(oldRegimeTax / 1.04)), fmt(Math.round(newRegimeTax / 1.04))],
+      ['Health & Education Cess (4%)', fmt(Math.round(oldRegimeTax / 1.04 * 0.04)), fmt(Math.round(newRegimeTax / 1.04 * 0.04))],
+      ['Total Tax Liability', fmt(oldRegimeTax), fmt(newRegimeTax)],
+    ];
+
+    regimeRows.forEach(([metric, oldVal, newVal], idx) => {
+      const isLast = idx === regimeRows.length - 1;
+      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
+      doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
+      doc.setFont('helvetica', isLast ? 'bold' : 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(isLast ? 15 : 51, 65, 85);
+      doc.text(metric, margin + 4, y + 4.5);
+      doc.text(oldVal, margin + colW + 4, y + 4.5);
+      doc.text(newVal, margin + (colW * 2) + 4, y + 4.5);
+      y += 6.5;
+    });
+
+    // Recommendation Banner
+    y += 3;
+    doc.setFillColor(236, 253, 245);
+    doc.setDrawColor(16, 185, 129);
+    doc.roundedRect(margin, y, pageWidth - (margin * 2), 10, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(4, 120, 87);
+    doc.text(
+      `STATUTORY RECOMMENDATION: ${recommendedRegime === 'old' ? 'Old Regime' : 'New Regime'} saves ₹${taxSaving.toLocaleString('en-IN')} annually. (Breakeven Threshold: ₹${breakeven.extraDeductionsExclStd.toLocaleString('en-IN')})`,
+      margin + 4,
+      y + 6.5
+    );
+
+    y += 16;
+
+    // 2. Capital Gains Schedule
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('2. Capital Gains Summary & Positions', margin, y);
+    y += 5;
+
+    // Table Header
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
+    doc.setFontSize(7.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text('ASSET', margin + 3, y + 4.5);
+    doc.text('PURCHASE', margin + 55, y + 4.5);
+    doc.text('SALE', margin + 78, y + 4.5);
+    doc.text('COST', margin + 98, y + 4.5);
+    doc.text('PROCEEDS', margin + 118, y + 4.5);
+    doc.text('GAIN/LOSS', margin + 140, y + 4.5);
+    doc.text('TYPE (TAX)', margin + 162, y + 4.5);
+    y += 6.5;
+
+    capitalGains.forEach((cg, idx) => {
+      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
+      doc.rect(margin, y, pageWidth - (margin * 2), 6, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(51, 65, 85);
+      doc.text(String(cg.asset || '').substring(0, 28), margin + 3, y + 4.2);
+      doc.text(String(cg.purchaseDate || '—'), margin + 55, y + 4.2);
+      doc.text(String(cg.saleDate || '—'), margin + 78, y + 4.2);
+      doc.text(fmt(cg.purchasePrice), margin + 98, y + 4.2);
+      doc.text(fmt(cg.salePrice), margin + 118, y + 4.2);
+
+      const isPositive = (cg.gainLoss || 0) >= 0;
+      doc.setTextColor(isPositive ? 4 : 220, isPositive ? 120 : 38, isPositive ? 87 : 38);
+      doc.text((isPositive ? '+' : '') + fmt(cg.gainLoss), margin + 140, y + 4.2);
+
+      doc.setTextColor(51, 65, 85);
+      doc.text(`${cg.type} (${cg.taxRate})`, margin + 162, y + 4.2);
+      y += 6;
+    });
+
+    // CG Summary Line
+    y += 2;
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, pageWidth - (margin * 2), 6.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(
+      `TOTAL LTCG: ${fmt(totalLTCG)} (Exemption u/s 112A: ₹1.25L · Taxable: ${fmt(taxableLTCG)} @ 12.5%) · TOTAL STCG: ${fmt(totalSTCG)} @ 20%`,
+      margin + 4,
+      y + 4.5
+    );
+
+    y += 14;
+
+    // 3. Deductions Breakdown
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('3. Chapter VI-A Deductions Claimed (Old Regime)', margin, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    finalDeductionsList.forEach((d) => {
+      doc.text(`• Section ${d.section} (${d.label}): ${fmt(d.used)}${d.limit ? ` / Cap: ${fmt(d.limit)}` : ''}`, margin + 4, y);
+      y += 4.8;
+    });
+
+    y += 6;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      'Disclaimer: This summary is generated under the provisions of the Indian Income Tax Act, 1961 (as amended by Finance Act 2024). Please verify all details with your Chartered Accountant before filing on incometax.gov.in.',
+      margin,
+      y,
+      { maxWidth: pageWidth - (margin * 2) }
+    );
+
+    return doc;
+  };
+
+  // ── Download PDF Summary ────────────────────────────────────────────────
+  const handleDownloadPDF = () => {
+    try {
+      const doc = buildTaxPDFDoc();
+      const panClean = (userInfo.pan || 'PAN').replace(/\s+/g, '');
+      const fyClean = fy.replace(/\s+/g, '_');
+      doc.save(`ITR2_Summary_${panClean}_${fyClean}.pdf`);
+      showToast('📄 PDF Summary downloaded successfully!');
+    } catch (err) {
+      console.error('PDF error:', err);
+      showToast('Failed to generate PDF');
+    }
+  };
+
+  // ── Download Capital Gains Excel (CSV) ──────────────────────────────────
+  const handleDownloadExcel = () => {
+    try {
+      const rows = [
+        ['FINAGENT CAPITAL GAINS & ITR-2 STATEMENT', fy],
+        ['Taxpayer Name', user?.name || userInfo.name || 'Aditya Chowdhury'],
+        ['PAN', userInfo.pan || 'ABCDE1234F'],
+        ['Assessment Year', userInfo.ay || '2026-27'],
+        ['Generated Date', new Date().toLocaleDateString('en-IN')],
+        ['Employment Type', isSalaried ? 'Salaried' : 'Non-Salaried / Business'],
+        [],
+        ['--- 1. INCOME & REGIME TAX COMPARISON ---'],
+        ['Metric', 'Old Regime (INR)', 'New Regime (INR)'],
+        ['Gross Total Income', totalIncomeWithFD, totalIncomeWithFD],
+        ['Standard Deduction', stdOld, stdNew],
+        ['Total Deductions (Chapter VI-A)', nonStdDeductionsTotal, 0],
+        ['Taxable Income', oldRegimeTaxable, newRegimeTaxable],
+        ['Basic Income Tax', Math.round(oldRegimeTax / 1.04), Math.round(newRegimeTax / 1.04)],
+        ['Health & Education Cess (4%)', Math.round((oldRegimeTax / 1.04) * 0.04), Math.round((newRegimeTax / 1.04) * 0.04)],
+        ['Total Tax Payable', oldRegimeTax, newRegimeTax],
+        ['Recommended Regime', recommendedRegime === 'old' ? 'Old Regime' : 'New Regime (115BAC)'],
+        ['Annual Tax Savings', taxSaving],
+        ['Breakeven Chapter VI-A Threshold', breakeven.extraDeductionsExclStd],
+        [],
+        ['--- 2. CAPITAL GAINS SUMMARY ---'],
+        ['Total LTCG (Gross)', totalLTCG],
+        ['Section 112A Exemption (Annual)', LTCG_EXEMPTION],
+        ['Taxable LTCG (above exemption)', taxableLTCG],
+        ['Total STCG (Flat 20%)', totalSTCG],
+        [],
+        ['--- 3. CAPITAL GAINS DETAILED TRANSACTIONS SCHEDULE ---'],
+        ['Asset Name', 'Purchase Date', 'Sale Date', 'Purchase Cost (INR)', 'Sale Value (INR)', 'Gain/Loss (INR)', 'Type', 'Tax Rate'],
+      ];
+
+      capitalGains.forEach(cg => {
+        rows.push([
+          cg.asset || '',
+          cg.purchaseDate || '',
+          cg.saleDate || '',
+          cg.purchasePrice || 0,
+          cg.salePrice || 0,
+          cg.gainLoss || 0,
+          cg.type || 'LTCG',
+          cg.taxRate || '',
+        ]);
+      });
+
+      // If lots exist from FIFO recomputation, append them too
+      if (lots && lots.length > 0) {
+        rows.push([]);
+        rows.push(['--- 4. REALISED FIFO LOTS AUDIT TRAIL ---']);
+        rows.push(['Asset Name', 'Buy Date', 'Sell Date', 'Units', 'Cost Per Unit', 'Sale NAV', 'Holding Days', 'Gain Type', 'Total Gain (INR)']);
+        lots.forEach(l => {
+          rows.push([
+            l.assetName || '',
+            l.purchaseDate || '',
+            l.saleDate || '',
+            l.units || 0,
+            l.costPerUnit || 0,
+            l.saleNav || 0,
+            l.holdingDays || 0,
+            l.gainType || '',
+            l.totalGain || 0,
+          ]);
+        });
+      }
+
+      rows.push([]);
+      rows.push(['--- 5. CHAPTER VI-A DEDUCTIONS BREAKDOWN ---']);
+      rows.push(['Section', 'Description', 'Claimed Amount (INR)', 'Statutory Limit (INR)']);
+      finalDeductionsList.forEach(d => {
+        rows.push([
+          d.section,
+          d.label,
+          d.used,
+          d.limit || 'No Cap',
+        ]);
+      });
+
+      // Format as CSV with UTF-8 BOM so Excel opens it with proper formatting
+      const csvContent = '\uFEFF' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Capital_Gains_Statement_${(userInfo.pan || 'PAN').replace(/\s+/g, '')}_${fy.replace(/\s+/g, '_')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📊 Capital Gains Excel downloaded successfully!');
+    } catch (err) {
+      console.error('Excel export error:', err);
+      showToast('Failed to generate Excel');
+    }
+  };
+
   // ── Email handler ──────────────────────────────────────────────────────
   async function handleEmailSend() {
     try {
+      let pdfBase64 = null;
+      try {
+        const doc = buildTaxPDFDoc();
+        const dataUri = doc.output('datauristring');
+        pdfBase64 = dataUri.split(',')[1];
+      } catch (e) {
+        console.warn('PDF attachment generation error:', e);
+      }
+
+      const cleanYear = (fy || '2025-26').replace(/^FY\s+/i, '');
+
       await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/email/itr`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: emailValue || user?.email,
-          clientName: user?.name || 'Investor',
-          year: fy,
+          clientName: user?.name || userInfo.name || 'Investor',
+          year: cleanYear,
+          gross: totalIncomeWithFD,
           grossIncome: totalIncomeWithFD,
+          oldTax: oldRegimeTax,
           oldRegimeTax,
+          newTax: newRegimeTax,
           newRegimeTax,
+          recommended: recommendedRegime,
           recommendedRegime,
+          savings: taxSaving,
           taxSaving,
+          ltcg: taxableLTCG > 0 ? taxableLTCG : totalLTCG,
           totalLTCG,
-          totalSTCG,
           taxableLTCG,
+          stcg: totalSTCG,
+          totalSTCG,
+          pdfBase64,
         }),
       });
       showToast('📧 ITR Summary sent to ' + (emailValue || user?.email));
@@ -747,10 +1067,10 @@ export default function ITRAssistant() {
             <div style={styles.sectionTitle}>📁 Export & Share</div>
             <div style={styles.card}>
               <div style={styles.actionRow}>
-                <button className="btn btn-primary" onClick={() => showToast('📄 PDF Summary downloaded successfully!')}>
+                <button className="btn btn-primary" onClick={handleDownloadPDF}>
                   📄 Download PDF Summary
                 </button>
-                <button className="btn btn-ghost" onClick={() => showToast('📊 Capital Gains Excel downloaded!')}>
+                <button className="btn btn-ghost" onClick={handleDownloadExcel}>
                   📊 Download Capital Gains Excel
                 </button>
                 <button className="btn btn-ghost" onClick={() => setEmailModal(true)}>
