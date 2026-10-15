@@ -6,6 +6,33 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 /**
+ * Universal ASCII sanitizer to prevent jsPDF Unicode/UTF-16 glyph corruption
+ * Replaces Indian Rupee (₹), em/en dashes, curved quotes, arrows, and non-ASCII characters
+ */
+export function cleanAscii(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    // Replace Indian Rupee symbol with Rs.
+    .replace(/₹\s*/g, 'Rs. ')
+    // Replace curved apostrophes & quotes
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    // Replace em/en dashes
+    .replace(/[\u2013\u2014]/g, ' - ')
+    // Replace arrows
+    .replace(/[\u2192\u21D2]/g, ' -> ')
+    // Replace ellipsis
+    .replace(/\u2026/g, '...')
+    // Replace bullets
+    .replace(/[\u2022\u00B7]/g, '*')
+    // Strip all remaining non-ASCII characters
+    .replace(/[^\x20-\x7E\n\r\t]/g, '')
+    // Collapse redundant horizontal whitespace
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+/**
  * Generates an institutional SEBI RIA Fiduciary Recommendation Letterhead PDF
  * @param {Object} reco - The recommendation object
  * @param {Object} advisor - Advisor details
@@ -19,22 +46,27 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
   const margin = 14;
   const contentWidth = pageWidth - (margin * 2);
 
-  const advisorName = advisor.name || 'Meera Kapoor';
-  const sebiRegNo = advisor.sebiRegNo || 'INA000014523';
-  const baslId = advisor.baslId || 'BASL-1842';
-  const firmName = advisor.firmName || 'WEALTHWISE ADVISORY SERVICES';
+  const advisorName = cleanAscii(advisor.name || 'Meera Kapoor');
+  const sebiRegNo = cleanAscii(advisor.sebiRegNo || 'INA000014523');
+  const baslId = cleanAscii(advisor.baslId || 'BASL-1842');
+  const firmName = cleanAscii(advisor.firmName || 'WEALTHWISE ADVISORY SERVICES');
 
-  const clientName = client.name || reco.clientName || 'Valued Client';
-  const clientRisk = client.riskProfile || 'Moderate';
-  const recoId = reco.id || `RECO-${Date.now()}`;
+  const clientName = cleanAscii(client.name || reco.clientName || 'Valued Client');
+  const clientRisk = cleanAscii(client.riskProfile || 'Moderate');
+  const recoId = cleanAscii(reco.id || `RECO-${Date.now()}`);
   const dateStr = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   });
 
+  const recoTitle = cleanAscii(reco.title || 'Investment Recommendation');
+  const recoSummary = cleanAscii(reco.summary || 'Customized fiduciary asset allocation recommendation.');
+  const recoAction = cleanAscii(reco.recommendation || reco.action || '');
+  const recoAdvisorNote = cleanAscii(reco.advisorNote || reco.advisorEdit || '');
+
   // Calculate synthetic deterministic SHA-256 payload string
-  const hashSeed = `${recoId}|${clientName}|${reco.title}|${sebiRegNo}|${dateStr}`;
+  const hashSeed = `${recoId}|${clientName}|${recoTitle}|${sebiRegNo}|${dateStr}`;
   let shaHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
   try {
     let hashNum = 0;
@@ -57,106 +89,159 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
   doc.rect(0, 26, pageWidth, 1.2, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
-  doc.text(firmName, margin, 11);
+  doc.text(firmName, margin, 10.5);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(199, 210, 254);
-  doc.text(`SEBI Registered Investment Adviser · Reg. No. ${sebiRegNo} | BASL Membership: ${baslId}`, margin, 17.5);
+  doc.text(`SEBI Registered Investment Adviser | Reg. No. ${sebiRegNo} | BASL Membership: ${baslId}`, margin, 16.5);
 
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
-  doc.text('Registered Office: BKC Finance Centre, Bandra-Kurla Complex, Mumbai 400051 · compliance@wealthwise.in', margin, 23);
+  doc.text('Registered Office: BKC Finance Centre, Bandra-Kurla Complex, Mumbai 400051 | compliance@wealthwise.in', margin, 21.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(251, 191, 36);
-  doc.text('OFFICIAL FIDUCIARY ADVICE', pageWidth - margin, 11, { align: 'right' });
+  doc.text('OFFICIAL FIDUCIARY ADVICE', pageWidth - margin, 10.5, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(224, 231, 255);
-  doc.text(`Date: ${dateStr}`, pageWidth - margin, 17.5, { align: 'right' });
-  doc.text(`Dispatch ID: ${recoId}`, pageWidth - margin, 23, { align: 'right' });
+  doc.text(`Date: ${dateStr}`, pageWidth - margin, 16.5, { align: 'right' });
+  doc.text(`Dispatch ID: ${recoId}`, pageWidth - margin, 21.5, { align: 'right' });
 
-  let y = 33;
+  let y = 31;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 2. CLIENT SUITABILITY PROFILE CARD (Regulation 17 Mandatory Disclosure)
   // ═══════════════════════════════════════════════════════════════════════════
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'FD');
+  doc.roundedRect(margin, y, contentWidth, 19, 1.5, 1.5, 'FD');
 
   const c1 = margin + 5;
   const c2 = margin + 65;
   const c3 = margin + 125;
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('CLIENT NAME', c1, y + 5);
-  doc.text('DOCUMENTED RISK PROFILE', c2, y + 5);
-  doc.text('STATUTORY REGIME', c3, y + 5);
+  doc.text('CLIENT NAME', c1, y + 4.5);
+  doc.text('DOCUMENTED RISK PROFILE', c2, y + 4.5);
+  doc.text('STATUTORY REGIME', c3, y + 4.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(clientName, c1, y + 10);
-  doc.text(`${clientRisk.toUpperCase()} (SEBI Profiled)`, c2, y + 10);
-  doc.text('SEBI (IA) Regulations, 2013', c3, y + 10);
+  doc.text(clientName, c1, y + 9);
+  doc.text(`${clientRisk.toUpperCase()} (SEBI Profiled)`, c2, y + 9);
+  doc.text('SEBI (IA) Regulations, 2013', c3, y + 9);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('COMMISSION STATUS', c1, y + 15.5);
-  doc.text('ADVISORY FEE MODEL', c2, y + 15.5);
-  doc.text('ASSESSMENT TYPE', c3, y + 15.5);
+  doc.text('COMMISSION STATUS', c1, y + 14);
+  doc.text('ADVISORY FEE MODEL', c2, y + 14);
+  doc.text('ASSESSMENT TYPE', c3, y + 14);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text('0% Trail (Direct Plan Only)', c1, y + 17.5);
+  doc.text('Fee-Only / Non-Distribution', c2, y + 17.5);
+  doc.text('Pre-Execution Fiduciary Audit', c3, y + 17.5);
+
+  y += 23;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. FIDUCIARY RECOMMENDATION DETAILS (DYNAMIC BOUNDING BOX)
+  // ═══════════════════════════════════════════════════════════════════════════
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  const titleLines = doc.splitTextToSize(recoTitle, contentWidth - 10);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text('0% Trail (Direct Plan Only)', c1, y + 19);
-  doc.text('Fee-Only / Non-Distribution', c2, y + 19);
-  doc.text('Pre-Execution Fiduciary Audit', c3, y + 19);
+  const summaryLines = doc.splitTextToSize(recoSummary, contentWidth - 10);
 
-  y += 25;
+  const actionLines = recoAction ? doc.splitTextToSize(`Action Plan: ${recoAction}`, contentWidth - 14) : [];
+  const noteLines = recoAdvisorNote ? doc.splitTextToSize(`Advisor Review Note: ${recoAdvisorNote}`, contentWidth - 14) : [];
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 3. FIDUCIARY RECOMMENDATION DETAILS
-  // ═══════════════════════════════════════════════════════════════════════════
-  doc.setFillColor(238, 242, 255); // Indigo light
+  // Calculate dynamic card height to guarantee ZERO overflow
+  let recoCardHeight = 11 + (titleLines.length * 4.2) + (summaryLines.length * 3.6);
+  if (actionLines.length > 0) {
+    recoCardHeight += (actionLines.length * 3.5) + 6;
+  }
+  if (noteLines.length > 0) {
+    recoCardHeight += (noteLines.length * 3.5) + 6;
+  }
+  recoCardHeight = Math.max(recoCardHeight, 30);
+
+  doc.setFillColor(238, 242, 255); // Indigo light (#EEF2FF)
   doc.setDrawColor(99, 102, 241);
-  doc.roundedRect(margin, y, contentWidth, 32, 2, 2, 'FD');
+  doc.roundedRect(margin, y, contentWidth, recoCardHeight, 2, 2, 'FD');
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(79, 70, 229);
-  doc.text(`RECOMMENDATION TYPE: ${(reco.type || 'PORTFOLIO_REBALANCE').replace(/_/g, ' ').toUpperCase()}`, margin + 5, y + 6);
+  let textY = y + 5.5;
 
+  // Header line
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
+  doc.setTextColor(79, 70, 229);
+  doc.text(`RECOMMENDATION TYPE: ${cleanAscii(reco.type || 'PORTFOLIO_REBALANCE').replace(/_/g, ' ').toUpperCase()}`, margin + 5, textY);
+
+  doc.setFontSize(7);
   doc.setTextColor(16, 185, 129);
-  doc.text(`Confidence Score: ${reco.confidence || 92}% · Priority: ${(reco.urgency || 'HIGH').toUpperCase()}`, pageWidth - margin - 5, y + 6, { align: 'right' });
+  doc.text(`Confidence Score: ${reco.confidence || 92}% | Priority: ${cleanAscii(reco.urgency || 'HIGH').toUpperCase()}`, pageWidth - margin - 5, textY, { align: 'right' });
 
+  textY += 5;
+
+  // Title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  const titleLines = doc.splitTextToSize(reco.title || 'Investment Recommendation', contentWidth - 10);
-  doc.text(titleLines, margin + 5, y + 12);
+  doc.text(titleLines, margin + 5, textY);
+  textY += (titleLines.length * 4.2) + 1;
 
-  const titleHeight = (titleLines.length * 5);
-
+  // Summary
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(51, 65, 85);
-  const summaryText = reco.advisorEdit || reco.summary || 'Customized fiduciary asset allocation recommendation.';
-  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 10);
-  doc.text(summaryLines.slice(0, 3), margin + 5, y + 14 + titleHeight);
+  doc.text(summaryLines, margin + 5, textY);
+  textY += (summaryLines.length * 3.6);
 
-  y += 37;
+  // Specific Action Plan (if present)
+  if (actionLines.length > 0) {
+    textY += 2;
+    doc.setFillColor(240, 253, 244); // Green tint
+    doc.setDrawColor(34, 197, 94);
+    const boxH = (actionLines.length * 3.5) + 3.5;
+    doc.roundedRect(margin + 4, textY, contentWidth - 8, boxH, 1, 1, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(21, 128, 61);
+    doc.text(actionLines, margin + 7, textY + 4);
+    textY += boxH + 1;
+  }
+
+  // Advisor Review Note (if present)
+  if (noteLines.length > 0) {
+    textY += 2;
+    doc.setFillColor(254, 243, 199); // Amber tint
+    doc.setDrawColor(245, 158, 11);
+    const boxH = (noteLines.length * 3.5) + 3.5;
+    doc.roundedRect(margin + 4, textY, contentWidth - 8, boxH, 1, 1, 'FD');
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(146, 64, 14);
+    doc.text(noteLines, margin + 7, textY + 4);
+  }
+
+  y += recoCardHeight + 4;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 4. QUANTITATIVE IMPACT & PORTFOLIO METRICS TABLE
@@ -168,8 +253,8 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
   });
 
   const impactBody = impactEntries.map(([metric, value]) => [
-    metric.replace(/_/g, ' ').toUpperCase(),
-    String(value),
+    cleanAscii(metric).toUpperCase(),
+    cleanAscii(value),
     'Verified pursuant to SEBI Suitability Standards'
   ]);
 
@@ -182,14 +267,14 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
     headStyles: {
       fillColor: [49, 46, 129],
       textColor: [255, 255, 255],
-      fontSize: 7.5,
+      fontSize: 7,
       fontStyle: 'bold',
       halign: 'left',
-      cellPadding: 2.5
+      cellPadding: 2
     },
     styles: {
-      fontSize: 8,
-      cellPadding: 2.5,
+      fontSize: 7.5,
+      cellPadding: 2,
       textColor: [15, 23, 42]
     },
     alternateRowStyles: {
@@ -202,15 +287,15 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
     }
   });
 
-  y = doc.lastAutoTable.finalY + 6;
+  y = doc.lastAutoTable.finalY + 4;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 5. SEBI REGULATION 17 SUITABILITY ASSESSMENT AUDIT
+  // 5. SEBI REGULATION 17 SUITABILITY ASSESSMENT AUDIT TABLE
   // ═══════════════════════════════════════════════════════════════════════════
   const suitabilityRows = [
     [
       'Reg. 17(1) Risk Profiling Alignment',
-      `Matches client's documented ${clientRisk} risk category without excess volatility risk.`,
+      `Matches client's documented ${clientRisk} risk category without excess market risk.`,
       'COMPLIANT'
     ],
     [
@@ -223,12 +308,24 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
       'Minimum 6 months living expenses preserved in liquid assets prior to market deployment.',
       'VERIFIED'
     ],
-    [
-      'Conflict of Interest & Affiliation Audit',
-      'Adviser holds zero proprietary interest, commission arrangement, or rebate agreements.',
-      'ZERO CONFLICT'
-    ],
   ];
+
+  // Include tailored AI rationales if available
+  if (Array.isArray(reco.aiRationale) && reco.aiRationale.length > 0) {
+    reco.aiRationale.slice(0, 2).forEach((rationale, idx) => {
+      suitabilityRows.push([
+        `Advisory Suitability Factor #${idx + 1}`,
+        cleanAscii(rationale),
+        'AUDITED'
+      ]);
+    });
+  }
+
+  suitabilityRows.push([
+    'Conflict of Interest & Affiliation Audit',
+    'Adviser holds zero proprietary position, commission arrangement, or rebate agreements.',
+    'ZERO CONFLICT'
+  ]);
 
   autoTable(doc, {
     startY: y,
@@ -239,14 +336,14 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
     headStyles: {
       fillColor: [30, 41, 59],
       textColor: [255, 255, 255],
-      fontSize: 7.5,
+      fontSize: 7,
       fontStyle: 'bold',
       halign: 'left',
-      cellPadding: 2.2
+      cellPadding: 1.8
     },
     styles: {
-      fontSize: 7.5,
-      cellPadding: 2.2,
+      fontSize: 7,
+      cellPadding: 1.8,
       textColor: [15, 23, 42]
     },
     alternateRowStyles: {
@@ -259,98 +356,78 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
     }
   });
 
-  y = doc.lastAutoTable.finalY + 6;
-
-  // Advisor Review Commentary (if present)
-  if (reco.advisorNote) {
-    doc.setFillColor(254, 243, 199); // Amber light
-    doc.setDrawColor(245, 158, 11);
-    doc.roundedRect(margin, y, contentWidth, 14, 1.5, 1.5, 'FD');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setTextColor(146, 64, 14);
-    doc.text('ADVISOR FIDUCIARY COMMENTARY:', margin + 4, y + 4.5);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(120, 53, 15);
-    const noteLines = doc.splitTextToSize(reco.advisorNote, contentWidth - 8);
-    doc.text(noteLines.slice(0, 2), margin + 4, y + 9.5);
-
-    y += 18;
-  }
+  y = doc.lastAutoTable.finalY + 4;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 6. STATUTORY DISCLOSURES & GRIEVANCE REDRESSAL MECHANISM
+  // 6. STATUTORY DISCLOSURES & GRIEVANCE REDRESSAL (SCORES)
   // ═══════════════════════════════════════════════════════════════════════════
   doc.setFillColor(241, 245, 249);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(margin, y, contentWidth, 24, 1.5, 1.5, 'FD');
+  doc.roundedRect(margin, y, contentWidth, 20, 1.5, 1.5, 'FD');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   doc.setTextColor(71, 85, 105);
-  doc.text('MANDATORY REGULATORY DISCLOSURES & SEBI GRIEVANCE MECHANISM (SCORES)', margin + 4, y + 4.5);
+  doc.text('MANDATORY REGULATORY DISCLOSURES & SEBI GRIEVANCE MECHANISM (SCORES)', margin + 4, y + 4);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6);
   doc.setTextColor(100, 116, 139);
   doc.text(
     '1. Investment in securities market is subject to market risks. Read all scheme related documents carefully before investing.',
     margin + 4,
-    y + 8.5
+    y + 7.5
   );
   doc.text(
-    '2. WealthWise Advisory Services is a SEBI-registered Investment Adviser (INA000014523). Recommendations are non-binding & fiduciary.',
+    `2. WealthWise Advisory Services is a SEBI-registered Investment Adviser (${sebiRegNo}). Recommendations are non-binding & fiduciary.`,
     margin + 4,
-    y + 12
+    y + 11
   );
   doc.text(
     '3. Direct Scheme Declaration: All mutual fund transactions must be routed through official AMC / BSE StAR MF / NSE NMF direct portals.',
     margin + 4,
-    y + 15.5
+    y + 14.5
   );
   doc.text(
     '4. Grievance Escalation: Lodge unresolved grievances on the SEBI SCORES portal (scores.sebi.gov.in) or Smart ODR (smartodr.in).',
     margin + 4,
-    y + 19
+    y + 18
   );
 
-  y += 28;
+  y += 24;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 7. DIGITAL SIGNATURE & VERIFICATION STAMP
   // ═══════════════════════════════════════════════════════════════════════════
   doc.setDrawColor(203, 213, 225);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 5;
+  y += 4;
 
   // Left Sign-Off
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(15, 23, 42);
-  doc.text(advisorName, margin, y);
+  doc.text(advisorName, margin, y + 1);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
-  doc.text(`Principal Officer & Registered Investment Adviser`, margin, y + 4);
-  doc.text(`SEBI Reg. No. ${sebiRegNo} · BASL ID: ${baslId}`, margin, y + 8);
+  doc.text('Principal Officer & Registered Investment Adviser', margin, y + 5);
+  doc.text(`SEBI Reg. No. ${sebiRegNo} | BASL ID: ${baslId}`, margin, y + 9);
 
   // Digital verification stamp (Right)
   const stampX = pageWidth - margin - 58;
   doc.setFillColor(238, 242, 255);
   doc.setDrawColor(99, 102, 241);
-  doc.roundedRect(stampX, y - 2, 58, 14, 1.5, 1.5, 'FD');
+  doc.roundedRect(stampX, y - 1, 58, 13, 1.5, 1.5, 'FD');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.5);
   doc.setTextColor(79, 70, 229);
-  doc.text('SEBI RIA DIGITALLY VERIFIED', stampX + 29, y + 2.5, { align: 'center' });
+  doc.text('SEBI RIA DIGITALLY VERIFIED', stampX + 29, y + 3, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6);
+  doc.setFontSize(5.5);
   doc.setTextColor(100, 116, 139);
   doc.text(`SHA-256: ${shaHash.slice(0, 18)}...`, stampX + 29, y + 6.5, { align: 'center' });
   doc.text(`Timestamp: ${new Date().toISOString()}`, stampX + 29, y + 10, { align: 'center' });
@@ -362,7 +439,7 @@ export function buildFiduciaryRecoPDF(reco, advisor = {}, client = {}) {
   doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);
   doc.text(
-    `WealthWise Advisory Services · SEBI Reg: ${sebiRegNo} · Immutable Record Logged to FinAgent Fiduciary Audit Trail`,
+    `WealthWise Advisory Services | SEBI Reg: ${sebiRegNo} | Immutable Record Logged to FinAgent Fiduciary Audit Trail`,
     margin,
     pageHeight - 5
   );

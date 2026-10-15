@@ -4,6 +4,27 @@ import { formatDateTime } from '../../utils/formatters';
 import { Shield, Copy, Download, Search, CheckCircle2, FileText, ExternalLink } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { cleanAscii } from '../../utils/fiduciaryPdfBuilder';
+
+export function formatType(rawType) {
+  if (!rawType) return 'ADVISORY';
+  const t = String(rawType).toLowerCase().replace(/[-_]+/g, ' ').trim();
+  
+  if (t.includes('batch')) return 'Batch Reco';
+  if (t.includes('dispatch')) return 'Advisory Dispatch';
+  if (t.includes('forensic') || t.includes('divorce')) return 'Forensic Audit';
+  if (t.includes('sip') || t.includes('step')) return 'SIP Step-Up';
+  if (t.includes('rebalance')) return 'Portfolio Rebalance';
+  if (t.includes('tax') || t.includes('harvest')) return 'Tax Harvesting';
+  if (t.includes('insurance')) return 'Insurance Gap';
+  if (t.includes('goal')) return 'Goal Review';
+  if (t.includes('onboard')) return 'Client Onboard';
+  if (t.includes('ingest')) return 'Asset Ingest';
+  
+  const words = t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1));
+  const res = words.join(' ');
+  return res.length > 20 ? res.slice(0, 18) + '..' : res;
+}
 
 const actionColors = {
   approved: 'var(--green)',
@@ -117,248 +138,264 @@ export default function AuditLog() {
       doc.setTextColor(255, 255, 255);
       doc.text('WEALTHWISE ADVISORY SERVICES', margin, 11);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(199, 210, 254);
-      doc.text('SEBI Registered Investment Adviser · INA000014523 | BASL Membership: BASL-1842', margin, 17);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(199, 210, 254);
+        doc.text('SEBI Registered Investment Adviser | INA000014523 | BASL Membership: BASL-1842', margin, 17);
 
-      doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text('Statutory Supervisory Audit Trail pursuant to SEBI (IA) Regulations, 2013 (Reg 19)', margin, 22.5);
+        doc.setFontSize(7.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Statutory Supervisory Audit Trail pursuant to SEBI (IA) Regulations, 2013 (Reg 19)', margin, 22.5);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(251, 191, 36);
-      doc.text('REGULATORY COMPLIANCE EXPORT', pageWidth - margin, 11, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(251, 191, 36);
+        doc.text('REGULATORY COMPLIANCE EXPORT', pageWidth - margin, 11, { align: 'right' });
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(224, 231, 255);
-      doc.text(`Generated: ${dateStr} ${timeStr}`, pageWidth - margin, 17, { align: 'right' });
-      doc.text('Jurisdiction: SEBI (WTM/MB/2026)', pageWidth - margin, 22.5, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(224, 231, 255);
+        doc.text(`Generated: ${dateStr} ${timeStr}`, pageWidth - margin, 17, { align: 'right' });
+        doc.text('Jurisdiction: SEBI (WTM/MB/2026)', pageWidth - margin, 22.5, { align: 'right' });
 
-      let y = 33;
+        let y = 33;
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // 2. INSPECTION CONTEXT & REGULATORY SCOPE CARD
-      // ═══════════════════════════════════════════════════════════════════════
-      doc.setFillColor(248, 250, 252);
-      doc.setDrawColor(203, 213, 225);
-      doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'FD');
+        // ═══════════════════════════════════════════════════════════════════════
+        // 2. INSPECTION CONTEXT & REGULATORY SCOPE CARD
+        // ═══════════════════════════════════════════════════════════════════════
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(203, 213, 225);
+        doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'FD');
 
-      const col1 = margin + 5;
-      const col2 = margin + 65;
-      const col3 = margin + 125;
+        const col1 = margin + 5;
+        const col2 = margin + 65;
+        const col3 = margin + 125;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(100, 116, 139);
-      doc.text('REGISTERED ENTITY', col1, y + 5);
-      doc.text('PRINCIPAL OFFICER', col2, y + 5);
-      doc.text('STATUTORY RETENTION PERIOD', col3, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text('REGISTERED ENTITY', col1, y + 5);
+        doc.text('PRINCIPAL OFFICER', col2, y + 5);
+        doc.text('STATUTORY RETENTION PERIOD', col3, y + 5);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
-      doc.text('WealthWise Advisory Services', col1, y + 10);
-      doc.text('Meera Kapoor (SEBI-RIA)', col2, y + 10);
-      doc.text('5 Years (Mandatory Reg 19(2))', col3, y + 10);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text('WealthWise Advisory Services', col1, y + 10);
+        doc.text('Meera Kapoor (SEBI-RIA)', col2, y + 10);
+        doc.text('5 Years (Mandatory Reg 19(2))', col3, y + 10);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(100, 116, 139);
-      doc.text('AI/ML AUDIT STATUS', col1, y + 15.5);
-      doc.text('CRYPTOGRAPHIC HASHING', col2, y + 15.5);
-      doc.text('DIRECT PLAN VERIFICATION', col3, y + 15.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text('AI/ML AUDIT STATUS', col1, y + 15.5);
+        doc.text('CRYPTOGRAPHIC HASHING', col2, y + 15.5);
+        doc.text('DIRECT PLAN VERIFICATION', col3, y + 15.5);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(15, 23, 42);
-      doc.text('SEBI Circular on AI/ML Verified', col1, y + 19);
-      doc.text('SHA-256 Per Recommendation', col2, y + 19);
-      doc.text('100% Direct (0% Trailer Drag)', col3, y + 19);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(15, 23, 42);
+        doc.text('SEBI Circular on AI/ML Verified', col1, y + 19);
+        doc.text('SHA-256 Per Recommendation', col2, y + 19);
+        doc.text('100% Direct (0% Trailer Drag)', col3, y + 19);
 
-      y += 26;
+        y += 26;
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // 3. STATISTICAL SUMMARY OF AUDITED ACTIONS
-      // ═══════════════════════════════════════════════════════════════════════
-      const totalEntries = auditLog.length;
-      const approvedCount = auditLog.filter(l => l.action === 'approved').length;
-      const editedCount = auditLog.filter(l => l.action === 'edited').length;
-      const rejectedCount = auditLog.filter(l => l.action === 'rejected').length;
-      const dispatchedCount = auditLog.filter(l => l.action === 'dispatched').length;
-      const approvalRate = Math.round(((approvedCount + editedCount + dispatchedCount) / Math.max(totalEntries, 1)) * 100);
+        // ═══════════════════════════════════════════════════════════════════════
+        // 3. STATISTICAL SUMMARY OF AUDITED ACTIONS
+        // ═══════════════════════════════════════════════════════════════════════
+        const totalEntries = auditLog.length;
+        const approvedCount = auditLog.filter(l => l.action === 'approved').length;
+        const editedCount = auditLog.filter(l => l.action === 'edited').length;
+        const rejectedCount = auditLog.filter(l => l.action === 'rejected').length;
+        const dispatchedCount = auditLog.filter(l => l.action === 'dispatched').length;
+        const approvalRate = Math.round(((approvedCount + editedCount + dispatchedCount) / Math.max(totalEntries, 1)) * 100);
 
-      const summaryRows = [
-        [
-          String(totalEntries),
-          String(approvedCount),
-          String(editedCount),
-          String(rejectedCount),
-          String(dispatchedCount),
-          `${approvalRate}%`
-        ]
-      ];
-
-      autoTable(doc, {
-        startY: y,
-        margin: { left: margin, right: margin },
-        head: [['TOTAL LOGGED', 'APPROVED AS-IS', 'EDITED & APPROVED', 'REJECTED', 'DISPATCHED', 'APPROVAL RATE']],
-        body: summaryRows,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [49, 46, 129],
-          textColor: [255, 255, 255],
-          fontSize: 7,
-          fontStyle: 'bold',
-          halign: 'center',
-          cellPadding: 2.5
-        },
-        styles: {
-          fontSize: 8.5,
-          fontStyle: 'bold',
-          halign: 'center',
-          cellPadding: 2.5,
-          textColor: [15, 23, 42]
-        },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 30, textColor: [16, 185, 129] },
-          2: { cellWidth: 32, textColor: [79, 70, 229] },
-          3: { cellWidth: 30, textColor: [239, 68, 68] },
-          4: { cellWidth: 30, textColor: [16, 185, 129] },
-          5: { cellWidth: 30, textColor: [79, 70, 229] }
-        }
-      });
-
-      y = doc.lastAutoTable.finalY + 6;
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // 4. DETAILED AUDITED EVENTS TABLE (MULTI-PAGE AUTOTABLE)
-      // ═══════════════════════════════════════════════════════════════════════
-      const tableRows = auditLog.map(log => {
-        const timeFormatted = new Date(log.timestamp).toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: '2-digit'
-        });
-        const actionLabel = (log.action || 'approved').toUpperCase();
-        const shortHash = (log.dataHash || '').replace('sha256:', '').slice(0, 14);
-
-        return [
-          `${log.clientName}\n(${timeFormatted})`,
-          (log.type || 'RECO').replace(/_/g, ' ').toUpperCase(),
-          actionLabel,
-          `${log.title}\n\nNote: ${log.advisorNote || 'Approved under SEBI Reg 17.'}`,
-          `${log.aiVersion || 'FinAgent-Advisory-v2.1'}\nSHA-256: ${shortHash}...`
+        const summaryRows = [
+          [
+            String(totalEntries),
+            String(approvedCount),
+            String(editedCount),
+            String(rejectedCount),
+            String(dispatchedCount),
+            `${approvalRate}%`
+          ]
         ];
-      });
 
-      autoTable(doc, {
-        startY: y,
-        margin: { left: margin, right: margin, bottom: 22 },
-        head: [['CLIENT · DATE', 'TYPE', 'ACTION', 'RECOMMENDATION & ADVISOR NOTE', 'MODEL & SHA-256 HASH']],
-        body: tableRows,
-        theme: 'grid',
-        showHead: 'everyPage',
-        headStyles: {
-          fillColor: [30, 41, 59],
-          textColor: [255, 255, 255],
-          fontSize: 7,
-          fontStyle: 'bold',
-          halign: 'left',
-          cellPadding: 2.2
-        },
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2.5,
-          textColor: [15, 23, 42],
-          overflow: 'linebreak'
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252]
-        },
-        columnStyles: {
-          0: { cellWidth: 38, fontStyle: 'bold', textColor: [30, 41, 59] },
-          1: { cellWidth: 30, textColor: [71, 85, 105] },
-          2: { cellWidth: 24, fontStyle: 'bold' },
-          3: { cellWidth: 56, textColor: [51, 65, 85] },
-          4: { cellWidth: 34, fontStyle: 'bold', textColor: [100, 116, 139] }
-        },
-        didParseCell: (data) => {
-          if (data.section === 'body' && data.column.index === 2) {
-            const val = String(data.cell.raw);
-            if (val.includes('APPROVED') || val.includes('DISPATCHED')) {
-              data.cell.styles.textColor = [16, 185, 129];
-            } else if (val.includes('REJECTED')) {
-              data.cell.styles.textColor = [239, 68, 68];
-            } else if (val.includes('EDITED')) {
-              data.cell.styles.textColor = [79, 70, 229];
+        autoTable(doc, {
+          startY: y,
+          margin: { left: margin, right: margin },
+          head: [['TOTAL LOGGED', 'APPROVED AS-IS', 'EDITED & APPROVED', 'REJECTED', 'DISPATCHED', 'APPROVAL RATE']],
+          body: summaryRows,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [49, 46, 129],
+            textColor: [255, 255, 255],
+            fontSize: 7,
+            fontStyle: 'bold',
+            halign: 'center',
+            cellPadding: 2.2
+          },
+          styles: {
+            fontSize: 8,
+            fontStyle: 'bold',
+            halign: 'center',
+            cellPadding: 2.2,
+            textColor: [15, 23, 42]
+          },
+          columnStyles: {
+            0: { cellWidth: 30 },
+            1: { cellWidth: 30, textColor: [16, 185, 129] },
+            2: { cellWidth: 32, textColor: [79, 70, 229] },
+            3: { cellWidth: 30, textColor: [239, 68, 68] },
+            4: { cellWidth: 30, textColor: [16, 185, 129] },
+            5: { cellWidth: 30, textColor: [79, 70, 229] }
+          }
+        });
+
+        y = doc.lastAutoTable.finalY + 5;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 4. DETAILED AUDITED EVENTS TABLE (MULTI-PAGE AUTOTABLE)
+        // ═══════════════════════════════════════════════════════════════════════
+        const tableRows = auditLog.map(log => {
+          const timeFormatted = new Date(log.timestamp).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: '2-digit'
+          });
+          const clientClean = cleanAscii(log.clientName || 'Client');
+          const typeClean = cleanAscii(formatType(log.type));
+          const actionClean = cleanAscii(log.action || 'approved').toUpperCase();
+
+          const titleClean = cleanAscii(log.title || 'Investment Recommendation');
+          const noteClean = cleanAscii(log.advisorNote || 'Approved under SEBI Reg 17.');
+          const contentCell = `${titleClean}\n\nNote: ${noteClean}`;
+
+          let modelClean = cleanAscii(log.aiVersion || 'FinAgent-v2.1');
+          if (modelClean.toLowerCase().includes('v2.1')) modelClean = 'v2.1 (FinAgent)';
+          else if (modelClean.toLowerCase().includes('v2.0')) modelClean = 'v2.0 (FinAgent)';
+          else if (modelClean.length > 16) modelClean = modelClean.slice(0, 14) + '..';
+
+          const rawHash = (log.dataHash || '').replace(/^sha256:/i, '').replace(/[^a-fA-F0-9]/g, '');
+          const shortHash = rawHash ? rawHash.slice(0, 12) : 'e3b0c44298fc';
+          const modelCell = `${modelClean}\nSHA: ${shortHash}`;
+
+          return [
+            `${clientClean}\n${timeFormatted}`,
+            typeClean,
+            actionClean,
+            contentCell,
+            modelCell
+          ];
+        });
+
+        autoTable(doc, {
+          startY: y,
+          margin: { left: margin, right: margin, bottom: 20 },
+          head: [['CLIENT / DATE', 'TYPE', 'ACTION', 'RECOMMENDATION & ADVISOR NOTE', 'MODEL & SHA-256 HASH']],
+          body: tableRows,
+          theme: 'grid',
+          showHead: 'everyPage',
+          headStyles: {
+            fillColor: [30, 41, 59],
+            textColor: [255, 255, 255],
+            fontSize: 7,
+            fontStyle: 'bold',
+            halign: 'left',
+            cellPadding: 2
+          },
+          styles: {
+            fontSize: 7,
+            cellPadding: 2,
+            textColor: [15, 23, 42],
+            overflow: 'linebreak',
+            lineColor: [226, 232, 240],
+            lineWidth: 0.15
+          },
+          alternateRowStyles: {
+            fillColor: [248, 250, 252]
+          },
+          columnStyles: {
+            0: { cellWidth: 32, fontStyle: 'bold', textColor: [30, 41, 59] },
+            1: { cellWidth: 26, textColor: [71, 85, 105], fontStyle: 'bold' },
+            2: { cellWidth: 22, fontStyle: 'bold', halign: 'center' },
+            3: { cellWidth: 70, textColor: [51, 65, 85] },
+            4: { cellWidth: 32, fontStyle: 'normal', textColor: [100, 116, 139] }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 2) {
+              const val = String(data.cell.raw);
+              if (val.includes('APPROVED') || val.includes('DISPATCHED')) {
+                data.cell.styles.textColor = [16, 185, 129];
+              } else if (val.includes('REJECTED')) {
+                data.cell.styles.textColor = [239, 68, 68];
+              } else if (val.includes('EDITED')) {
+                data.cell.styles.textColor = [79, 70, 229];
+              }
             }
           }
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 5. REGULATORY SIGN-OFF BLOCK
+        // ═══════════════════════════════════════════════════════════════════════
+        let finalY = doc.lastAutoTable.finalY + 6;
+        if (finalY > pageHeight - 34) {
+          doc.addPage();
+          finalY = 20;
         }
-      });
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // 5. REGULATORY SIGN-OFF BLOCK
-      // ═══════════════════════════════════════════════════════════════════════
-      let finalY = doc.lastAutoTable.finalY + 8;
-      if (finalY > pageHeight - 38) {
-        doc.addPage();
-        finalY = 20;
-      }
+        doc.setFillColor(241, 245, 249);
+        doc.setDrawColor(203, 213, 225);
+        doc.roundedRect(margin, finalY, contentWidth, 24, 1.5, 1.5, 'FD');
 
-      doc.setFillColor(241, 245, 249);
-      doc.setDrawColor(203, 213, 225);
-      doc.roundedRect(margin, finalY, contentWidth, 24, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 41, 59);
+        doc.text('PRINCIPAL OFFICER STATUTORY CERTIFICATION', margin + 4, finalY + 5);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(30, 41, 59);
-      doc.text('PRINCIPAL OFFICER STATUTORY CERTIFICATION', margin + 4, finalY + 5);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(71, 85, 105);
-      doc.text(
-        'I, Meera Kapoor, Principal Officer of WealthWise Advisory Services (SEBI RIA INA000014523), certify that all recommendations logged herein',
-        margin + 4,
-        finalY + 9.5
-      );
-      doc.text(
-        'have undergone human review pursuant to SEBI (Investment Advisers) Regulations, 2013 and SEBI Circular on AI/ML applications.',
-        margin + 4,
-        finalY + 13
-      );
-      doc.text(
-        'All records are stored with tamper-evident SHA-256 cryptographic hashes and archived for a minimum statutory period of 5 years.',
-        margin + 4,
-        finalY + 16.5
-      );
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Meera Kapoor · Registered Investment Adviser (INA000014523)', margin + 4, finalY + 21);
-      doc.text('BASL ID: BASL-1842 · Mumbai Office', pageWidth - margin - 4, finalY + 21, { align: 'right' });
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // 6. RUNNING FOOTERS ON ALL PAGES
-      // ═══════════════════════════════════════════════════════════════════════
-      const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6.5);
-        doc.setTextColor(148, 163, 184);
+        doc.setTextColor(71, 85, 105);
         doc.text(
-          'WealthWise Advisory Services · SEBI RIA INA000014523 · Confidential Supervisory Audit Log',
-          margin,
-          pageHeight - 6
+          'I, Meera Kapoor, Principal Officer of WealthWise Advisory Services (SEBI RIA INA000014523), certify that all recommendations logged herein',
+          margin + 4,
+          finalY + 9.5
         );
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
-      }
+        doc.text(
+          'have undergone human review pursuant to SEBI (Investment Advisers) Regulations, 2013 and SEBI Circular on AI/ML applications.',
+          margin + 4,
+          finalY + 13
+        );
+        doc.text(
+          'All records are stored with tamper-evident SHA-256 cryptographic hashes and archived for a minimum statutory period of 5 years.',
+          margin + 4,
+          finalY + 16.5
+        );
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(15, 23, 42);
+        doc.text('Meera Kapoor | Registered Investment Adviser (INA000014523)', margin + 4, finalY + 21);
+        doc.text('BASL ID: BASL-1842 | Mumbai Office', pageWidth - margin - 4, finalY + 21, { align: 'right' });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 6. RUNNING FOOTERS ON ALL PAGES
+        // ═══════════════════════════════════════════════════════════════════════
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text(
+            'WealthWise Advisory Services | SEBI RIA INA000014523 | Confidential Supervisory Audit Log',
+            margin,
+            pageHeight - 6
+          );
+          doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
+        }
 
       doc.save(`SEBI_Compliance_Audit_Log_INA000014523.pdf`);
     } catch (err) {
