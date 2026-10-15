@@ -617,6 +617,28 @@ function logAuditEvent(event) {
   return { id, eventType, actor, market, details, createdAt };
 }
 
+function getAuditEvents(limit = 100) {
+  if (!db) return [];
+  const safeLimit = getSafeLimit(limit);
+  const rows = db.prepare(`SELECT * FROM audit_events ORDER BY created_at DESC LIMIT ?`).all(safeLimit);
+  return rows.map(r => {
+    let parsedDetails = {};
+    try {
+      parsedDetails = typeof r.details === 'string' ? JSON.parse(r.details || '{}') : (r.details || {});
+    } catch {
+      parsedDetails = { raw: r.details };
+    }
+    return {
+      id: r.id,
+      eventType: r.event_type,
+      actor: r.actor,
+      market: r.market,
+      details: parsedDetails,
+      createdAt: r.created_at,
+    };
+  });
+}
+
 // 9. Advisor Clients
 function saveAdvisorClient(client, broadcastToCloud = true) {
   const id = client.id || `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -852,6 +874,7 @@ module.exports = {
   getTaxFilings,
   getTaxFilingById,
   logAuditEvent,
+  getAuditEvents,
   saveAdvisorClient,
   getAdvisorClients,
   saveAdvisorDispatch,

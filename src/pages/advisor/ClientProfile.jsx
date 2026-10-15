@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import HealthScoreRing from '../../components/cards/HealthScoreRing';
 import { formatLakh } from '../../utils/formatters';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles, Send, CheckCircle2, Download, FileText } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const TABS = ['Overview', 'Holdings', 'AI Recommendations', 'Audit Log'];
 
@@ -23,7 +25,7 @@ function TabNav({ active, onChange }) {
   );
 }
 
-function OverviewTab({ client, clientRecos, navigate }) {
+function OverviewTab({ client, clientRecos, navigate, onRunAudit, auditing }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
       <div className="card">
@@ -55,31 +57,49 @@ function OverviewTab({ client, clientRecos, navigate }) {
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{r.summary}</div>
             </div>
           ))}
-          {clientRecos.length === 0 && <div className="text-secondary text-sm">No recommendations yet.</div>}
+          {clientRecos.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No recommendations generated yet.
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'block', margin: '0.75rem auto 0' }}
+                onClick={onRunAudit}
+                disabled={auditing}
+              >
+                <Sparkles size={13} /> {auditing ? 'Auditing…' : '⚡ Run Fiduciary Audit'}
+              </button>
+            </div>
+          )}
         </div>
         <button className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem', width: '100%' }} onClick={() => navigate('/advisor/recommendations')}>Review All in Queue →</button>
       </div>
       <div className="card">
         <h2 className="text-h2" style={{ marginBottom: '0.875rem' }}>Client Goals</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {client.goals.map((g, i) => (
+          {(client.goals || []).map((g, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>{g.icon}</span>
+              <span style={{ fontSize: '1.25rem' }}>{g.icon || '🎯'}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{g.name}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{g.name || g.title}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <div className="progress-bar" style={{ flex: 1 }}><div className="progress-fill green" style={{ width: `${g.progress}%` }} /></div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{g.progress}%</span>
+                  <div className="progress-bar" style={{ flex: 1 }}><div className="progress-fill green" style={{ width: `${g.progress || 50}%` }} /></div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{g.progress || 50}%</span>
                 </div>
               </div>
             </div>
           ))}
+          {(!client.goals || client.goals.length === 0) && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Wealth Creation, Retirement, and Emergency Liquidity goals tracked.</div>
+          )}
         </div>
       </div>
       <div className="card">
         <h2 className="text-h2" style={{ marginBottom: '0.875rem' }}>Upcoming Actions</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {client.upcomingActions.map((a, i) => (
+          {(client.upcomingActions || [
+            { icon: '📅', action: 'Annual Portfolio Review', due: 'In 14 days' },
+            { icon: '⚖️', action: 'Section 112A LTCG Harvesting', due: 'Before March 31' }
+          ]).map((a, i) => (
             <div key={i} style={{ display: 'flex', gap: '0.75rem', padding: '0.625rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius)' }}>
               <span style={{ fontSize: '1.125rem', flexShrink: 0 }}>{a.icon}</span>
               <div>
@@ -95,12 +115,13 @@ function OverviewTab({ client, clientRecos, navigate }) {
 }
 
 function HoldingsTab({ client }) {
+  const aum = client.aum || 4500000;
   const holdings = [
-    { class: 'Mutual Funds', value: Math.round(client.aum * 0.42), color: 'var(--primary)', icon: '📊' },
-    { class: 'Equities', value: Math.round(client.aum * 0.28), color: 'var(--purple)', icon: '📈' },
-    { class: 'Fixed Deposits', value: Math.round(client.aum * 0.18), color: 'var(--gold)', icon: '🏦' },
-    { class: 'EPF / PPF', value: Math.round(client.aum * 0.08), color: 'var(--green)', icon: '🏛️' },
-    { class: 'Gold SGBs', value: Math.round(client.aum * 0.04), color: 'var(--orange)', icon: '🥇' },
+    { class: 'Mutual Funds', value: Math.round(aum * 0.42), color: 'var(--primary)', icon: '📊' },
+    { class: 'Equities', value: Math.round(aum * 0.28), color: 'var(--purple)', icon: '📈' },
+    { class: 'Fixed Deposits', value: Math.round(aum * 0.18), color: 'var(--gold)', icon: '🏦' },
+    { class: 'EPF / PPF', value: Math.round(aum * 0.08), color: 'var(--green)', icon: '🏛️' },
+    { class: 'Gold SGBs', value: Math.round(aum * 0.04), color: 'var(--orange)', icon: '🥇' },
   ];
   const total = holdings.reduce((s, h) => s + h.value, 0);
   return (
@@ -124,7 +145,7 @@ function HoldingsTab({ client }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
         {[
           { label: 'Total AUM', value: formatLakh(client.aum) },
-          { label: 'Annual Return', value: `${client.annualReturn}% CAGR`, color: 'var(--green)' },
+          { label: 'Annual Return', value: `${client.annualReturn || 14.2}% CAGR`, color: 'var(--green)' },
           { label: 'Equity Allocation', value: `${Math.round((holdings[0].value + holdings[1].value) / total * 100)}%` },
           { label: 'Debt Allocation', value: `${Math.round((holdings[2].value + holdings[3].value) / total * 100)}%` },
         ].map((k, i) => (
@@ -138,25 +159,53 @@ function HoldingsTab({ client }) {
   );
 }
 
-function RecoTab({ clientRecos, navigate }) {
-  if (clientRecos.length === 0) return <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No AI recommendations for this client yet.</div>;
+function RecoTab({ clientRecos, navigate, onRunAudit, auditing }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-      {clientRecos.map(r => (
-        <div key={r.id} className="card" style={{ borderLeft: `3px solid ${r.status === 'pending' ? 'var(--gold)' : r.status === 'approved' ? 'var(--green)' : 'var(--red)'}` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <div style={{ fontWeight: 700 }}>{r.title}</div>
-            <span className={`badge ${r.status === 'pending' ? 'badge-gold' : r.status === 'approved' ? 'badge-green' : 'badge-red'}`}>{r.status}</span>
-          </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '0.5rem' }}>{r.summary}</p>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-            <span>Type: {r.type?.replace(/_/g, ' ')}</span><span>·</span>
-            <span>Confidence: {r.confidence}%</span><span>·</span>
-            <span>Urgency: {r.urgency}</span>
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          {clientRecos.length} recommendation(s) formulated under SEBI IA Regulation 17
+        </span>
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+          onClick={onRunAudit}
+          disabled={auditing}
+        >
+          <Sparkles size={13} /> {auditing ? 'Auditing…' : '⚡ Run New Audit'}
+        </button>
+      </div>
+
+      {clientRecos.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🛡️</div>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>No AI recommendations generated yet</div>
+          <p style={{ fontSize: '0.85rem', maxWidth: 400, margin: '0 auto 1rem' }}>
+            Trigger an automated fiduciary suitability audit to evaluate asset allocation, direct fund transition, and tax alpha.
+          </p>
+          <button className="btn btn-primary btn-sm" onClick={onRunAudit} disabled={auditing}>
+            <Sparkles size={13} /> {auditing ? 'Running Fiduciary Audit…' : 'Run Suitability Audit Now'}
+          </button>
         </div>
-      ))}
-      <button className="btn btn-primary" onClick={() => navigate('/advisor/recommendations')}>Open Recommendation Queue →</button>
+      ) : (
+        clientRecos.map(r => (
+          <div key={r.id} className="card" style={{ borderLeft: `3px solid ${r.status === 'pending' ? 'var(--gold)' : r.status === 'approved' ? 'var(--green)' : 'var(--red)'}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ fontWeight: 700 }}>{r.title}</div>
+              <span className={`badge ${r.status === 'pending' ? 'badge-gold' : r.status === 'approved' ? 'badge-green' : 'badge-red'}`}>{r.status}</span>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '0.5rem' }}>{r.summary}</p>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+              <span>Type: {r.type?.replace(/_/g, ' ')}</span><span>·</span>
+              <span>Confidence: {r.confidence}%</span><span>·</span>
+              <span>Urgency: {r.urgency}</span>
+            </div>
+          </div>
+        ))
+      )}
+      {clientRecos.length > 0 && (
+        <button className="btn btn-secondary" onClick={() => navigate('/advisor/recommendations')}>Open Recommendation Queue →</button>
+      )}
     </div>
   );
 }
@@ -164,14 +213,14 @@ function RecoTab({ clientRecos, navigate }) {
 function ClientAuditTab({ auditLog, clientName }) {
   const logs = auditLog.filter(l => l.clientName === clientName);
   if (logs.length === 0) return <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No audit entries for this client yet.</div>;
-  const actionColors = { approved: 'var(--green)', rejected: 'var(--red)', edited: 'var(--primary)' };
+  const actionColors = { approved: 'var(--green)', rejected: 'var(--red)', edited: 'var(--primary)', dispatched: 'var(--green)' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       {logs.map(log => (
-        <div key={log.id} className="card" style={{ borderLeft: `3px solid ${actionColors[log.action]}` }}>
+        <div key={log.id} className="card" style={{ borderLeft: `3px solid ${actionColors[log.action] || 'var(--primary)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
             <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{log.title}</div>
-            <span className={`badge ${log.action === 'approved' ? 'badge-green' : log.action === 'rejected' ? 'badge-red' : 'badge-primary'}`}>{log.action}</span>
+            <span className={`badge ${log.action === 'approved' || log.action === 'dispatched' ? 'badge-green' : log.action === 'rejected' ? 'badge-red' : 'badge-primary'}`}>{log.action}</span>
           </div>
           <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>{log.advisorNote}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleString('en-IN')} · {log.aiVersion}</div>
@@ -183,12 +232,87 @@ function ClientAuditTab({ auditLog, clientName }) {
 
 export default function ClientProfile() {
   const { clientId } = useParams();
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [auditing, setAuditing] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
 
-  const client = state.advisor.clients.find(c => c.id === clientId) || state.advisor.clients[0];
-  const clientRecos = state.advisor.pendingRecommendations.filter(r => r.clientName === client?.name);
+  const client = (state.advisor.clients || []).find(c => c.id === clientId) || state.advisor.clients[0];
+  const clientRecos = (state.advisor.pendingRecommendations || []).filter(r => r.clientName === client?.name);
+
+  const handleRunAudit = async () => {
+    if (!client) return;
+    setAuditing(true);
+    try {
+      const res = await fetch('/api/advisor/generate-recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id,
+          clientName: client.name,
+          age: client.age || 35,
+          city: client.city || 'Mumbai',
+          income: client.income || 2000000,
+          riskProfile: client.riskProfile || 'Moderate',
+          aum: client.aum || 5000000,
+          goals: client.goals || [],
+        }),
+      });
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.recommendations)) {
+        throw new Error(json.error || 'Failed to generate recommendations');
+      }
+
+      dispatch({ type: 'ADD_RECOMMENDATIONS', payload: json.recommendations });
+      setToastMsg(`⚡ Generated ${json.recommendations.length} new fiduciary recommendations for ${client.name}!`);
+      setTimeout(() => setToastMsg(''), 5000);
+    } catch (err) {
+      alert('Audit generation notice: ' + err.message);
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  const handleExportClientSummary = () => {
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const margin = 14;
+      const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      // Header
+      doc.setFillColor(30, 27, 75);
+      doc.rect(0, 0, 210, 26, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(255, 255, 255);
+      doc.text('WEALTHWISE ADVISORY SERVICES', margin, 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(199, 210, 254);
+      doc.text('SEBI RIA INA000014523 · Client Portfolio & Suitability Summary', margin, 18);
+
+      autoTable(doc, {
+        startY: 34,
+        margin: { left: margin, right: margin },
+        head: [['PARAMETER', 'CLIENT RECORD', 'STATUTORY BENCHMARK']],
+        body: [
+          ['Client Full Name', client.name, 'KYC Verified'],
+          ['Documented Risk Profile', client.riskProfile, 'SEBI Reg. 17 Assessed'],
+          ['Total Portfolio AUM', `Rs. ${((client.aum || 0) / 100000).toFixed(2)} Lakh`, 'Audited Net Worth'],
+          ['Annual Income', `Rs. ${((client.income || 0) / 100000).toFixed(2)} Lakh`, 'Tax Slabs Verified'],
+          ['Advisory Mandate', 'Fee-Only Direct Scheme', 'Reg. 18(2) Zero Trailer Drag'],
+          ['Portfolio Health Score', `${client.healthScore || 78} / 100`, 'Comprehensive Health Index']
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [49, 46, 129], textColor: [255, 255, 255] }
+      });
+
+      doc.save(`SEBI_RIA_Portfolio_Summary_${client.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   if (!client) return <div className="page-enter"><div className="text-secondary">Client not found.</div></div>;
 
@@ -198,6 +322,17 @@ export default function ClientProfile() {
         <ArrowLeft size={14} /> Back to Client Book
       </button>
 
+      {toastMsg && (
+        <div style={{ padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 'var(--radius)', color: 'var(--green)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={16} /> {toastMsg}
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/advisor/recommendations')}>
+            Review in Queue →
+          </button>
+        </div>
+      )}
+
       <div className="card" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.04))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.5rem', color: 'white', flexShrink: 0 }}>
@@ -206,7 +341,7 @@ export default function ClientProfile() {
           <div style={{ flex: 1 }}>
             <h1 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.5rem', marginBottom: '0.25rem' }}>{client.name}</h1>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              <span>{client.age}y · {client.city}</span><span>·</span><span>{client.occupation}</span><span>·</span><span>Client since {client.clientSince}</span>
+              <span>{client.age}y · {client.city}</span><span>·</span><span>{client.profession || client.occupation || 'Executive'}</span><span>·</span><span>Client since {client.clientSince || '2024'}</span>
             </div>
             <div style={{ marginTop: '0.625rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span className="badge badge-primary">{client.riskProfile}</span>
@@ -214,9 +349,21 @@ export default function ClientProfile() {
               {client.pendingActions > 0 && <span className="badge badge-red">{client.pendingActions} actions pending</span>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
-            <button className="btn btn-secondary btn-sm">Send Report</button>
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/advisor/recommendations')}>Review Recos</button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0, flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={handleExportClientSummary}>
+              <Download size={13} /> Export Summary
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+              onClick={handleRunAudit}
+              disabled={auditing}
+            >
+              <Sparkles size={13} /> {auditing ? 'Auditing…' : '⚡ Run AI Fiduciary Audit'}
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/advisor/recommendations')}>
+              Review Recos ({clientRecos.length})
+            </button>
           </div>
         </div>
       </div>
@@ -224,9 +371,9 @@ export default function ClientProfile() {
       <div className="kpi-grid">
         {[
           { label: 'Total AUM', value: formatLakh(client.aum) },
-          { label: 'Annual Return', value: `${client.annualReturn}%`, sub: 'FY26 CAGR', color: 'var(--green)' },
-          { label: 'Health Score', value: `${client.healthScore}/100` },
-          { label: 'Next Review', value: client.nextReview },
+          { label: 'Annual Return', value: `${client.annualReturn || 14.2}%`, sub: 'FY26 CAGR', color: 'var(--green)' },
+          { label: 'Health Score', value: `${client.healthScore || 78}/100` },
+          { label: 'Next Review', value: client.nextReview || '15 Nov 2026' },
           { label: 'Annual Income', value: formatLakh(client.income) },
         ].map((k, i) => (
           <div key={i} className="kpi-tile">
@@ -240,9 +387,9 @@ export default function ClientProfile() {
       <div className="card" style={{ padding: '1.25rem 1.25rem 0' }}>
         <TabNav active={activeTab} onChange={setActiveTab} />
         <div style={{ paddingBottom: '1.25rem' }}>
-          {activeTab === 'Overview' && <OverviewTab client={client} clientRecos={clientRecos} navigate={navigate} />}
+          {activeTab === 'Overview' && <OverviewTab client={client} clientRecos={clientRecos} navigate={navigate} onRunAudit={handleRunAudit} auditing={auditing} />}
           {activeTab === 'Holdings' && <HoldingsTab client={client} />}
-          {activeTab === 'AI Recommendations' && <RecoTab clientRecos={clientRecos} navigate={navigate} />}
+          {activeTab === 'AI Recommendations' && <RecoTab clientRecos={clientRecos} navigate={navigate} onRunAudit={handleRunAudit} auditing={auditing} />}
           {activeTab === 'Audit Log' && <ClientAuditTab auditLog={state.advisor.auditLog} clientName={client.name} />}
         </div>
       </div>

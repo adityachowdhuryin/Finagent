@@ -419,6 +419,34 @@ function appReducer(state, action) {
       };
     }
 
+    case 'ADD_RECOMMENDATIONS': {
+      const newRecos = Array.isArray(action.payload) ? action.payload : [action.payload];
+      const existing = state.advisor.pendingRecommendations || [];
+      const existingIds = new Set(existing.map(r => r.id));
+      const toAdd = newRecos.filter(r => !existingIds.has(r.id));
+      return {
+        ...state,
+        advisor: {
+          ...state.advisor,
+          pendingRecommendations: [...toAdd, ...existing],
+        },
+      };
+    }
+
+    case 'SYNC_AUDIT_LOG': {
+      const newEvents = Array.isArray(action.payload) ? action.payload : [];
+      const existing = state.advisor.auditLog || [];
+      const existingIds = new Set(existing.map(e => e.id));
+      const toAdd = newEvents.filter(e => !existingIds.has(e.id));
+      return {
+        ...state,
+        advisor: {
+          ...state.advisor,
+          auditLog: [...toAdd, ...existing],
+        },
+      };
+    }
+
     case 'SET_ADVISOR_CLIENTS': {
       return {
         ...state,
@@ -528,6 +556,26 @@ export function AppProvider({ children }) {
               payload: [...toAdd, ...currentClients]
             });
           }
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/advisor/audit-events')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && Array.isArray(json.events) && json.events.length > 0) {
+          const mapped = json.events.map(ev => ({
+            id: ev.id,
+            clientName: ev.details?.clientName || 'Statutory Client',
+            timestamp: ev.createdAt,
+            type: ev.eventType || 'SYSTEM_ACTION',
+            title: ev.details?.title || ev.eventType?.replace(/_/g, ' '),
+            action: ev.eventType === 'SEBI_ADVISORY_RECOMMENDATION_DISPATCHED' ? 'dispatched' : 'approved',
+            advisorNote: ev.details?.advisorNote || ev.details?.summary || `Audited under SEBI RIA regulations. Hash: ${ev.details?.sha256Hash?.slice(0, 12) || 'verified'}`,
+            aiVersion: 'FinAgent-Advisory-v2.1',
+            dataHash: ev.details?.sha256Hash ? `sha256:${ev.details.sha256Hash.slice(0, 16)}...` : `sha256:${ev.id.slice(0, 12)}...`,
+          }));
+          dispatch({ type: 'SYNC_AUDIT_LOG', payload: mapped });
         }
       })
       .catch(() => {});

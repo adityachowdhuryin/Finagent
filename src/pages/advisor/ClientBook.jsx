@@ -42,11 +42,14 @@ export default function ClientBook() {
           <div className="text-label text-muted">WealthWise Advisory · {profile.sebiRegNo}</div>
           <h1 className="text-h1 mt-1">Client Book</h1>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate('/advisor/onboarding')}>
             + Onboard Client
           </button>
-          <button className="btn btn-primary" onClick={() => navigate('/advisor/recommendations')}>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/advisor/recommendations')}>
+            ⚡ Run AI Audit
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/advisor/recommendations')}>
             Review {pendingCount} Pending Recos →
           </button>
         </div>
