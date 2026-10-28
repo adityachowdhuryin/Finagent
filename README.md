@@ -13,7 +13,7 @@
 [![Tests Passing](https://img.shields.io/badge/Tests-119%2F119%20Pass%20(100%25)-success)](./tests)
 [![GitHub](https://img.shields.io/badge/GitHub-adityachowdhuryin%2FFinagent-181717?logo=github&logoColor=white)](https://github.com/adityachowdhuryin/Finagent)
 
-> **FinAgent** is an institutional-grade, venture-scale, AI-native Financial Operating System architected for dual-market operation (**🇺🇸 United States** & **🇮🇳 India**). It provides unified financial infrastructure for retail investors, high-net-worth families, Registered Investment Advisors (SEBI RIAs / SEC RIAs), CPAs, CAs, corporate treasurers, venture syndicates, non-profit endowments, matrimonial attorneys, and regional commercial banks.
+> **FinAgent** is an institutional-grade, venture-scale, AI-native Financial Operating System architected for dual-market operation (**🇺🇸 United States** & **🇮🇳 India**). It provides unified financial infrastructure for retail investors, high-net-worth families, Registered Investment Advisors (SEBI RIAs / SEC RIAs), CPAs, Chartered Accountants (CAs), corporate treasurers, venture syndicates, non-profit endowments, matrimonial attorneys, and regional commercial banks.
 
 ---
 
@@ -21,29 +21,87 @@
 1. [Executive Overview & Vision](#1-executive-overview--vision)
 2. [Dual-Market Macroeconomic Architecture](#2-dual-market-macroeconomic-architecture)
 3. [The Core Ecosystem Portals & Personas](#3-the-core-ecosystem-portals--personas)
-4. [Deep Dive: High-Impact Frontier Platforms](#4-deep-dive-high-impact-frontier-platforms)
-   - [4.1 Tax & Forensic Studio: Dual-Market Institutional Engine](#41-tax--forensic-studio-dual-market-institutional-engine-apptax)
+4. [Deep Dive: Frontier Platforms & Statutory Engines](#4-deep-dive-frontier-platforms--statutory-engines)
+   - [4.1 Tax & Forensic Studio: Dual-Market Institutional Engine (`/app/tax`)](#41-tax--forensic-studio-dual-market-institutional-engine-apptax)
    - [4.2 Commercial Monetization & AI Defensibility Moats](#42-commercial-monetization--ai-defensibility-moats)
    - [4.3 Universal US 50-State, Territories & Expatriate Relief Engine](#43-universal-us-50-state-territories--expatriate-relief-engine)
-   - [4.4 Direct Indexing & Custom Factor Tilt Studio](#44-direct-indexing--custom-factor-tilt-studio-appdirect-indexing)
-   - [4.5 Direct Government Tax E-Filing Rails & AIS / TIS Reconciler](#45-direct-government-tax-e-filing-rails--ais--tis-reconciler-appe-file)
-   - [4.6 SEBI RIA & SEC RIA Fiduciary Practice Management](#46-sebi-ria--sec-ria-fiduciary-practice-management-advisor)
-   - [4.7 Legally-Binding Estate Succession & Living Trust Hubs](#47-legally-binding-estate-succession--living-trust-hubs-appdigital-will-appustrust)
-   - [4.8 Forensic Portfolio X-Ray & Fee Leakage Auditor](#48-forensic-portfolio-x-ray--fee-leakage-auditor-appforensic-audit-appxray)
-   - [4.9 Multi-PAN Family Office Hub & Dead Man's Emergency Vault](#49-multi-pan-family-office-hub--dead-mans-emergency-vault-appfamily-hub-appemergency-vault)
-   - [4.10 HUF Statutory Tax Studio & S-Corp FICA Arbitrage](#410-huf-statutory-tax-studio--s-corp-fica-arbitrage-apphuf-studio-appusscorp)
-   - [4.11 Bank Fee & Loan Repricing / Mortgage Refi Engine](#411-bank-fee--loan-repricing--mortgage-refi-engine-apploan-appusmortgage)
-   - [4.12 Frontier AI Copilot Sidecar & Multi-Persona Council](#412-frontier-ai-copilot-sidecar--multi-persona-council-appcouncil-applive-banker)
-5. [Statutory Vector PDF Engine (12+ Institutional Documents)](#5-statutory-vector-pdf-engine-12-institutional-documents)
-6. [Complete Route Catalog (100+ Routes)](#6-complete-route-catalog-100-routes)
-7. [System Architecture & End-to-End Data Flows](#7-system-architecture--end-to-end-data-flows)
-8. [Technology Stack & Third-Party Integrations](#8-technology-stack--third-party-integrations)
-9. [Repository Directory Structure](#9-repository-directory-structure)
-10. [Automated Verification & Test Suites (119/119 Tests)](#10-automated-verification--test-suites-119119-tests)
-11. [Getting Started & Local Setup](#11-getting-started--local-setup)
-12. [Mobile App Setup (Capacitor iOS & Android)](#12-mobile-app-setup-capacitor-ios--android)
-13. [Cloud Deployment Guide (Vercel & Render)](#13-cloud-deployment-guide-vercel--render)
-14. [Regulatory Compliance & Security Architecture](#14-regulatory-compliance--security-architecture)
+   - [4.4 Direct Indexing & Custom Factor Tilt Studio (`/app/direct-indexing`)](#44-direct-indexing--custom-factor-tilt-studio-appdirect-indexing)
+   - [4.5 Direct Government Tax E-Filing Rails & AIS / TIS Reconciler (`/app/e-file`)](#45-direct-government-tax-e-filing-rails--ais--tis-reconciler-appe-file)
+   - [4.6 SEBI RIA & SEC RIA Fiduciary Practice Management (`/advisor`)](#46-sebi-ria--sec-ria-fiduciary-practice-management-advisor)
+   - [4.7 Legally-Binding Estate Succession & Living Trust Hubs (`/app/digital-will`, `/app/us/trust`)](#47-legally-binding-estate-succession--living-trust-hubs-appdigital-will-appustrust)
+   - [4.8 Forensic Portfolio X-Ray & Fee Leakage Auditor (`/app/forensic-audit`, `/app/xray`)](#48-forensic-portfolio-x-ray--fee-leakage-auditor-appforensic-audit-appxray)
+   - [4.9 Multi-PAN Family Office Hub & Dead Man's Emergency Vault (`/app/family-hub`, `/app/emergency-vault`)](#49-multi-pan-family-office-hub--dead-mans-emergency-vault-appfamily-hub-appemergency-vault)
+   - [4.10 HUF Statutory Tax Studio & S-Corp FICA Arbitrage (`/app/huf-studio`, `/app/us/scorp`)](#410-huf-statutory-tax-studio--s-corp-fica-arbitrage-apphuf-studio-appusscorp)
+   - [4.11 Bank Fee & Loan Repricing / Mortgage Refi Engine (`/app/loan`, `/app/us/mortgage`)](#411-bank-fee--loan-repricing--mortgage-refi-engine-apploan-appusmortgage)
+   - [4.12 Agentic AI Council & Frontier Intelligence Suite (`/app/council`, `/app/live-banker`, `/app/life-twin`)](#412-agentic-ai-council--frontier-intelligence-suite-appcouncil-applive-banker-applife-twin)
+5. [Deep Dive: Frontier AI Copilot Chatbot Architecture](#5-deep-dive-frontier-ai-copilot-chatbot-architecture)
+   - [5.1 Dual-Topology AI Advisory System](#51-dual-topology-ai-advisory-system)
+   - [5.2 Dynamic Context-Aware Route Introspection & Page Profiling](#52-dynamic-context-aware-route-introspection--page-profiling)
+   - [5.3 Autonomous Proactive Wealth Monitor & Event-Driven Alerts](#53-autonomous-proactive-wealth-monitor--event-driven-alerts)
+   - [5.4 Long-Term Memory Knowledge Graph & Financial DNA Archetypes](#54-long-term-memory-knowledge-graph--financial-dna-archetypes)
+   - [5.5 Emotional Panic-Selling Intervention Protocol](#55-emotional-panic-selling-intervention-protocol)
+   - [5.6 Bidirectional Voice System (Web Speech API)](#56-bidirectional-voice-system-web-speech-api)
+   - [5.7 Multimodal Vision & In-Chat Document OCR](#57-multimodal-vision--in-chat-document-ocr)
+   - [5.8 Interactive Executable In-Chat Action Cards](#58-interactive-executable-in-chat-action-cards)
+   - [5.9 Gemini Function-Calling Tool Declarations](#59-gemini-function-calling-tool-declarations)
+   - [5.10 Fiduciary Audit Logging & Regulatory Supervision](#510-fiduciary-audit-logging--regulatory-supervision)
+6. [Deep Dive: Consumer Wealth, Behavioral & Life Engines](#6-deep-dive-consumer-wealth-behavioral--life-engines)
+   - [6.1 Portfolio Doctor (`/app/doctor`)](#61-portfolio-doctor-appdoctor)
+   - [6.2 Life Event Re-Architect (`/app/life-events`)](#62-life-event-re-architect-applife-events)
+   - [6.3 SIP & Inflow Optimizer (`/app/sip-optimizer`)](#63-sip--inflow-optimizer-appsip-optimizer)
+   - [6.4 WhatsApp AI Assistant (`/app/whatsapp`)](#64-whatsapp-ai-assistant-appwhatsapp)
+   - [6.5 Document Intelligence OCR (`/app/documents`)](#65-document-intelligence-ocr-appdocuments)
+   - [6.6 Credit Score Sentinel & Bureau Dispute Generator (`/app/credit`)](#66-credit-score-sentinel--bureau-dispute-generator-appcredit)
+   - [6.7 Credit Card & Points Maximizer (`/app/card-optimizer`, `/app/us-cards`)](#67-credit-card--points-maximizer-appcard-optimizer-appus-cards)
+   - [6.8 ESOP & RSU Equity OS (`/app/esop-rsu`, `/app/equity-os`)](#68-esop--rsu-equity-os-appesop-rsu-appequity-os)
+   - [6.9 Couple Pre-Nup & Wealth Alignment (`/app/prenup`)](#69-couple-pre-nup--wealth-alignment-appprenup)
+   - [6.10 Financial DNA & Psychometrics (`/app/dna`)](#610-financial-dna--psychometrics-appdna)
+   - [6.11 Peer Leagues & Blind Demographic Cohorts (`/app/peers`, `/app/cohorts`)](#611-peer-leagues--blind-demographic-cohorts-apppeers-appcohorts)
+   - [6.12 Real Estate Automated Valuation Model (AVM) (`/app/real-estate-avm`)](#612-real-estate-automated-valuation-model-avm-appreal-estate-avm)
+   - [6.13 Private Equity & 409A Cap Table (`/app/private-equity`)](#613-private-equity--409a-cap-table-appprivate-equity)
+   - [6.14 Residency Tax Arbitrage (`/app/residency-arbitrage`)](#614-residency-tax-arbitrage-appresidency-arbitrage)
+   - [6.15 Micro-Invest Round-Ups (`/app/roundups`)](#615-micro-invest-round-ups-approundups)
+   - [6.16 Insurance Decoder & HLV Calculator (`/app/insurance`)](#616-insurance-decoder--hlv-calculator-appinsurance)
+   - [6.17 FIRE Calculator & Safe Withdrawal Rate Modeler (`/app/fire`)](#617-fire-calculator--safe-withdrawal-rate-modeler-appfire)
+   - [6.18 Cashflow & Statement Vision (`/app/cashflow`)](#618-cashflow--statement-vision-appcashflow)
+   - [6.19 Government Schemes & Sovereign Wealth (`/app/govt-schemes`)](#619-government-schemes--sovereign-wealth-appgovt-schemes)
+   - [6.20 FinAgent Black Sovereign VIP Wealth Portal (`/app/black`)](#620-finagent-black-sovereign-vip-wealth-portal-appblack)
+7. [Deep Dive: Zero-Auth Viral Lead-Magnet Tools (`/tools/*`)](#7-deep-dive-zero-auth-viral-lead-magnet-tools-tools)
+   - [7.1 CTC Tax Leak Calculator (`/tools/ctc-tax-leak`)](#71-ctc-tax-leak-calculator-toolsctc-tax-leak)
+   - [7.2 Loan Arbitrage Calculator (`/tools/loan-arbitrage`)](#72-loan-arbitrage-calculator-toolsloan-arbitrage)
+   - [7.3 US W-2 Tax Drag Calculator (`/tools/w2-tax-leak`)](#73-us-w-2-tax-drag-calculator-toolsw2-tax-leak)
+   - [7.4 PMI Removal & Refi Calculator (`/tools/pmi-arbitrage`)](#74-pmi-removal--refi-calculator-toolspmi-arbitrage)
+   - [7.5 Comprehensive Wealth Diagnostic (`/tools/wealth-leak`)](#75-comprehensive-wealth-diagnostic-toolswealth-leak)
+8. [Deep Dive: Wealth Advisor OS Operational Depth (`/advisor/*`)](#8-deep-dive-wealth-advisor-os-operational-depth-advisor)
+   - [8.1 Client Book & AUM Matrix (`/advisor/clients`)](#81-client-book--aum-matrix-advisorclients)
+   - [8.2 Client Profile & Statutory IPS Builder (`/advisor/clients/:clientId`)](#82-client-profile--statutory-ips-builder-advisorclientsclientid)
+   - [8.3 Fiduciary Recommendation Queue & Order Bridging (`/advisor/recommendations`)](#83-fiduciary-recommendation-queue--order-bridging-advisorrecommendations)
+   - [8.4 Five-Year Regulatory Audit Trail & SEBI Form B Dossier (`/advisor/audit`)](#84-five-year-regulatory-audit-trail--sebi-form-b-dossier-advisoraudit)
+   - [8.5 Digital Client Onboarding Flow (`/advisor/onboarding`)](#85-digital-client-onboarding-flow-advisoronboarding)
+   - [8.6 AI Pre-Meeting Briefing Dossiers (`/advisor/meeting-prep`)](#86-ai-pre-meeting-briefing-dossiers-advisormeeting-prep)
+   - [8.7 Quarterly Fiduciary Report Cards (`/advisor/report-cards`)](#87-quarterly-fiduciary-report-cards-advisorreport-cards)
+   - [8.8 Compliance Watchdog & Drift Monitor (`/advisor/compliance`)](#88-compliance-watchdog--drift-monitor-advisorcompliance)
+   - [8.9 Model Portfolios & Rebalancing Templates (`/advisor/models`)](#89-model-portfolios--rebalancing-templates-advisormodels)
+   - [8.10 AUM Revenue Analytics & Fee Billing (`/advisor/aum`)](#810-aum-revenue-analytics--fee-billing-advisoraum)
+   - [8.11 SEC Rule 204-2 Books & Records Watchdog (`/advisor/us/compliance`)](#811-sec-rule-204-2-books--records-watchdog-advisoruscompliance)
+9. [Deep Dive: Institutional & Enterprise B2B Portals](#9-deep-dive-institutional--enterprise-b2b-portals)
+   - [9.1 Corporate Treasury & CFO Yield Sentinel (`/treasury`)](#91-corporate-treasury--cfo-yield-sentinel-treasury)
+   - [9.2 Venture Syndicates, SPVs & Cap Table OS (`/syndicates`)](#92-venture-syndicates-spvs--cap-table-os-syndicates)
+   - [9.3 FinAgent for Work & R&D Tax Credits (`/work`)](#93-finagent-for-work--rd-tax-credits-work)
+   - [9.4 Non-Profit Endowments & Stock Giving Portal (`/giving`)](#94-non-profit-endowments--stock-giving-portal-giving)
+   - [9.5 Family Law, Divorce & Forensic Discovery (`/divorce`)](#95-family-law-divorce--forensic-discovery-divorce)
+   - [9.6 White-Label Bank Embedded Wealth SDK (`/bank-embed`)](#96-white-label-bank-embedded-wealth-sdk-bank-embed)
+   - [9.7 B2B CPA & CA Practice Portal (`/cpa` & Practice Mode)](#97-b2b-cpa--ca-practice-portal-cpa--practice-mode)
+10. [Statutory Vector PDF Engine (12+ Institutional Documents)](#10-statutory-vector-pdf-engine-12-institutional-documents)
+11. [Complete Route Catalog (100+ Routes)](#11-complete-route-catalog-100-routes)
+12. [System Architecture & End-to-End Data Flows](#12-system-architecture--end-to-end-data-flows)
+13. [Technology Stack & Third-Party Integrations](#13-technology-stack--third-party-integrations)
+14. [Repository Directory Structure](#14-repository-directory-structure)
+15. [Automated Verification & Test Suites (119/119 Tests)](#15-automated-verification--test-suites-119119-tests)
+16. [Getting Started & Local Setup](#16-getting-started--local-setup)
+17. [Mobile App Setup (Capacitor iOS & Android)](#17-mobile-app-setup-capacitor-ios--android)
+18. [Cloud Deployment Guide (Vercel & Render)](#18-cloud-deployment-guide-vercel--render)
+19. [Regulatory Compliance & Security Architecture](#19-regulatory-compliance--security-architecture)
 
 ---
 
@@ -91,63 +149,19 @@ flowchart TD
 
 FinAgent provides purpose-built interfaces tailored to each stakeholder in the financial ecosystem:
 
-### 1. 📈 Personal Wealth Cockpit (`/app`)
-- **Real-Time Net Worth & Health Score**: 0–100 proprietary health engine evaluating liquidity, debt burden, insurance coverage, diversification, and retirement glide paths.
-- **Tax & Forensic Studio (`/app/tax`)**: Unified 11-tab dual-market tax command center combining automated document ingestion, what-if scenario sandboxes, statutory penalty defense, and institutional workpapers.
-- **Direct Indexing Studio (`/app/direct-indexing`)**: Fractional constituent basket replication with interactive Momentum, Quality, and Low-Volatility factor tilt sliders.
-- **Government Tax E-Filing (`/app/e-file`)**: CBDT AY 2026-27 JSON compiler, NSDL AIS/TIS side-by-side reconciliation matrix, and 28-point pre-flight statutory linter.
-- **Autonomous 1-Click Execution (`/app/execution`)**: Direct execution hub linked to Alpaca Securities (US Paper/Live) and Zerodha Kite Connect / BSE StAR MF (India).
-
-### 2. 👑 FinAgent Black VIP Sovereign Hub (`/app/black`)
-- Reserved for Ultra-High-Net-Worth individuals ($5M+ liquid net worth).
-- Features concierge banker messaging, sovereign wealth asset allocation, zero-knowledge family escrow, and direct secondary private equity allocations.
-
-### 3. 👔 Wealth Advisor OS (`/advisor`)
-- **Client Book (`/advisor/clients`)**: Practice overview displaying client AUM, health scores, and risk profiles.
-- **Client Profile & Statutory IPS (`/advisor/clients/:clientId`)**: SEBI Regulation 17 / SEC Form ADV Investment Policy Statement (IPS) builder with asset allocation bands, return hurdles, and bilateral digital execution.
-- **Statutory Recommendation Queue (`/advisor/recommendations`)**: Fiduciary approval workflow with **1-Click SEBI RIA Co-Signing & Order Bridging** directly into consumer execution rails.
-- **SEBI Compliance Audit Trail (`/advisor/audit`)**: Five-year immutable audit log with cryptographic SHA-256 digests and one-click **SEBI Form B Compliance Dossier PDF** export.
-- **SEC Compliance Watchdog (`/advisor/us/compliance`)**: US RIA compliance tracking under SEC Rule 204-2 books and records.
-
-### 4. 🏦 Corporate Treasury & CFO Yield Sentinel (`/treasury`)
-- **Target Audience**: Startup CFOs, mid-market controllers, treasurers.
-- **Dynamic Runway & Burn Counter**: Real-time runway calculations based on operational cash burn.
-- **Multi-Bank Insured Cash Sweep (ICS)**: Sweeps deposits across partner banks to achieve **$150M+ extended FDIC / DICGC** insurance coverage.
-- **T-Bill Yield Ladder**: Dual-market yield optimizer modeling 4-week to 26-week US Treasuries (5.28%) or Indian RBI 91/182-Day T-Bills (6.84%).
-- **ERP Bridge**: One-click sync with NetSuite, QuickBooks Online, and TallyPrime.
-
-### 5. 🤝 Venture Syndicates, SPVs & Cap Table OS (`/syndicates`)
-- **Target Audience**: Syndicate leads, angel networks, micro-VCs.
-- **SPV Formation & Capital Calls**: Track LP commitments and dispatch digital capital call notices with tracking of wired funds.
-- **Waterfall Distribution Engine**: Models European and American distribution waterfalls, preferred returns (8% hurdle), catch-up provisions, and 80/20 carried interest splits.
-- **Automated Tax Packages**: Generates US IRS Form 1065 / Schedule K-1 and Indian Category I/II AIF Form 64D tax packages.
-
-### 6. 🏛️ Non-Profits, Endowments & Stock Giving (`/giving`)
-- **Target Audience**: University endowments, 501(c)(3) charities, Section 8 non-profits.
-- **Zero-Tax Stock Donation Widget**: Demonstrates tax savings for donors giving appreciated equities (circumventing capital gains tax while securing full fair-market deductions).
-- **Embeddable Donation Snippet**: Ready-to-use HTML/JavaScript embed widget for fundraising portals.
-- **UPMIFA Spending Policy Sentinel**: Audits endowment drawdowns against statutory 4.5%–5.0% caps.
-
-### 7. ⚖️ Family Law, Divorce & Forensic Discovery (`/divorce`)
-- **Target Audience**: Matrimonial attorneys, forensic accountants, divorce mediators.
-- **AI Forensic Statement Audit**: Ingests hundreds of financial statements to flag suspicious offshore transfers, undisclosed crypto wallets, and hidden cash withdrawals.
-- **Equitable Distribution Simulator**: Interactive balance sheet modeling community property vs. separate property across 50/50 splits or custom settlements.
-- **QDRO Modeler**: Models ERISA 401(k) / EPF divisions without triggering early withdrawal penalties.
-
-### 8. 🌐 White-Label Bank Embedded Wealth SDK (`/bank-embed`)
-- **Target Audience**: Regional commercial banks, credit unions, fintech neobanks.
-- **Live Theme Customizer**: Real-time preview of the embedded widget with configurable colors, corner radii, and brand logos.
-- **Developer Code Playground**: Ready-to-copy code snippets for **React**, **iOS Swift**, and **Android Kotlin**.
-- **Deposit Retention Engine**: Automated sweep rules preventing deposit runoff by routing excess checking balances into high-yield internal certificates.
-
-### 9. 💼 CPA & Tax Practice Portal (`/cpa` & `/app/tax` Practice Mode)
-- Multi-client dashboard for tax practitioners and chartered accountants.
-- Batch generation and export of IRS **Form 8949 / Schedule D CSV bundles** and Indian ITR capital gains packages.
-- Cross-client 28-rule batch linting, manifest CSV exports, and shareable client intake links.
+1. **📈 Personal Wealth Cockpit (`/app`)**: Net worth tracking, 0–100 health scoring, tax harvesting, direct indexing, and autonomous execution.
+2. **👑 FinAgent Black Sovereign VIP Hub (`/app/black`)**: Reserved for $5M+ net worth individuals with bespoke allocations, ZK escrow, and concierge banker access.
+3. **👔 Wealth Advisor OS (`/advisor`)**: SEBI RIA & SEC RIA practice management with IPS builders, 1-click order co-signing, and 5-year immutable audit ledgers.
+4. **🏦 Corporate Treasury & CFO Yield Sentinel (`/treasury`)**: Dynamic burn monitoring, $150M+ extended FDIC/DICGC cash sweeps, and dual-market T-Bill yield ladders.
+5. **🤝 Venture Syndicates, SPVs & Cap Table OS (`/syndicates`)**: Capital calls, European/American distribution waterfalls, carried interest, and K-1/Form 64D tax packages.
+6. **🏛️ Non-Profits, Endowments & Stock Giving (`/giving`)**: Zero-tax appreciated stock donation widgets, embeddable donation snippets, and UPMIFA spending monitors.
+7. **⚖️ Family Law, Divorce & Forensic Discovery (`/divorce`)**: AI forensic statement audits, 50/50 community property division, and QDRO retirement plan splitting.
+8. **🌐 White-Label Bank Embedded Wealth SDK (`/bank-embed`)**: Configurable embeddable wealth widgets for regional banks, credit unions, and fintech neobanks.
+9. **💼 CPA & Tax Practice Portal (`/cpa` & `/app/tax` Practice Mode)**: Multi-client practice suite with batch Form 8949 / Schedule D generation and 28-rule batch linting.
 
 ---
 
-## 4. Deep Dive: High-Impact Frontier Platforms
+## 4. Deep Dive: Frontier Platforms & Statutory Engines
 
 ### 4.1 Tax & Forensic Studio: Dual-Market Institutional Engine (`/app/tax`)
 A unified command center bridging US & India tax strategies across 11 integrated modules:
@@ -167,8 +181,6 @@ A unified command center bridging US & India tax strategies across 11 integrated
 
 ### 4.2 Commercial Monetization & AI Defensibility Moats
 
-In the era of public LLMs (ChatGPT, Claude, Gemini), users will not pay for static information or text-only advice. FinAgent monetizes where LLMs cannot compete:
-
 | LLM Commoditization Weakness | FinAgent Commercial Moat | Implementation |
 | :--- | :--- | :--- |
 | **Fiduciary Liability & Audit Defense**<br>Public LLMs disclaim all legal & tax liability ("Not tax advice"). | **Audit-Proof Workpapers with Fiduciary Sign-Off**<br>Legally binding Circular 230 / Section 288 certified workpapers. | [`src/utils/institutionalTaxBinderPdf.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/institutionalTaxBinderPdf.js) |
@@ -178,7 +190,7 @@ In the era of public LLMs (ChatGPT, Claude, Gemini), users will not pay for stat
 | **Last-Mile Filing Gateways**<br>Chatbots cannot transmit IRS MeF XML or CBDT JSON schemas. | **Electronic Transmission & Schema Linting**<br>28-rule automated validation & direct e-filing pipeline. | [`src/pages/consumer/us/US1040EFilingStudio.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/pages/consumer/us/US1040EFilingStudio.jsx) |
 | **Accountant Workflow Friction**<br>Individual tools do not scale for accounting firms and CPAs. | **B2B CPA & CA Practice Mode**<br>Multi-client batch management, cross-client linter, and firm-branded intake portals (\$99/mo/seat). | [`src/components/tax/CpaPracticePortal.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/CpaPracticePortal.jsx) |
 
-- **Executive Value-Gated Paywall (`TaxExecutionPaywallModal.jsx`)**: Free diagnostic scans with execution actions gated behind a dynamic ROI display (**61.6x – 83.2x ROI**) and a strict **3x ROI Money-Back Guarantee** ($299–$599 US / ₹7,999–₹14,999 IN). Includes a **VIP Demo Access** button for instantaneous review.
+- **Executive Value-Gated Paywall (`TaxExecutionPaywallModal.jsx`)**: Free diagnostic scans with execution actions gated behind a dynamic ROI display (**61.6x – 83.2x ROI**) and a strict **3x ROI Money-Back Guarantee** ($299–$599 US / ₹7,999–₹14,999 IN). Includes a **VIP Demo Access** button for instantaneous testing.
 
 ---
 
@@ -201,7 +213,6 @@ Covers all 50 US States + DC + 5 Overseas Territories and international expats:
 ---
 
 ### 4.4 Direct Indexing & Custom Factor Tilt Studio (`/app/direct-indexing`)
-Direct indexing unbundles the index into fractional constituent holdings, allowing personalized factor tilts and constituent-level tax-loss harvesting:
 - **Factor Tilt Sliders**: Interactive controls for **Momentum** (52W high proximity, 6M alpha), **Quality** (Return on Equity, low leverage), and **Low Volatility** (Beta < 0.85).
 - **Dynamic Risk Math**: Calculates active constituent weights, tracking error ($\Delta \text{TE}$), and projected excess alpha against Nifty 50 TRI or S&P 500 benchmarks.
 - **Constituent Lot Harvester**: Scans individual stock lots for unrealized losses and executes 31-day sector ETF proxy swaps (e.g. INFY $\rightarrow$ NIFTYIT) to bank tax loss without breaking sector beta.
@@ -211,7 +222,6 @@ Direct indexing unbundles the index into fractional constituent holdings, allowi
 ---
 
 ### 4.5 Direct Government Tax E-Filing Rails & AIS / TIS Reconciler (`/app/e-file`)
-A full statutory e-filing pipeline conforming to government tax schemas:
 - **AY 2026-27 CBDT JSON Schema**: Targets Finance Act 2024 post-July 23 rules: Section 112A LTCG at **12.5%** with ₹1,25,000 autonomous exemption, Section 111A STCG at **20%**, Schedule Salary standard deduction of ₹75,000 u/s 16(ia) under New Regime (Sec 115BAC), and quarterly capital gains apportionment for Section 234C interest waiver.
 - **AIS / TIS Discrepancy Matrix**: Side-by-side reconciliation across 7 reporting sources (Employer Form 16 u/s 192, RTA Form 194 Dividend, Bank SFT-005 Savings Interest, Bank 194A FD Interest, CAMS/KFintech SFT-006 Mutual Fund sales, Zerodha SFT-017 share trades).
 - **1-Click Auto-Align Discrepancies**: Automatically synchronizes declared income with AIS figures to eliminate Section 143(1)(a) automated adjustment notices.
@@ -221,10 +231,9 @@ A full statutory e-filing pipeline conforming to government tax schemas:
 ---
 
 ### 4.6 SEBI RIA & SEC RIA Fiduciary Practice Management (`/advisor`)
-Empowers Registered Investment Advisers to manage client books while fulfilling statutory fiduciary mandates:
 - **Statutory IPS Tab (`/advisor/clients/:clientId`)**: Implements SEBI Regulation 17 / SEC suitability requirements with horizon, return hurdles, strategic asset allocation bands, and ESG negative screening.
 - **Bilateral Statutory IPS PDF**: One-click download of the formal RIA Investment Policy Statement via [`buildClientIPSPDF`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/fiduciaryPdfBuilder.js).
-- **Fiduciary Co-Signing & Order Bridging (`/advisor/recommendations`)**: Advisors can review approved recommendations and click **"⚡ SEBI RIA Co-Sign & Bridge to Execution"**. This co-signs the order under SEBI Reg `INA000014523` and bridges it directly into [`brokerExecution.js`](file:///Users/adityachowdhury/Downloads/Fin/server/routes/brokerExecution.js) so it immediately appears in the consumer's **1-Click Execution Hub (`/app/execution`)**.
+- **Fiduciary Co-Signing & Order Bridging (`/advisor/recommendations`)**: Advisors review recommendations and click **"⚡ SEBI RIA Co-Sign & Bridge to Execution"**. This co-signs the order under SEBI Reg `INA000014523` and bridges it directly into [`brokerExecution.js`](file:///Users/adityachowdhury/Downloads/Fin/server/routes/brokerExecution.js) for consumer execution.
 - **Compliance Dossiers**: One-click export of the regulatory inspection dossier via [`buildSEBIInspectionDossierPDF`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/fiduciaryPdfBuilder.js) and SEC Form ADV Part 2A trackers.
 
 ---
@@ -252,9 +261,9 @@ Empowers Registered Investment Advisers to manage client books while fulfilling 
 ---
 
 ### 4.10 HUF Statutory Tax Studio & S-Corp FICA Arbitrage (`/app/huf-studio`, `/app/us/scorp`)
-- **HUF Separate Tax Entity**: Leverages Hindu Undivided Family legal entity creation under Hindu Law to establish a secondary PAN, claiming an independent basic exemption limit (₹3,00,000 under New Regime), separate Section 80C deduction (₹1,50,000), and independent Section 112A capital gains exemption (₹1,25,000), saving upwards of ₹3,00,000+ per year.
-- **HUF Constitution Deed PDF**: Generates the legal declaration deed via [`buildHUFDeedPDF`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/fiduciaryPdfBuilder.js).
-- **S-Corp Studio (`/app/us/scorp`)**: Models IRC § 1366 pass-through taxation and RCReports-compliant reasonable compensation to shield business income from the 15.3% self-employment FICA tax (saving $10,000–$25,000+ annually). Includes Pass-Through Entity Tax (PTET) state SALT workarounds.
+- **HUF Separate Tax Entity**: Leverages Hindu Undivided Family legal entity creation under Hindu Law to claim independent basic exemptions and Section 112A capital gains exemptions, saving upwards of ₹3,00,000+ per year.
+- **HUF Constitution Deed PDF**: Generates legal declaration deeds via [`buildHUFDeedPDF`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/fiduciaryPdfBuilder.js).
+- **S-Corp Studio (`/app/us/scorp`)**: Models IRC § 1366 pass-through taxation and RCReports-compliant reasonable compensation to shield business income from 15.3% self-employment FICA taxes (saving $10,000–$25,000+ annually). Includes Pass-Through Entity Tax (PTET) state SALT workarounds.
 
 ---
 
@@ -265,8 +274,7 @@ Empowers Registered Investment Advisers to manage client books while fulfilling 
 
 ---
 
-### 4.12 Frontier AI Copilot Sidecar & Multi-Persona Council (`/app/council`, `/app/live-banker`)
-- **Frontier AI Copilot Sidecar (`AICopilotSidecar.jsx`)**: Context-aware drawer available across the entire platform with persistent memory (`copilotMemoryService.js`) and proactive financial recommendations (`proactiveAdvisorEngine.js`). Renders interactive in-chat cards for basket orders, fund comparisons, and loan prepayment sliders.
+### 4.12 Agentic AI Council & Frontier Intelligence Suite (`/app/council`, `/app/live-banker`, `/app/life-twin`)
 - **Agentic AI Council (`/app/council`)**: Multi-agent deliberative debate where 4 specialized AI personas (Chief Investment Officer, Conservative Tax Attorney, Aggressive Growth Strategist, and Risk Manager) debate portfolio holdings and synthesize a unanimous consensus.
 - **Interactive User Challenge**: Allows the investor to inject counter-arguments or lifestyle constraints, prompting a multi-turn recalculation.
 - **Gemini Live Multimodal Banker (`/app/live-banker`)**: Real-time voice and WebRTC vision banker inspecting physical documents through your device camera.
@@ -274,7 +282,242 @@ Empowers Registered Investment Advisers to manage client books while fulfilling 
 
 ---
 
-## 5. Statutory Vector PDF Engine (12+ Institutional Documents)
+## 5. Deep Dive: Frontier AI Copilot Chatbot Architecture
+
+FinAgent incorporates an AI advisory infrastructure designed to operate both as an autonomous consumer copilot and as a fiduciary institutional advisor assistant.
+
+```mermaid
+flowchart TD
+    subgraph UI_Layer ["User Interface Access Points"]
+        Sidecar["Global AI Copilot Sidecar (Cmd+J / TopBar / Mobile)<br/>AICopilotSidecar.jsx"]
+        FullTerminal["Full-Page AI Wealth Terminal (/app/ai-advisor)<br/>AIAdvisor.jsx & ChatWindow.jsx"]
+    end
+
+    subgraph Intelligence_Engines ["Proactive Intelligence & Memory"]
+        Proactive["Autonomous Proactive Wealth Monitor<br/>proactiveAdvisorEngine.js"]
+        Memory["Long-Term Memory & Knowledge Graph<br/>copilotMemoryService.js"]
+        Panic["Emotional Panic-Selling Intervention<br/>checkPanicSellingIntent()"]
+    end
+
+    subgraph Multimodal_IO ["Multimodal Input / Output"]
+        Voice["Bidirectional Speech API<br/>SpeechRecognition & SpeechSynthesis"]
+        Vision["Screen & Document OCR<br/>Inspect Current Screen + CAS/W-2/1099 Ingestion"]
+    end
+
+    subgraph Execution_Cards ["Interactive In-Chat Action Cards"]
+        Card1["InChatBasketOrderCard (1-Click Rebalance/Harvest)"]
+        Card2["InChatPrepaymentSliderCard (Dynamic Loan Slider)"]
+        Card3["InChatFundCompareCard (Fund Overlap & Alpha)"]
+        Card4["InChatDossierExportCard (SEBI/SEC Dossier PDF)"]
+    end
+
+    subgraph Backend_Tools ["Gemini Function Calling (copilotTools.js)"]
+        Tool1["draft_basket_order"]
+        Tool2["simulate_loan_prepayment"]
+        Tool3["compare_mutual_funds"]
+        Tool4["calculate_tax_breakdown"]
+        Tool5["generate_advisor_suitability_memo"]
+    end
+
+    UI_Layer --> Intelligence_Engines
+    UI_Layer --> Multimodal_IO
+    Intelligence_Engines --> Execution_Cards
+    Execution_Cards --> Backend_Tools
+```
+
+### 5.1 Dual-Topology AI Advisory System
+1. **Full-Page AI Wealth Terminal (`/app/ai-advisor`)** ([`AIAdvisor.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/pages/consumer/AIAdvisor.jsx)):
+   - Dedicated conversational workstation for in-depth financial planning.
+   - Includes full conversation history preservation via [`ChatHistorySidebar.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/ChatHistorySidebar.jsx).
+   - Real-time voice interaction with visual audio waveforms ([`VoiceOrb.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/VoiceOrb.jsx)).
+   - Regulated under **SEC Rule 204-2** (CRD #319402) and **SEBI Reg 19** (`INA000014523`) with statutory disclaimers.
+2. **Persistent Global Copilot Sidecar Drawer** ([`AICopilotSidecar.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/AICopilotSidecar.jsx)):
+   - Non-blocking slide-out drawer accessible anywhere across the platform using `Cmd+J` / `Ctrl+J`, the mobile bottom navigation bar, or the header bar.
+   - Maintains continuous conversational state as the user navigates between portfolio, tax, and advisor views.
+
+---
+
+### 5.2 Dynamic Context-Aware Route Introspection & Page Profiling
+The Copilot continuously introspects the user's active route and live portfolio data, dynamically tailoring its system prompt, context badge, and suggested prompt chips:
+- **Investments & Portfolio (`/app/portfolio`, `/app/performance`)**: Ingests total equity count and net worth; suggests concentration risk audits and benchmark comparisons.
+- **Tax & Alpha Optimization (`/app/tax`, `/app/wash-sale`)**: Ingests harvestable loss lots and active tax jurisdiction rules; suggests wash-sale proxy swaps and 115BAC vs. Old Regime simulations.
+- **Loan & Debt Negotiator (`/app/loan`, `/app/mortgage-refi`)**: Ingests outstanding principal and repo rates; suggests loan reset demand letters and prepayment savings.
+- **Family Office Council (`/app/council`)**: Ingests committee persona state; suggests lifestyle tradeoff debates.
+- **Wealth Advisor OS (`/advisor/*`)**: Switches to **SEBI/SEC RIA Institutional Copilot**, preparing suitability memos, asset allocation drift audits, and pre-meeting client briefings.
+
+---
+
+### 5.3 Autonomous Proactive Wealth Monitor & Event-Driven Alerts
+Implemented in [`src/services/proactiveAdvisorEngine.js`](file:///Users/adityachowdhury/Downloads/Fin/src/services/proactiveAdvisorEngine.js), the proactive engine monitors 5 event conditions, surfacing unread alert counters and action buttons:
+1. **Daily Market Open Briefing (☀️)**: Simulates 9:00 AM market trends, projecting day-delta impact across user equities.
+2. **Asset Allocation Drift Alert (⚖️)**: Triggers when equity/debt allocations drift $\ge 5\%$ from IPS targets, offering a 1-click rebalance shortcut.
+3. **Tax-Loss Harvesting Radar (✂️)**: Scans individual lots for unrealized losses ($>\$1,000$ or $>₹8,000$) and calculates immediate tax savings.
+4. **Repo Rate & Loan Spread Arbitrage (🏦)**: Identifies floating-rate loan spread discrepancies against benchmark rates.
+5. **Fixed Deposit Maturity Countdown (⏳)**: Alerts the investor when bank FDs are within 14 days of maturity to prevent low-yield auto-rollovers.
+
+---
+
+### 5.4 Long-Term Memory Knowledge Graph & Financial DNA Archetypes
+Implemented in [`src/services/copilotMemoryService.js`](file:///Users/adityachowdhury/Downloads/Fin/src/services/copilotMemoryService.js), this service persists the investor's mental model and profile across sessions:
+- **Strategy & ESG Constraints**: Hard rules that the Copilot must respect (e.g. strict exclusion of tobacco and defense weapons; mandate for direct mutual funds; minimum liquid cash reserve).
+- **Life Milestones & Targets**: Target retirement age, target corpus, and major planned expenses.
+- **Financial DNA Traits**: Behavioral psychology scores including **Archetype** (e.g., *Strategic Compounder*), **Loss Aversion Score** (0–100 sensitivity to market dips), and **Impulse Selling Risk**.
+
+---
+
+### 5.5 Emotional Panic-Selling Intervention Protocol
+When market volatility spikes, investors frequently make destructive emotional decisions. The Copilot contains a built-in behavioral intervention guardrail ([`checkPanicSellingIntent`](file:///Users/adityachowdhury/Downloads/Fin/src/services/copilotMemoryService.js#L66)):
+- Evaluates prompts for panic language (`"sell all"`, `"dump everything"`, `"panic sell"`, `"cash out now"`, `"exit market"`).
+- Automatically halts immediate order execution and presents grounding guidance:
+  1. Displays the user's defined long-term Financial DNA archetype and target retirement horizon.
+  2. Presents historical market data showing broad market index recoveries within 18 months.
+  3. Quantifies the immediate tax cost (realizing short-term capital gains) and loss of compounded dividend income.
+
+---
+
+### 5.6 Bidirectional Voice System (Web Speech API)
+- **Speech-to-Text Recognition**: Uses `window.SpeechRecognition` / `webkitSpeechRecognition` with locale switching (`en-US` vs. `en-IN`) for hands-free queries.
+- **Text-to-Speech Audio Readouts**: Uses `window.SpeechSynthesis` (`SpeechSynthesisUtterance`) to speak back advice with regex-sanitized markdown formatting.
+
+---
+
+### 5.7 Multimodal Vision & In-Chat Document OCR
+- **"Inspect Current Screen" Action**: Automatically captures the active page DOM state and sends it to Gemini to highlight hidden risks or unoptimized allocations.
+- **In-Chat Drag-and-Drop File Upload**: Upload PDF statements, Form 16, 1099-B, W-2s, or bank statements directly into the chat for OCR parsing and portfolio ingestion.
+
+---
+
+### 5.8 Interactive Executable In-Chat Action Cards
+Rather than generating plain text responses, the Copilot renders rich interactive React cards directly inside the conversation:
+1. **[`InChatBasketOrderCard.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/cards/InChatBasketOrderCard.jsx)**: Multi-leg order ticket for rebalancing or tax harvesting with symbol, action (BUY/SELL), quantity, price, tax impact, and a **"⚡ Bridge to 1-Click Execution"** button.
+2. **[`InChatPrepaymentSliderCard.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/cards/InChatPrepaymentSliderCard.jsx)**: Interactive slider allowing users to adjust lump-sum loan prepayments and see live interest savings and tenure reductions.
+3. **[`InChatFundCompareCard.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/cards/InChatFundCompareCard.jsx)**: Side-by-side mutual fund comparison showing 1Y/3Y/5Y CAGR, Expense Ratio (TER), Alpha, Sharpe Ratio, and Portfolio Overlap %.
+4. **[`InChatDossierExportCard.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/ai/cards/InChatDossierExportCard.jsx)**: Summary card for advisory memos with a **"📄 Download Official PDF"** button.
+
+---
+
+### 5.9 Gemini Function-Calling Tool Declarations
+Located in [`server/services/copilotTools.js`](file:///Users/adityachowdhury/Downloads/Fin/server/services/copilotTools.js), the backend registers structured function-calling tools with the Gemini API:
+- `draft_basket_order`: Generates validated order tickets.
+- `simulate_loan_prepayment`: Calculates amortization deltas and interest savings.
+- `compare_mutual_funds`: Evaluates risk-adjusted returns and expense drags.
+- `calculate_tax_breakdown`: Computes tax liability under Old vs. New (115BAC) regimes.
+- `generate_advisor_suitability_memo`: Produces SEBI-compliant suitability documentation.
+
+---
+
+### 5.10 Fiduciary Audit Logging & Regulatory Supervision
+Every response generated across `/app/ai-advisor` and `AICopilotSidecar` is logged in the backend database with:
+- Client identifier, actor persona, and timestamp.
+- Cryptographic SHA-256 digest of advice text.
+- Governing regulatory citation (**SEBI Reg 19** for India; **SEC Rule 204-2** for US).
+
+---
+
+## 6. Deep Dive: Consumer Wealth, Behavioral & Life Engines
+
+### 6.1 Portfolio Doctor (`/app/doctor`)
+Diagnostic scanner evaluating asset health across concentration risk, liquidity buffer, insurance adequacy, and asset class overlap, generating prioritized clinical prescriptions.
+
+### 6.2 Life Event Re-Architect (`/app/life-events`)
+Interactive life planner modeling financial impacts for marriage, home purchases, career sabbaticals, parenthood, and inheritance with goal-adjusted cash flow glide paths.
+
+### 6.3 SIP & Inflow Optimizer (`/app/sip-optimizer`)
+Models Step-Up SIP schedules (e.g. 10% annual increase), analyzes date-of-month return distributions, and simulates step-down safety buffers during financial emergencies.
+
+### 6.4 WhatsApp AI Assistant (`/app/whatsapp`)
+Twilio webhook-powered mobile assistant allowing users to query net worth, log expenses, and receive morning market briefings via WhatsApp.
+
+### 6.5 Document Intelligence OCR (`/app/documents`)
+Multimodal OCR engine extracting tabular data from CAMS/NSDL CAS statements, Form 16, Bank FDs, and Insurance Policy schedules.
+
+### 6.6 Credit Score Sentinel & Bureau Dispute Generator (`/app/credit`)
+Ingests CIBIL and Experian bureau files, tracks credit utilization ratios across accounts, and drafts formal dispute letters citing statutory credit reporting standards.
+
+### 6.7 Credit Card & Points Maximizer (`/app/card-optimizer`, `/app/us-cards`)
+Optimizes reward point valuations, tracks the Chase 5/24 rule, and balances annual fees against spend multipliers and travel credits.
+
+### 6.8 ESOP & RSU Equity OS (`/app/esop-rsu`, `/app/equity-os`)
+Comprehensive equity compensation management modeling Section 17(2)(vi) perquisite tax on vesting, capital gains on sale, AMT triggers for ISOs, and 83(b) election deadlines.
+
+### 6.9 Couple Pre-Nup & Wealth Alignment (`/app/prenup`)
+Aligns pre-marital assets, tracks separate vs. joint property, models shared financial goals, and generates transparent wealth disclosure schedules.
+
+### 6.10 Financial DNA & Psychometrics (`/app/dna`)
+Evaluates user risk tolerance, loss aversion, and behavioral archetypes (e.g., *Strategic Compounder*, *Guardian Filer*) to calibrate investment recommendations.
+
+### 6.11 Peer Leagues & Blind Demographic Cohorts (`/app/peers`, `/app/cohorts`)
+Blind benchmarking comparing savings rates, net worth percentiles, and asset allocations against peer groups without exposing personal identifying data.
+
+### 6.12 Real Estate Automated Valuation Model (AVM) (`/app/real-estate-avm`)
+Models property appreciation, rental yields, mortgage amortization, and tax deductions under Section 24(b) / US IRC § 163(h).
+
+### 6.13 Private Equity & 409A Cap Table (`/app/private-equity`)
+Models startup equity grants, secondary market share sales, 409A valuation discounts, and liquidation waterfall preferences.
+
+### 6.14 Residency Tax Arbitrage (`/app/residency-arbitrage`)
+Evaluates physical presence rules (e.g., India 182-day rule, US state statutory residence), DTAA double taxation treaties, and interstate tax migration (e.g., California to Texas).
+
+### 6.15 Micro-Invest Round-Ups (`/app/roundups`)
+Rounds up daily debit card and UPI transactions to the nearest ₹10 or \$1, sweeping spare change into low-cost index ETFs.
+
+### 6.16 Insurance Decoder & HLV Calculator (`/app/insurance`)
+Calculates Human Life Value (HLV), evaluates health insurance room rent sub-limits, and models surrender values for traditional endowment/ULIP policies.
+
+### 6.17 FIRE Calculator & Safe Withdrawal Rate Modeler (`/app/fire`)
+Models Lean FIRE, Fat FIRE, and Coast FIRE targets using safe withdrawal rates (3.0%–4.0%) adjusted for healthcare inflation.
+
+### 6.18 Cashflow & Statement Vision (`/app/cashflow`)
+Categorizes bank transaction statements, tracks monthly burn rates, and flags silent recurring subscription leaks.
+
+### 6.19 Government Schemes & Sovereign Wealth (`/app/govt-schemes`)
+Tracks Indian sovereign savings instruments including Public Provident Fund (PPF), Sukanya Samriddhi Yojana (SSY), Senior Citizens Savings Scheme (SCSS), and Sovereign Gold Bonds (SGB).
+
+### 6.20 FinAgent Black Sovereign VIP Wealth Portal (`/app/black`)
+Private wealth portal reserved for ultra-high-net-worth investors (\$5M+ AUM) featuring concierge private banking, secondary allocations, and bespoke escrow services.
+
+---
+
+## 7. Deep Dive: Zero-Auth Viral Lead-Magnet Tools (`/tools/*`)
+
+Public, unauthenticated calculators designed for customer acquisition:
+1. **CTC Tax Leak Calculator (`/tools/ctc-tax-leak`)**: Quantifies tax leakage in Indian salary structures and demonstrates savings via Corporate NPS and tax-exempt allowances.
+2. **Loan Arbitrage Calculator (`/tools/loan-arbitrage`)**: Calculates interest savings from refinancing floating-rate loans to external benchmark rates.
+3. **US W-2 Tax Drag Calculator (`/tools/w2-tax-leak`)**: Evaluates tax drag on executive salaries, recommending S-Corp and HSA optimizations.
+4. **PMI Removal & Refi Calculator (`/tools/pmi-arbitrage`)**: Calculates home equity thresholds to eliminate Private Mortgage Insurance (PMI) on conventional US mortgages.
+5. **Comprehensive Wealth Diagnostic (`/tools/wealth-leak`)**: Analyzes fee drag, commission leakage, and tax inefficiency across multi-asset portfolios.
+
+---
+
+## 8. Deep Dive: Wealth Advisor OS Operational Depth (`/advisor/*`)
+
+1. **Client Book & AUM Matrix (`/advisor/clients`)**: Practice overview displaying client AUM, health scores, and risk profiles.
+2. **Client Profile & Statutory IPS Builder (`/advisor/clients/:clientId`)**: SEBI Regulation 17 / SEC Form ADV Investment Policy Statement (IPS) builder with asset allocation bands and return hurdles.
+3. **Fiduciary Recommendation Queue & Order Bridging (`/advisor/recommendations`)**: AI recommendation queue with **1-Click SEBI RIA Co-Signing & Order Bridging** directly into consumer execution rails.
+4. **Five-Year Regulatory Audit Trail & SEBI Form B Dossier (`/advisor/audit`)**: Five-year immutable audit log with cryptographic SHA-256 digests and one-click **SEBI Form B Compliance Dossier PDF** export.
+5. **Digital Client Onboarding Flow (`/advisor/onboarding`)**: 5-step digital client onboarding wizard with risk profiling and digital agreement execution.
+6. **AI Pre-Meeting Briefing Dossiers (`/advisor/meeting-prep`)**: AI-generated client dossiers synthesizing recent portfolio shifts, pending tax harvesting opportunities, and family milestones before client reviews.
+7. **Quarterly Fiduciary Report Cards (`/advisor/report-cards`)**: Performance attribution and asset allocation reports ready for client delivery.
+8. **Compliance Watchdog & Drift Monitor (`/advisor/compliance`)**: Real-time monitoring of client portfolios for allocation drift and regulatory fee compliance.
+9. **Model Portfolios & Rebalancing Templates (`/advisor/models`)**: Practice-wide model portfolio templates with target weights across equity, debt, and alternative assets.
+10. **AUM Revenue Analytics & Fee Billing (`/advisor/aum`)**: Revenue tracking, fee tier breakdowns, and automated client billing schedules.
+11. **SEC Rule 204-2 Books & Records Watchdog (`/advisor/us/compliance`)**: Dedicated compliance tracking for US RIAs, auditing books and records under SEC Rule 204-2.
+
+---
+
+## 9. Deep Dive: Institutional & Enterprise B2B Portals
+
+1. **Corporate Treasury & CFO Yield Sentinel (`/treasury`)**: Dynamic burn counter, multi-bank Insured Cash Sweep (ICS) providing **$150M+ extended FDIC / DICGC** insurance, and T-Bill yield ladders.
+2. **Venture Syndicates, SPVs & Cap Table OS (`/syndicates`)**: LP commitment tracking, digital capital calls, European/American distribution waterfalls, and K-1/Form 64D tax packages.
+3. **FinAgent for Work & R&D Tax Credits (`/work`)**: Employee equity financing and enterprise financial wellness.
+4. **Non-Profit Endowments & Stock Giving Portal (`/giving`)**: Zero-tax appreciated stock donation widgets, embeddable donation snippets, and UPMIFA spending policy monitoring.
+5. **Family Law, Divorce & Forensic Discovery (`/divorce`)**: AI forensic statement audit flagging undisclosed assets, 50/50 balance sheet modeling, and QDRO 401(k)/EPF divisions.
+6. **White-Label Bank Embedded Wealth SDK (`/bank-embed`)**: Embeddable wealth management widgets for regional banks and credit unions with live theme customization and code playgrounds.
+7. **B2B CPA & CA Practice Portal (`/cpa` & Practice Mode)**: Accountant practice suite with 28-rule batch client linting, manifest CSV exports, and shareable client intake links.
+
+---
+
+## 10. Statutory Vector PDF Engine (12+ Institutional Documents)
 
 FinAgent includes a dedicated 3,800+ line vector PDF generator located across [`src/utils/fiduciaryPdfBuilder.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/fiduciaryPdfBuilder.js) and [`src/utils/institutionalTaxBinderPdf.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/institutionalTaxBinderPdf.js). Every builder features `cleanAscii` sanitization, ensuring zero UTF-16 glyph corruption, perfect typography, clean table formatting, and SHA-256 integrity digests:
 
@@ -295,9 +538,7 @@ FinAgent includes a dedicated 3,800+ line vector PDF generator located across [`
 
 ---
 
-## 6. Complete Route Catalog (100+ Routes)
-
-FinAgent implements over 100 production routes organized into distinct operational tiers:
+## 11. Complete Route Catalog (100+ Routes)
 
 ```
 FinAgent Route Hierarchy
@@ -307,7 +548,7 @@ FinAgent Route Hierarchy
 │   ├── /signup                   Registration Flow
 │   ├── /onboarding               5-Step New User Onboarding Wizard
 │   ├── /terms & /privacy         DPDP Act 2023 & Terms of Service
-│   └── /tools/*                  Viral Calculators (CTC Tax Leak, Loan Arbitrage, W-2 Leak, PMI Arbitrage)
+│   └── /tools/*                  Viral Calculators (CTC Tax Leak, Loan Arbitrage, W-2 Leak, PMI Arbitrage, Wealth Leak)
 │
 ├── Personal Wealth Cockpit (/app/*)
 │   ├── /app/dashboard            Net worth, Health Score ring, asset allocation
@@ -377,7 +618,7 @@ FinAgent Route Hierarchy
 
 ---
 
-## 7. System Architecture & End-to-End Data Flows
+## 12. System Architecture & End-to-End Data Flows
 
 ```mermaid
 sequenceDiagram
@@ -419,7 +660,7 @@ sequenceDiagram
 
 ---
 
-## 8. Technology Stack & Third-Party Integrations
+## 13. Technology Stack & Third-Party Integrations
 
 ### Frontend
 - **Framework**: [React 18.3](https://react.dev/) + [Vite 5.4](https://vitejs.dev/)
@@ -454,7 +695,7 @@ sequenceDiagram
 
 ---
 
-## 9. Repository Directory Structure
+## 14. Repository Directory Structure
 
 ```
 Fin/
@@ -549,9 +790,9 @@ Fin/
 
 ---
 
-## 10. Automated Verification & Test Suites (119/119 Tests)
+## 15. Automated Verification & Test Suites (119/119 Tests)
 
-FinAgent maintains a rigorous automated testing pipeline validating every statutory computation, bracket calculation, paywall transition, and PDF generator:
+FinAgent maintains an automated test pipeline validating statutory computations, bracket calculations, paywall transitions, and PDF generators:
 
 ```bash
 # 1. Commercial Monetization & AI Defensibility Moats (9 Tests)
@@ -594,7 +835,7 @@ node tests/test_enterprise_commercial_readiness.mjs
 
 ---
 
-## 11. Getting Started & Local Setup
+## 16. Getting Started & Local Setup
 
 ### Prerequisites
 - **Node.js**: `v18.0.0` or higher (Node.js 20+ or 24 recommended)
@@ -672,7 +913,7 @@ npm run build
 
 ---
 
-## 12. Mobile App Setup (Capacitor iOS & Android)
+## 17. Mobile App Setup (Capacitor iOS & Android)
 
 FinAgent is configured with [Capacitor](https://capacitorjs.com/) for native mobile deployment.
 
@@ -698,7 +939,7 @@ For full details on code signing, app icons, and publishing, see [`MOBILE_BUILD.
 
 ---
 
-## 13. Cloud Deployment Guide (Vercel & Render)
+## 18. Cloud Deployment Guide (Vercel & Render)
 
 ### Deploy Frontend to Vercel ($0 Free Tier)
 1. Push your changes to GitHub.
@@ -724,7 +965,7 @@ For full details on code signing, app icons, and publishing, see [`MOBILE_BUILD.
 
 ---
 
-## 14. Regulatory Compliance & Security Architecture
+## 19. Regulatory Compliance & Security Architecture
 
 - **SEBI (Investment Advisers) Regulations, 2013**:
   - **Regulation 17 (Suitability)**: Risk profiling and mandatory Investment Policy Statement (IPS) before advising.
