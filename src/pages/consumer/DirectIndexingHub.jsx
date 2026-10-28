@@ -1,15 +1,19 @@
+// src/pages/consumer/DirectIndexingHub.jsx
+// Direct Indexing Terminal, Custom Factor Tilt Studio & Continuous Tax-Alpha Harvester
+
 import React, { useState, useEffect } from 'react';
 import {
   Layers, TrendingUp, ShieldCheck, DollarSign, ArrowRight, CheckCircle2,
   Sliders, Ban, RefreshCw, AlertCircle, Percent, Zap, Sparkles, PieChart,
-  Award, FileCheck, Lock, ExternalLink
+  Award, FileCheck, Lock, ExternalLink, Download, Send, SlidersHorizontal, Scale
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { buildDirectIndexingCharterPDF } from '../../utils/fiduciaryPdfBuilder';
 
 export default function DirectIndexingHub() {
-  const { state, isUSMarket } = useApp();
+  const { state, dispatch, isUSMarket } = useApp();
   const { currentUser, userProfile } = useAuth();
   const { tier, upgradeTier } = useSubscription();
 
@@ -22,12 +26,28 @@ export default function DirectIndexingHub() {
   const [cashSweep, setCashSweep] = useState(null);
   const [tierYieldData, setTierYieldData] = useState(null);
   const [excludedSymbols, setExcludedSymbols] = useState([]);
-  const [investmentAmount, setInvestmentAmount] = useState(market === 'IN' ? 100000 : 10000);
+  const [investmentAmount, setInvestmentAmount] = useState(market === 'IN' ? 500000 : 25000);
   const [rebalancing, setRebalancing] = useState(false);
   const [orderBasketResult, setOrderBasketResult] = useState(null);
   const [executionSuccess, setExecutionSuccess] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
 
-  // Advisory Wrap Fee & Agreement State (Engine 2)
+  // Factor Tilts State (0 to 100%)
+  const [factorTilts, setFactorTilts] = useState({
+    momentum: 25,
+    quality: 35,
+    lowVol: 0
+  });
+
+  // Constituent Tax-Loss Harvester State
+  const [harvestingLots, setHarvestingLots] = useState(false);
+  const [harvestResult, setHarvestResult] = useState(null);
+
+  // Routing to Advisor Queue
+  const [routingToAdvisor, setRoutingToAdvisor] = useState(false);
+  const [routedToAdvisor, setRoutedToAdvisor] = useState(false);
+
+  // Advisory Wrap Fee & Agreement State
   const [showWrapModal, setShowWrapModal] = useState(false);
   const [wrapSignature, setWrapSignature] = useState(
     state?.consumer?.user?.name || userProfile?.name || (market === 'IN' ? 'Arjun Sharma' : 'Alex Chen')
@@ -38,6 +58,11 @@ export default function DirectIndexingHub() {
   useEffect(() => {
     fetchModels();
   }, [market, tier]);
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   async function fetchModels() {
     setLoading(true);
@@ -85,15 +110,21 @@ export default function DirectIndexingHub() {
       const json = await res.json();
       if (json.success) {
         setWrapEnrollment(json.enrollment);
+        showToast('✓ 25 bps Advisory Wrap Agreement enrolled!');
       }
     } catch (err) {
       console.error('Failed to enroll in wrap fee:', err);
+      showToast('Error enrolling wrap agreement');
     } finally {
       setEnrollingWrap(false);
     }
   }
 
   const selectedModel = models.find(m => m.id === selectedModelId) || models[0];
+
+  // Dynamic real-time tracking error and excess alpha estimates based on factor tilts
+  const estTrackingError = (0.38 + (factorTilts.momentum * 0.005 + factorTilts.quality * 0.004 + factorTilts.lowVol * 0.003)).toFixed(2) + '%';
+  const estExcessReturn = '+' + (1.85 + (factorTilts.momentum * 0.01 + factorTilts.quality * 0.008 - factorTilts.lowVol * 0.002)).toFixed(2) + '% p.a.';
 
   function toggleExclusion(symbol) {
     if (excludedSymbols.includes(symbol)) {
@@ -118,15 +149,18 @@ export default function DirectIndexingHub() {
           modelId: selectedModel.id,
           exclusions: excludedSymbols,
           market,
-          customCash: Number(investmentAmount)
+          customCash: Number(investmentAmount),
+          tilts: factorTilts
         })
       });
       const json = await res.json();
       if (json.success) {
         setOrderBasketResult(json);
+        showToast('✓ Rebalancing basket & factor tilt weights compiled!');
       }
     } catch (err) {
       console.error('Failed to compute rebalance:', err);
+      showToast('Error computing rebalance');
     } finally {
       setRebalancing(false);
     }
@@ -135,7 +169,6 @@ export default function DirectIndexingHub() {
   async function handleExecuteBasket() {
     if (!orderBasketResult) return;
     setExecutionSuccess(true);
-    // Submit first batch to SOR router
     try {
       await fetch('/api/broker-router/place-order', {
         method: 'POST',
@@ -147,39 +180,152 @@ export default function DirectIndexingHub() {
           type: 'SOR_VWAP'
         })
       });
+      showToast('✓ Direct Index batch filled across market lots!');
     } catch (e) {
-      // simulated fill succeeds
+      showToast('Executed in high-fidelity sandbox');
+    }
+  }
+
+  // 1-Click Constituent Tax-Loss Harvest
+  async function handleHarvestTaxAlpha() {
+    setHarvestingLots(true);
+    try {
+      const res = await fetch('/api/direct-indexing/harvest-lots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId: selectedModel?.id,
+          market,
+          customCash: Number(investmentAmount)
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setHarvestResult(json);
+        showToast(`✓ Harvested ${json.totalLossHarvested} in losses! Tax benefit: ${json.taxShieldBenefit}`);
+      }
+    } catch (err) {
+      showToast('Failed to harvest tax loss: ' + err.message);
+    } finally {
+      setHarvestingLots(false);
+    }
+  }
+
+  // Download Direct Indexing Operating Charter PDF
+  function handleDownloadCharterPDF() {
+    if (!selectedModel) return;
+    const doc = buildDirectIndexingCharterPDF(
+      selectedModel,
+      factorTilts,
+      excludedSymbols,
+      state?.consumer?.user || userProfile || { name: 'Arjun Sharma' }
+    );
+    doc.save(`FinAgent_Direct_Indexing_Charter_${selectedModel.id || 'Nifty50'}.pdf`);
+    showToast('✓ Direct Indexing Operating Charter PDF downloaded');
+  }
+
+  // Route Custom Tilt to Advisor Review Queue
+  async function handleRouteToAdvisor() {
+    setRoutingToAdvisor(true);
+    try {
+      const recoPayload = {
+        id: `r_di_tilt_${Date.now()}`,
+        clientId: 'c1',
+        clientName: state?.consumer?.user?.name || userProfile?.name || 'Arjun Sharma',
+        type: 'direct_indexing_tilt',
+        title: `Direct Index Custom Factor Tilt: ${selectedModel?.name}`,
+        urgency: 'medium',
+        confidence: 96,
+        status: 'pending',
+        advisorEdit: '',
+        createdAt: new Date().toISOString(),
+        summary: `Client requested customized factor tilts (Momentum: +${factorTilts.momentum}%, Quality: +${factorTilts.quality}%, LowVol: +${factorTilts.lowVol}%) with ${excludedSymbols.length} exclusions on ${selectedModel?.benchmark}. Projected tracking error: ${orderBasketResult?.trackingError || estTrackingError}.`,
+        impact: {
+          aum: Number(investmentAmount),
+          projectedTaxAlpha: selectedModel?.projectedTaxAlpha || '+1.85% p.a.',
+          advisoryFeeBps: 25,
+          annualFeeAmount: Math.round(Number(investmentAmount) * 0.0025)
+        },
+        orders: orderBasketResult?.orderBasket || []
+      };
+
+      if (dispatch) {
+        dispatch({
+          type: 'ADD_RECOMMENDATIONS',
+          payload: [recoPayload]
+        });
+      }
+
+      setRoutedToAdvisor(true);
+      showToast('✓ Custom Index Charter routed to SEBI RIA Queue (/advisor/recommendations)');
+    } catch (err) {
+      showToast('Failed to route to advisor: ' + err.message);
+    } finally {
+      setRoutingToAdvisor(false);
     }
   }
 
   return (
     <div className="page-enter" style={{ padding: '1.5rem', maxWidth: 1280, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header */}
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed',
+          top: 24,
+          right: 24,
+          zIndex: 9999,
+          background: 'var(--primary)',
+          color: '#fff',
+          padding: '0.875rem 1.25rem',
+          borderRadius: 'var(--radius)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontWeight: 600,
+          animation: 'slideIn 0.2s ease-out'
+        }}>
+          <CheckCircle2 size={18} />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Header Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
             <span style={{ fontSize: '1.75rem' }}>🧬</span>
             <h1 className="text-h1" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>
-              Direct Indexing Terminal & Tax-Alpha Harvester
+              Direct Indexing & Custom Factor Tilt Studio
             </h1>
             <span className="badge badge-primary" style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-              Vector 1 · Institutional Execution
+              Vector 1 · Zero Mutual Fund TER
             </span>
           </div>
-          <p className="text-sm text-secondary" style={{ margin: 0 }}>
-            Replicate top benchmarks through fractional individual equities. Harvest individual lot losses to generate +1.8% to +2.4% annualized after-tax alpha while eliminating employer stock concentration.
+          <p className="text-sm text-secondary" style={{ margin: 0, maxWidth: 800 }}>
+            Directly own the 50 underlying benchmark equities in your personal demat account. Apply multi-factor tilts (Momentum, Quality, Low-Vol), enforce ESG exclusions, and harvest constituent-level losses for <strong>+1.8% to +2.4% annual tax alpha</strong>.
           </p>
         </div>
 
-        {/* Market Badge & Quick Sweep Pill */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <div className="card" style={{ padding: '0.5rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-            <Zap size={16} color="var(--green)" />
-            <div style={{ fontSize: '0.75rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Idle Cash Sweep: </span>
-              <strong style={{ color: 'var(--green)' }}>{cashSweep?.yield || (market === 'US' ? '5.15% APY' : '6.85% p.a.')}</strong>
-            </div>
-          </div>
+        {/* Action Controls */}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleDownloadCharterPDF}
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Download size={14} /> Download Operating Charter (PDF)
+          </button>
+
+          <button
+            onClick={handleRouteToAdvisor}
+            disabled={routingToAdvisor || routedToAdvisor}
+            className="btn btn-primary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+          >
+            {routedToAdvisor ? <CheckCircle2 size={14} /> : <Send size={14} />}
+            {routedToAdvisor ? 'Routed to RIA Queue' : 'Route to SEBI RIA'}
+          </button>
         </div>
       </div>
 
@@ -188,7 +334,7 @@ export default function DirectIndexingHub() {
         {models.map(m => (
           <button
             key={m.id}
-            onClick={() => { setSelectedModelId(m.id); setOrderBasketResult(null); setExecutionSuccess(false); }}
+            onClick={() => { setSelectedModelId(m.id); setOrderBasketResult(null); setExecutionSuccess(false); setHarvestResult(null); }}
             className="btn"
             style={{
               padding: '0.65rem 1.1rem',
@@ -210,361 +356,445 @@ export default function DirectIndexingHub() {
       </div>
 
       {selectedModel && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.5rem' }}>
-          {/* Left Column: Direct Index Constituents & Custom Exclusions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div>
-                  <h3 className="text-h3" style={{ margin: 0, fontWeight: 700 }}>
-                    {selectedModel.name}
-                  </h3>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                    Replicating <strong>{selectedModel.benchmark}</strong> · Tracking Error: <strong>{selectedModel.trackingError}</strong>
-                  </div>
-                </div>
+        <>
+          {/* Factor Tilt Console Banner */}
+          <div className="card" style={{
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.06) 100%)',
+            border: '1px solid rgba(99,102,241,0.25)',
+            padding: '1.25rem 1.5rem',
+            borderRadius: 14
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h3 className="text-h3" style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SlidersHorizontal size={18} color="var(--primary)" /> Multi-Factor Tilt Control Matrix
+                </h3>
+                <p className="text-sm text-secondary" style={{ marginTop: 2 }}>
+                  Dynamically overlay quantitative smart-beta factors over benchmark market-cap weights without breaking tracking error bounds.
+                </p>
+              </div>
 
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Projected Tax-Alpha</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)' }}>
-                    {selectedModel.projectedTaxAlpha}
+                  <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Projected Tracking Error</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>
+                    {orderBasketResult?.trackingError || estTrackingError}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Expected Excess Alpha</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--green)' }}>
+                    {orderBasketResult?.projectedExcessReturn || estExcessReturn}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* 25 bps Advisory Wrap Fee & Net Client Surplus (Engine 2) */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)',
-                  border: '1px solid rgba(99,102,241,0.25)',
-                  borderRadius: 'var(--radius)',
-                  padding: '1rem',
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <Award size={16} color="var(--primary)" />
-                    <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>
-                      Advisory Wrap Fee: 25 bps ({selectedModel.wrapFeeAnnualPct || '0.25% p.a.'})
-                    </span>
-                    <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                      Net Client Tax-Alpha: {selectedModel.netClientTaxAlpha || '+1.89% p.a.'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                    SEBI RIA / Form ADV Model · Billed quarterly in arrears · Client retains &gt;85% of net harvested tax alpha
-                  </div>
+            {/* Tilt Sliders Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+              {/* Momentum Tilt */}
+              <div style={{ background: 'var(--surface-raised)', borderRadius: 10, padding: '0.875rem 1rem', border: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>🚀 Momentum Factor</span>
+                  <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>+{factorTilts.momentum}%</span>
                 </div>
-
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setShowWrapModal(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', borderColor: 'var(--glass-border)', fontSize: '0.75rem' }}
-                >
-                  <FileCheck size={14} />
-                  <span>{wrapEnrollment ? 'Agreement Enrolled' : 'Wrap Fee Schedule'}</span>
-                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={factorTilts.momentum}
+                  onChange={e => {
+                    setFactorTilts(prev => ({ ...prev, momentum: Number(e.target.value) }));
+                    setOrderBasketResult(null);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                />
+                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Overweights top 12M relative strength performers (Telecom, Semiconductors).
+                </div>
               </div>
 
-              {/* Constituents Grid with Exclusion Toggles */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1.2fr', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                  <span>Constituent</span>
-                  <span>Weight</span>
-                  <span>Price</span>
-                  <span>Lot P&L</span>
-                  <span style={{ textAlign: 'right' }}>Action / Exclusion</span>
+              {/* Quality / ROE Tilt */}
+              <div style={{ background: 'var(--surface-raised)', borderRadius: 10, padding: '0.875rem 1rem', border: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>💎 Quality & ROE Factor</span>
+                  <span style={{ fontWeight: 800, color: 'var(--green)', fontSize: '0.9rem' }}>+{factorTilts.quality}%</span>
                 </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={factorTilts.quality}
+                  onChange={e => {
+                    setFactorTilts(prev => ({ ...prev, quality: Number(e.target.value) }));
+                    setOrderBasketResult(null);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--green)', cursor: 'pointer' }}
+                />
+                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Tilts into fortress balance sheets, high ROIC, and low debt (TCS, Infosys, MSFT).
+                </div>
+              </div>
 
-                {selectedModel.constituents?.map(c => {
-                  const isExcluded = excludedSymbols.includes(c.symbol);
-                  return (
-                    <div
-                      key={c.symbol}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1.2fr',
-                        alignItems: 'center',
-                        padding: '0.65rem 0.75rem',
-                        borderRadius: 'var(--radius)',
-                        background: isExcluded ? 'rgba(239, 68, 68, 0.06)' : 'var(--surface-raised)',
-                        border: `1px solid ${isExcluded ? 'rgba(239, 68, 68, 0.25)' : 'var(--glass-border)'}`,
-                        opacity: isExcluded ? 0.6 : 1,
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.symbol}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.name}</span>
-                      </div>
-
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
-                        {isExcluded ? <span style={{ color: 'var(--red)', textDecoration: 'line-through' }}>{c.weight}%</span> : `${c.weight}%`}
-                      </div>
-
-                      <div style={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-                        {currencySymbol}{c.price.toLocaleString()}
-                      </div>
-
-                      <div>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: 4,
-                          background: c.pnlPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                          color: c.pnlPct >= 0 ? 'var(--green)' : 'var(--red)'
-                        }}>
-                          {c.pnlPct >= 0 ? `+${c.pnlPct}%` : `${c.pnlPct}%`}
-                        </span>
-                      </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => toggleExclusion(c.symbol)}
-                          className="btn btn-ghost btn-sm"
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '0.2rem 0.6rem',
-                            color: isExcluded ? 'var(--text-primary)' : 'var(--red)',
-                            border: `1px solid ${isExcluded ? 'var(--glass-border)' : 'rgba(239, 68, 68, 0.3)'}`
-                          }}
-                        >
-                          {isExcluded ? 'Include +' : 'Exclude ✕'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Low Volatility Tilt */}
+              <div style={{ background: 'var(--surface-raised)', borderRadius: 10, padding: '0.875rem 1rem', border: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>🛡️ Low Volatility Factor</span>
+                  <span style={{ fontWeight: 800, color: 'var(--gold)', fontSize: '0.9rem' }}>+{factorTilts.lowVol}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={factorTilts.lowVol}
+                  onChange={e => {
+                    setFactorTilts(prev => ({ ...prev, lowVol: Number(e.target.value) }));
+                    setOrderBasketResult(null);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer' }}
+                />
+                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Minimizes portfolio drawdown via recession-proof cash cows (HUL, ITC, JPM).
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Order Basket Generator & Live Execution */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <Sliders size={18} color="var(--primary)" />
-                <h3 className="text-h3" style={{ margin: 0, fontWeight: 700 }}>Deploy Direct Index</h3>
-              </div>
-
-              {/* Amount Input */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem', display: 'block', fontWeight: 600 }}>
-                  Deployment Capital ({market === 'US' ? 'USD' : 'INR'})
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', border: '1px solid var(--glass-border)', padding: '0.5rem 0.85rem' }}>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-muted)', marginRight: '0.5rem' }}>{currencySymbol}</span>
-                  <input
-                    type="number"
-                    value={investmentAmount}
-                    onChange={(e) => { setInvestmentAmount(e.target.value); setOrderBasketResult(null); }}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 700, width: '100%', outline: 'none' }}
-                  />
-                </div>
-              </div>
-
-              {/* Exclusions summary */}
-              <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: '0.85rem', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.35rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Single-Stock Exclusions:</span>
-                  <strong style={{ color: excludedSymbols.length > 0 ? 'var(--gold)' : 'var(--text-primary)' }}>
-                    {excludedSymbols.length > 0 ? excludedSymbols.join(', ') : 'None'}
-                  </strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Smart Order Route:</span>
-                  <strong style={{ color: 'var(--green)' }}>{market === 'US' ? 'Alpaca REST / IEX Direct' : 'Zerodha Kite / NSE SOR'}</strong>
-                </div>
-              </div>
-
-              {/* Calculate Basket Button */}
-              <button
-                onClick={handleCalculateRebalance}
-                disabled={rebalancing}
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}
-              >
-                {rebalancing ? <RefreshCw size={16} className="spin" /> : <TrendingUp size={16} />}
-                Generate Optimized Order Basket
-              </button>
-
-              {/* Order Basket Preview */}
-              {orderBasketResult && (
-                <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 700 }}>
-                      Generated Orders ({orderBasketResult.orderBasket?.length} Lots)
-                    </span>
-                    <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                      {orderBasketResult.trackingErrorDelta}
-                    </span>
-                  </div>
-
-                  <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }}>
-                    {orderBasketResult.orderBasket?.map(ord => (
-                      <div
-                        key={ord.symbol}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '0.45rem 0.65rem',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          borderRadius: 6,
-                          fontSize: '0.775rem'
-                        }}
-                      >
-                        <div>
-                          <strong>{ord.symbol}</strong>
-                          <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{ord.targetWeight}%</span>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 600 }}>{currencySymbol}{ord.allocatedCash?.toLocaleString()}</span>
-                          <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({ord.targetQty} sh)</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ padding: '0.65rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1rem', fontSize: '0.75rem', color: 'var(--green)' }}>
-                    ✓ <strong>Tax Alpha Projected:</strong> {orderBasketResult.estimatedTaxLossAlphaHarvest} via automated tax lot tracking.
-                  </div>
-
-                  {!executionSuccess ? (
-                    <button
-                      onClick={handleExecuteBasket}
-                      className="btn"
-                      style={{
-                        width: '100%',
-                        padding: '0.8rem',
-                        fontWeight: 800,
-                        background: 'linear-gradient(135deg, #10B981, #059669)',
-                        color: '#fff',
-                        borderRadius: 'var(--radius)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
-                      }}
-                    >
-                      <CheckCircle2 size={18} />
-                      Transmit Order Basket via Smart Router
-                    </button>
-                  ) : (
-                    <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: 'var(--radius)', textAlign: 'center', border: '1px solid var(--green)' }}>
-                      <CheckCircle2 size={24} color="var(--green)" style={{ margin: '0 auto 0.5rem' }} />
-                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                        Basket Executed Successfully
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                        Orders sliced via {market === 'US' ? 'Alpaca VWAP' : 'Zerodha SOR'}. Portfolio holding records updated.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Tiered Cash Sweep & Net Interest Margin (Engine 4) */}
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Percent size={18} color="var(--gold)" />
-                  <h4 style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem' }}>Autonomous Cash Sweep</h4>
-                </div>
-                <span className={`badge ${tier === 'free' ? 'badge-gold' : 'badge-green'}`} style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                  {tier === 'free' ? 'Tiered 50 bps Spread' : 'VIP 100% Institutional'}
-                </span>
-              </div>
-
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 0.85rem 0', lineHeight: 1.4 }}>
-                Uninvested cash balances are swept daily into institutional ultra-short government yields.
-              </p>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', marginBottom: '0.75rem' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target Instrument</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{cashSweep?.vehicle || (market === 'US' ? 'SGOV 0-3M T-Bills' : 'Liquid Overnight MF')}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Your Effective Yield</div>
-                  <div className="badge badge-green" style={{ fontSize: '0.85rem', fontWeight: 800 }}>
-                    {tierYieldData?.effectiveUserYieldPct || (tier === 'free' ? (market === 'US' ? '4.65% APY' : '6.35% p.a.') : (market === 'US' ? '5.15% APY' : '6.85% p.a.'))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Free Tier Conversion Hook (Engine 4) */}
-              {tier === 'free' ? (
-                <div style={{
-                  background: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
-                  borderRadius: 10,
-                  padding: '0.85rem',
-                  fontSize: '0.775rem',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.5
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, color: 'var(--gold)', marginBottom: 4 }}>
-                    <Zap size={14} />
-                    <span>Free Tier 50 bps Float Spread</span>
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.5rem' }}>
+            {/* Left Column: Direct Index Constituents & Custom Exclusions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="card" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div>
-                    FinAgent retains a <strong>50 bps spread</strong> on Free accounts. Institutional base yield is <strong>{tierYieldData?.institutionalYieldPct || (market === 'US' ? '5.15% APY' : '6.85% p.a.')}</strong>.
+                    <h3 className="text-h3" style={{ margin: 0, fontWeight: 700 }}>
+                      {selectedModel.name}
+                    </h3>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      Replicating <strong>{selectedModel.benchmark}</strong> · Base Tracking Error: <strong>{selectedModel.trackingError}</strong>
+                    </div>
                   </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Projected Tax-Alpha</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)' }}>
+                      {selectedModel.projectedTaxAlpha}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 25 bps Advisory Wrap Fee & Net Client Surplus */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    borderRadius: 'var(--radius)',
+                    padding: '1rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <Award size={16} color="var(--primary)" />
+                      <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                        Advisory Wrap Fee: 25 bps ({selectedModel.wrapFeeAnnualPct || '0.25% p.a.'})
+                      </span>
+                      <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
+                        Net Client Tax-Alpha: {selectedModel.netClientTaxAlpha || '+1.89% p.a.'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                      SEBI RIA / Form ADV Model · Billed quarterly in arrears · Client retains &gt;85% of net harvested tax alpha
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => upgradeTier('pro')}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.75rem',
-                      padding: '0.5rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem'
-                    }}
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowWrapModal(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', borderColor: 'var(--glass-border)', fontSize: '0.75rem' }}
                   >
-                    <Sparkles size={13} />
-                    <span>Upgrade to Pro / Black to Unlock +50 bps</span>
+                    <FileCheck size={14} />
+                    <span>{wrapEnrollment ? 'Agreement Enrolled' : 'Wrap Fee Schedule'}</span>
                   </button>
                 </div>
-              ) : (
-                <div style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                  borderRadius: 10,
-                  padding: '0.75rem',
-                  fontSize: '0.75rem',
-                  color: 'var(--green)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <CheckCircle2 size={16} />
-                  <span><strong>Full Pass-Through Active:</strong> 0 bps spread deducted. You earn 100% of underlying yields.</span>
+
+                {/* Constituents Grid with Exclusion Toggles */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1.2fr', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                    <span>Constituent</span>
+                    <span>Weight</span>
+                    <span>Price</span>
+                    <span>Lot P&L</span>
+                    <span style={{ textAlign: 'right' }}>Action / Exclusion</span>
+                  </div>
+
+                  {selectedModel.constituents?.map(c => {
+                    const isExcluded = excludedSymbols.includes(c.symbol);
+                    return (
+                      <div
+                        key={c.symbol}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1.2fr',
+                          alignItems: 'center',
+                          padding: '0.65rem 0.75rem',
+                          borderRadius: 'var(--radius)',
+                          background: isExcluded ? 'rgba(239, 68, 68, 0.06)' : 'var(--surface-raised)',
+                          border: `1px solid ${isExcluded ? 'rgba(239, 68, 68, 0.25)' : 'var(--glass-border)'}`,
+                          opacity: isExcluded ? 0.6 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.symbol}</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.name}</span>
+                        </div>
+
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                          {isExcluded ? <span style={{ color: 'var(--red)', textDecoration: 'line-through' }}>{c.weight}%</span> : `${c.weight}%`}
+                        </div>
+
+                        <div style={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                          {currencySymbol}{c.price.toLocaleString()}
+                        </div>
+
+                        <div>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.4rem',
+                            borderRadius: 4,
+                            background: c.pnlPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                            color: c.pnlPct >= 0 ? 'var(--green)' : 'var(--red)'
+                          }}>
+                            {c.pnlPct >= 0 ? `+${c.pnlPct}%` : `${c.pnlPct}%`}
+                          </span>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <button
+                            onClick={() => toggleExclusion(c.symbol)}
+                            className="btn btn-ghost btn-sm"
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.2rem 0.6rem',
+                              color: isExcluded ? 'var(--text-primary)' : 'var(--red)',
+                              border: `1px solid ${isExcluded ? 'var(--glass-border)' : 'rgba(239, 68, 68, 0.3)'}`
+                            }}
+                          >
+                            {isExcluded ? 'Include +' : 'Exclude ✕'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Right Column: Order Basket Generator & Live Execution */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Deploy Basket Card */}
+              <div className="card" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <Sliders size={18} color="var(--primary)" />
+                  <h3 className="text-h3" style={{ margin: 0, fontWeight: 700 }}>Deploy Direct Index</h3>
+                </div>
+
+                {/* Amount Input */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem', display: 'block', fontWeight: 600 }}>
+                    Deployment Capital ({market === 'US' ? 'USD' : 'INR'})
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-raised)', borderRadius: 'var(--radius)', border: '1px solid var(--glass-border)', padding: '0.5rem 0.85rem' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-muted)', marginRight: '0.5rem' }}>{currencySymbol}</span>
+                    <input
+                      type="number"
+                      value={investmentAmount}
+                      onChange={(e) => { setInvestmentAmount(e.target.value); setOrderBasketResult(null); }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 700, width: '100%', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Exclusions summary */}
+                <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: '0.85rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.35rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Active Exclusions:</span>
+                    <strong style={{ color: excludedSymbols.length > 0 ? 'var(--gold)' : 'var(--text-primary)' }}>
+                      {excludedSymbols.length > 0 ? excludedSymbols.join(', ') : 'None'}
+                    </strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Smart Order Route:</span>
+                    <strong style={{ color: 'var(--green)' }}>{market === 'US' ? 'Alpaca REST / IEX Direct' : 'Zerodha Kite / NSE SOR'}</strong>
+                  </div>
+                </div>
+
+                {/* Calculate Basket Button */}
+                <button
+                  onClick={handleCalculateRebalance}
+                  disabled={rebalancing}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}
+                >
+                  {rebalancing ? <RefreshCw size={16} className="spin" /> : <TrendingUp size={16} />}
+                  Compile Tilts & Order Basket
+                </button>
+
+                {/* Order Basket Preview */}
+                {orderBasketResult && (
+                  <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700 }}>
+                        Generated Orders ({orderBasketResult.orderBasket?.length} Lots)
+                      </span>
+                      <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
+                        TE: {orderBasketResult.trackingError}
+                      </span>
+                    </div>
+
+                    <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }}>
+                      {orderBasketResult.orderBasket?.map(ord => (
+                        <div
+                          key={ord.symbol}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.45rem 0.65rem',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            borderRadius: 6,
+                            fontSize: '0.775rem'
+                          }}
+                        >
+                          <div>
+                            <strong>{ord.symbol}</strong>
+                            <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{ord.targetWeight}%</span>
+                            {ord.factorDelta !== 0 && (
+                              <span style={{ color: ord.factorDelta > 0 ? 'var(--green)' : 'var(--gold)', marginLeft: 4, fontSize: '0.7rem' }}>
+                                ({ord.factorDelta > 0 ? `+${ord.factorDelta}` : ord.factorDelta}%)
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontWeight: 600 }}>{currencySymbol}{ord.allocatedCash?.toLocaleString()}</span>
+                            <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({ord.targetQty} sh)</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {!executionSuccess ? (
+                      <button
+                        onClick={handleExecuteBasket}
+                        className="btn"
+                        style={{
+                          width: '100%',
+                          padding: '0.8rem',
+                          fontWeight: 800,
+                          background: 'linear-gradient(135deg, #10B981, #059669)',
+                          color: '#fff',
+                          borderRadius: 'var(--radius)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        <CheckCircle2 size={18} />
+                        Transmit Order Basket via Smart Router
+                      </button>
+                    ) : (
+                      <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: 'var(--radius)', textAlign: 'center', border: '1px solid var(--green)' }}>
+                        <CheckCircle2 size={24} color="var(--green)" style={{ margin: '0 auto 0.5rem' }} />
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          Basket Executed Successfully
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                          Orders sliced via {market === 'US' ? 'Alpaca VWAP' : 'Zerodha SOR'}. Demat lots updated.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Constituent Tax-Loss Alpha Harvester */}
+              <div className="card" style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Scale size={18} color="var(--green)" />
+                    <h4 style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem' }}>Constituent Lot Tax-Harvester</h4>
+                  </div>
+                  <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
+                    3 Underwater Lots Active
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 0.85rem 0', lineHeight: 1.4 }}>
+                  Harvest individual declining lots even when the parent index is up, swapping into correlated sector beta proxies.
+                </p>
+
+                <button
+                  onClick={handleHarvestTaxAlpha}
+                  disabled={harvestingLots}
+                  className="btn btn-secondary btn-sm"
+                  style={{ width: '100%', padding: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}
+                >
+                  {harvestingLots ? <RefreshCw size={14} className="spin" /> : <Zap size={14} color="var(--green)" />}
+                  {harvestingLots ? 'Harvesting Lots…' : 'Execute 31-Day Beta-Preserved Tax Swap (1-Click)'}
+                </button>
+
+                {harvestResult && (
+                  <div style={{ marginTop: '0.85rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--green)', borderRadius: 8, padding: '0.75rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={14} /> Losses Harvested: {harvestResult.totalLossHarvested}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                      Generated <strong>{harvestResult.taxShieldBenefit}</strong> instant tax shield. Swapped into 31-day sector ETF proxies.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tiered Cash Sweep */}
+              <div className="card" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Percent size={18} color="var(--gold)" />
+                    <h4 style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem' }}>Autonomous Cash Sweep</h4>
+                  </div>
+                  <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
+                    {cashSweep?.yield || '6.85% p.a.'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius)' }}>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target Instrument</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{cashSweep?.vehicle || 'Overnight Liquid Fund'}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Liquidity Buffer</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--green)' }}>T+0 Daily</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Advisory Wrap Fee Agreement Modal (Engine 2) */}
+      {/* Advisory Wrap Fee Agreement Modal */}
       {showWrapModal && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
@@ -596,15 +826,11 @@ export default function DirectIndexingHub() {
                   </ul>
                 </div>
 
-                {/* Calculation Breakdown */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
                   <div style={{ background: 'rgba(99,102,241,0.06)', borderRadius: 8, padding: '0.85rem', border: '1px solid rgba(99,102,241,0.2)' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Annual 25 bps Wrap Fee</div>
                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginTop: 2 }}>
                       {currencySymbol}{Math.round(Number(investmentAmount || 0) * 0.0025).toLocaleString()}/yr
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      ~{currencySymbol}{Math.round(Number(investmentAmount || 0) * 0.0025 / 4).toLocaleString()} / quarter
                     </div>
                   </div>
 
@@ -612,9 +838,6 @@ export default function DirectIndexingHub() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Net Client Tax-Alpha</div>
                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)', marginTop: 2 }}>
                       {selectedModel?.netClientTaxAlpha || '+1.89% p.a.'}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      Net alpha after 25 bps fee deducted
                     </div>
                   </div>
                 </div>
@@ -629,7 +852,7 @@ export default function DirectIndexingHub() {
                       type="text"
                       value={wrapSignature}
                       onChange={e => setWrapSignature(e.target.value)}
-                      placeholder="e.g. Alex Chen"
+                      placeholder="e.g. Arjun Sharma"
                       style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontWeight: 600, outline: 'none' }}
                     />
                   </div>
@@ -651,7 +874,7 @@ export default function DirectIndexingHub() {
                     disabled={enrollingWrap || !wrapSignature.trim()}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                   >
-                    {enrollingWrap ? <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <FileCheck size={15} />}
+                    {enrollingWrap ? <RefreshCw size={15} className="spin" /> : <FileCheck size={15} />}
                     <span>{enrollingWrap ? 'Enrolling...' : 'Sign Agreement & Enroll Portfolio'}</span>
                   </button>
                 </div>
@@ -678,9 +901,7 @@ export default function DirectIndexingHub() {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={() => {
-                      setShowWrapModal(false);
-                    }}
+                    onClick={() => setShowWrapModal(false)}
                   >
                     Done
                   </button>
@@ -693,4 +914,3 @@ export default function DirectIndexingHub() {
     </div>
   );
 }
-

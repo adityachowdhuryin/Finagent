@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useApp } from '../../context/AppContext';
 
-const INITIAL_MODELS = [
+const IN_INITIAL_MODELS = [
   {
     id: 1,
     name: 'Conservative — Retiree',
@@ -61,6 +62,64 @@ const INITIAL_MODELS = [
   },
 ];
 
+const US_INITIAL_MODELS = [
+  {
+    id: 'us_m1',
+    name: 'Boglehead Core 3-Fund ETF',
+    risk: 'Moderate',
+    clients: ['David Chen (42)', 'Jennifer Miller (38)', 'Alexander Vance (45)'],
+    allocation: { Equity: 80, Debt: 20, Gold: 0, Cash: 0 },
+    funds: {
+      Equity: ['Vanguard Total Stock Market ETF (VTI)', 'Vanguard Total International Stock ETF (VXUS)'],
+      Debt: ['Vanguard Total Bond Market ETF (BND)'],
+      Gold: ['SPDR Gold Trust (GLD)'],
+      Cash: ['Vanguard Federal Money Market (VMFXX)'],
+    },
+    driftData: [
+      { client: 'David Chen', currentEquity: 84, targetEquity: 80, drift: 4 },
+      { client: 'Jennifer Miller', currentEquity: 74, targetEquity: 80, drift: -6 },
+      { client: 'Alexander Vance', currentEquity: 81, targetEquity: 80, drift: 1 },
+    ],
+  },
+  {
+    id: 'us_m2',
+    name: 'CA & NY Tax-Exempt Muni Portfolio',
+    risk: 'Conservative',
+    clients: ['Robert Sterling (67)', 'Eleanor Winthrop (71)', 'Harrison Ford (62)'],
+    allocation: { Equity: 20, Debt: 70, Gold: 0, Cash: 10 },
+    funds: {
+      Equity: ['Vanguard Dividend Appreciation ETF (VIG)'],
+      Debt: ['Vanguard Tax-Exempt Bond ETF (VTEB)', 'iShares California Muni Bond ETF (CMF)', 'iShares New York Muni Bond ETF (NYF)'],
+      Gold: [],
+      Cash: ['iShares 0-3 Month Treasury Bond ETF (SGOV)'],
+    },
+    driftData: [
+      { client: 'Robert Sterling', currentEquity: 24, targetEquity: 20, drift: 4 },
+      { client: 'Eleanor Winthrop', currentEquity: 18, targetEquity: 20, drift: -2 },
+      { client: 'Harrison Ford', currentEquity: 26, targetEquity: 20, drift: 6 },
+    ],
+  },
+  {
+    id: 'us_m3',
+    name: 'High-Growth Tech & Factor Tilt',
+    risk: 'Aggressive',
+    clients: ['Lucas Hayes (29)', 'Sophie Taylor (34)', 'Liam Zhang (31)', 'Maya Patel (28)'],
+    allocation: { Equity: 85, Debt: 0, Gold: 10, Cash: 5 },
+    funds: {
+      Equity: ['Vanguard S&P 500 ETF (VOO)', 'Avantis US Small Cap Value ETF (AVUV)', 'Invesco NASDAQ 100 ETF (QQQM)', 'VanEck Semiconductor ETF (SMH)'],
+      Debt: [],
+      Gold: ['SPDR Gold MiniShares (GLDM)', 'iShares Bitcoin Trust (IBIT)'],
+      Cash: ['JPMorgan Ultra-Short Income ETF (JPST)'],
+    },
+    driftData: [
+      { client: 'Lucas Hayes', currentEquity: 92, targetEquity: 85, drift: 7 },
+      { client: 'Sophie Taylor', currentEquity: 83, targetEquity: 85, drift: -2 },
+      { client: 'Liam Zhang', currentEquity: 91, targetEquity: 85, drift: 6 },
+      { client: 'Maya Patel', currentEquity: 86, targetEquity: 85, drift: 1 },
+    ],
+  },
+];
+
 const ALLOC_COLORS = { Equity: '#6366f1', Debt: '#10b981', Gold: '#f59e0b', Cash: '#06b6d4' };
 const RISK_COLORS = { Conservative: 'var(--green)', Moderate: 'var(--gold)', Aggressive: 'var(--red)' };
 const RISK_BG = { Conservative: 'rgba(34,197,94,0.1)', Moderate: 'rgba(245,158,11,0.1)', Aggressive: 'rgba(239,68,68,0.1)' };
@@ -68,16 +127,26 @@ const RISK_BG = { Conservative: 'rgba(34,197,94,0.1)', Moderate: 'rgba(245,158,1
 const emptyModel = { name: '', risk: 'Moderate', allocation: { Equity: 60, Debt: 30, Gold: 5, Cash: 5 } };
 
 export default function ModelPortfolios() {
-  const [models, setModels] = useState(INITIAL_MODELS);
-  const [selected, setSelected] = useState(INITIAL_MODELS[0]);
+  const { isUSMarket } = useApp();
+  const jurisdiction = localStorage.getItem('finagent_advisor_jurisdiction') || (isUSMarket ? 'SEC' : 'SEBI');
+  const isUS = Boolean(isUSMarket || jurisdiction === 'SEC');
+
+  const initialList = isUS ? US_INITIAL_MODELS : IN_INITIAL_MODELS;
+  const [models, setModels] = useState(initialList);
+  const [selected, setSelected] = useState(initialList[0]);
   const [showCreate, setShowCreate] = useState(false);
   const [newModel, setNewModel] = useState(emptyModel);
   const [editFunds, setEditFunds] = useState(false);
   const [toast, setToast] = useState('');
-  const [custodian, setCustodian] = useState('Zerodha Kite Connect');
+  const [custodian, setCustodian] = useState(isUS ? 'Charles Schwab Institutional' : 'Zerodha Kite Connect');
   const [executingOrders, setExecutingOrders] = useState(false);
   const [executionLogs, setExecutionLogs] = useState([
-    { client: 'Meera Reddy', action: 'Trim Equity by 7.0% (₹48,200), Buy Debt', custodian: 'Zerodha Kite', status: 'FILLED' },
+    {
+      client: isUS ? 'Jennifer Miller' : 'Meera Reddy',
+      action: isUS ? 'Trim Equity by 6.0% ($48,200), Buy Munis' : 'Trim Equity by 7.0% (₹48,200), Buy Debt',
+      custodian: isUS ? 'Charles Schwab' : 'Zerodha Kite',
+      status: 'FILLED'
+    },
   ]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -351,9 +420,21 @@ export default function ModelPortfolios() {
                         background: 'var(--surface-raised)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600
                       }}
                     >
-                      <option value="Zerodha Kite Connect">Zerodha Kite Connect (NSE/BSE)</option>
-                      <option value="Alpaca Securities">Alpaca Securities (US Markets)</option>
-                      <option value="Interactive Brokers">Interactive Brokers (Global Institutional)</option>
+                      {isUS ? (
+                        <>
+                          <option value="Charles Schwab Institutional">Charles Schwab Institutional</option>
+                          <option value="Fidelity Wealth Services">Fidelity Wealth Services</option>
+                          <option value="Interactive Brokers">Interactive Brokers (Global Institutional)</option>
+                          <option value="Alpaca Securities">Alpaca Securities (Apex Clearing)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Zerodha Kite Connect">Zerodha Kite Connect (NSE/BSE)</option>
+                          <option value="Groww Custody API">Groww Custody API</option>
+                          <option value="Interactive Brokers">Interactive Brokers (Global Institutional)</option>
+                          <option value="Alpaca Securities">Alpaca Securities (US Markets)</option>
+                        </>
+                      )}
                     </select>
 
                     <button

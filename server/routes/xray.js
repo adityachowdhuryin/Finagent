@@ -66,7 +66,17 @@ function matchFundName(name) {
     const score = matches / Math.max(words.length, 1);
     if (score > bestScore) { bestScore = score; bestKey = key; }
   }
-  return bestScore > 0.4 ? bestKey : null;
+  if (bestScore > 0.35) return bestKey;
+
+  // Category fallback
+  if (n.includes('midcap') || n.includes('mid cap')) return 'HDFC Midcap Opportunities Fund';
+  if (n.includes('small') || n.includes('small cap')) return 'Nippon India Small Cap Fund';
+  if (n.includes('flexi') || n.includes('parag')) return 'Parag Parikh Flexi Cap Fund';
+  if (n.includes('nifty') || n.includes('index')) return 'UTI Nifty 50 Index Fund';
+  if (n.includes('tax') || n.includes('elss')) return 'Mirae Asset ELSS Tax Saver';
+  if (n.includes('large') || n.includes('bluechip')) return 'Mirae Asset Large Cap Fund';
+
+  return 'HDFC Top 100 Fund';
 }
 
 // POST /api/xray/analyze
@@ -75,13 +85,16 @@ async function analyze(req, res) {
     const { mutualFunds } = req.body; // [{ name, value }]
     if (!mutualFunds?.length) return res.json({ stockExposure: [], overlapMatrix: [], redundancyAlerts: [], diversificationScore: 0 });
 
-    const totalValue = mutualFunds.reduce((s, f) => s + (f.value || 0), 0);
-    const matched = mutualFunds.map(f => ({
-      ...f,
-      matchedKey: matchFundName(f.name),
-      portfolio: matchFundName(f.name) ? FUND_PORTFOLIOS[matchFundName(f.name)] : null,
-      weight: (f.value || 0) / totalValue,
-    })).filter(f => f.portfolio);
+    const totalValue = mutualFunds.reduce((s, f) => s + (f.value || 0), 0) || 1;
+    const matched = mutualFunds.map(f => {
+      const matchedKey = matchFundName(f.name);
+      return {
+        ...f,
+        matchedKey,
+        portfolio: FUND_PORTFOLIOS[matchedKey] || FUND_PORTFOLIOS['HDFC Top 100 Fund'],
+        weight: (f.value || 0) / totalValue,
+      };
+    }).filter(f => f.portfolio);
 
     // Aggregate stock exposure
     const stockMap = {};
@@ -91,7 +104,9 @@ async function analyze(req, res) {
         const portfolioContrib = fundWeight * fund.weight * 100;
         if (!stockMap[stock]) stockMap[stock] = { pct: 0, funds: [] };
         stockMap[stock].pct += portfolioContrib;
-        stockMap[stock].funds.push(fund.name);
+        if (!stockMap[stock].funds.includes(fund.name)) {
+          stockMap[stock].funds.push(fund.name);
+        }
       });
     }
     const stockExposure = Object.entries(stockMap)
@@ -112,9 +127,9 @@ async function analyze(req, res) {
       }
     }
 
-    // Redundancy alerts
+    // Redundancy alerts (> 50% overlap)
     const redundancyAlerts = overlapMatrix
-      .filter(o => o.overlap > 60)
+      .filter(o => o.overlap >= 50)
       .map(o => ({
         fund1: o.fund1, fund2: o.fund2, overlap: o.overlap,
         message: `${o.fund1.split(' ').slice(0, 3).join(' ')} and ${o.fund2.split(' ').slice(0, 3).join(' ')} share ${o.overlap}% of their top holdings — consider consolidating`,

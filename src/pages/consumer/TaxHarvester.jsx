@@ -5,11 +5,18 @@ import { formatLakh } from '../../utils/formatters';
 import { ExternalLink, AlertTriangle, Info } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { analyze } from '../../services/geminiService';
+import TaxSuiteNav from '../../components/tax/TaxSuiteNav';
+import USTaxLossHarvester from './us/USTaxLossHarvester';
+import TaxHarvestingWaterfall from '../../components/tax/visualizations/TaxHarvestingWaterfall';
 
 export default function TaxHarvester() {
+  const { state, isUSMarket } = useApp();
+  if (isUSMarket || state?.activeMarket === 'US') {
+    return <USTaxLossHarvester />;
+  }
+
   const [selected, setSelected] = useState(new Set(['0', '2', '3']));
   const navigate = useNavigate();
-  const { state } = useApp();
 
   // ── Tab state ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('existing');
@@ -231,6 +238,9 @@ Generate a numbered transaction sequence. Return ONLY valid JSON:
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Tax Suite Tab Navigation */}
+      <TaxSuiteNav />
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
@@ -264,6 +274,20 @@ Generate a numbered transaction sequence. Return ONLY valid JSON:
       {/* ── Existing tab ─────────────────────────────────────────────────────── */}
       {activeTab === 'existing' && (
         <>
+          {/* Interactive Loss Harvesting Waterfall Hero */}
+          <TaxHarvestingWaterfall
+            market="IN"
+            stcgGain={stats.stcgGains}
+            ltcgGain={stats.ltcgGains}
+            stclHarvested={stats.stcgLosses}
+            ltclHarvested={stats.ltcgLosses}
+            exemptionLimit={125000}
+            exemptionUsed={Math.min(125000, stats.ltcgGains)}
+            taxBefore={stats.taxWithoutHarvest}
+            taxAfter={stats.taxWithHarvest}
+            taxSaved={stats.taxSaved}
+          />
+
           {/* Summary banner */}
           <div className="card card-glow-green" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.04))', display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <div>

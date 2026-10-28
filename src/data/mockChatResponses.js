@@ -171,15 +171,86 @@ export const chatResponses = {
   },
 };
 
-export function findResponse(userMessage) {
+export const chatResponsesUS = {
+  tax_harvesting: {
+    prompt: 'Harvest capital losses under IRC § 1091 wash-sale rules',
+    triggerKeywords: ['wash', 'harvest', 'loss', '1091', 'tax', 'capital loss', 'schedule d'],
+    chunks: [
+      "I've scanned your taxable accounts at Charles Schwab and Fidelity.\n\n",
+      "Found **$18,450 in harvestable unrealized losses** that can offset your realized capital gains and reduce ordinary income by $3,000.\n\n",
+      "Here is your tax-loss swap analysis:\n\n",
+    ],
+    card: {
+      type: 'tax_harvest',
+      title: '🌾 US Tax-Loss Harvesting — IRC § 1091 Compliant',
+      summary: 'Potential net federal & state tax saving: $4,428',
+      items: [
+        { holding: 'VOO (Vanguard S&P 500 ETF)', lossType: 'LTCG', unrealizedLoss: 12450, holdingDays: 410, action: 'Sell & swap into IVV proxy (0.99 corr)', warning: null },
+        { holding: 'TSLA (Tesla Inc)', lossType: 'STCG', unrealizedLoss: 6000, holdingDays: 95, action: 'Sell & swap into QQQM or hold cash 31 days', warning: '⚠️ 30-day wash-sale window applies' },
+      ],
+      summary_table: {
+        realized_gains: 24500,
+        harvestable_losses: 18450,
+        net_taxable_gain: 6050,
+        tax_rate_stcg: 24,
+        tax_saved: 4428,
+      },
+      disclaimer: 'Fiduciary AI analysis under SEC Advisers Act Rule 204-2. Consult your CPA before filing IRS Form 8949.',
+    },
+    trailing_chunks: [
+      "\n\n**Fiduciary Recommendation:** Execute the VOO ➔ IVV swap immediately. Because they track the same benchmark under different issuers, the IRS does not treat them as 'substantially identical', eliminating wash-sale risk while maintaining 100% market beta.",
+      "\n\nWant me to queue this order for 1-click execution through your connected Alpaca clearing rail? ⚡",
+    ],
+  },
+
+  retirement_goal: {
+    prompt: 'Can I retire at 55 with a $3.5M portfolio and 4% SWR?',
+    triggerKeywords: ['retire', 'retirement', '55', '3.5m', 'swr', 'fire', '401k'],
+    chunks: [
+      "I've run your retirement timeline against your total $1.42M net worth — including your taxable brokerage, 401(k), Backdoor Roth, and primary residence equity.\n\n",
+      "Here is the actuarial simulation:\n\n",
+    ],
+    card: {
+      type: 'goal_projection',
+      title: '🌴 US Retirement Goal — Age 55 / 4% Safe Withdrawal Rate',
+      summary: '88% Monte Carlo probability of hitting $3.5M by age 55',
+      current_corpus: 1420000,
+      target_corpus: 3500000,
+      monthly_savings: 4500,
+      shortfall: 0,
+      status: 'ON TRACK',
+      disclaimer: 'Assumes 7.5% real equity return, 2.5% inflation, and annual 401(k) / IRA maximization.',
+    },
+    trailing_chunks: [
+      "\n\nAt a 4% SWR, a $3.5M portfolio provides **$140,000/year in inflation-adjusted retirement income** prior to Social Security at age 67. You are on track if you sustain your current $4,500/month savings cadence.",
+    ],
+  },
+
+  default: {
+    prompt: '',
+    triggerKeywords: [],
+    chunks: [
+      "I've analyzed your complete US financial picture — $1,420,000 across equities, index ETFs, 401(k), HSA, and real estate.\n\n",
+      "**Top 3 fiduciary priority recommendations:**\n",
+      "1. 💡 **Tax Loss Harvesting**: Harvest $18,450 in underwater lots into an IVV proxy without triggering 30-day wash-sale rules.\n",
+      "2. 🛡️ **HSA Triple-Tax Shield**: Deploy shoebox strategy — pay current expenses out-of-pocket and invest $4,300/yr tax-free in VOO.\n",
+      "3. ⚖️ **S-Corp Reasonable Salary**: Restructure K-1 distributions to save ~$7,840/yr in self-employment FICA taxes.\n\n",
+      "Which of these would you like to review, or ask me any question about your investments and tax strategy?",
+    ],
+  },
+};
+
+export function findResponse(userMessage, market = 'IN') {
+  const isUS = market === 'US';
+  const responses = isUS ? chatResponsesUS : chatResponses;
   const lower = userMessage.toLowerCase();
-  for (const [key, response] of Object.entries(chatResponses)) {
+  for (const [key, response] of Object.entries(responses)) {
     if (key === 'default') continue;
     if (response.triggerKeywords.some(kw => lower.includes(kw))) {
       return response;
     }
   }
-  return chatResponses.default;
+  return responses.default;
 }
 
 export const suggestedPrompts = [
@@ -189,4 +260,13 @@ export const suggestedPrompts = [
   { category: 'Insurance', label: 'Am I adequately covered with my SBI Life term plan?', icon: '🛡️' },
   { category: 'Cash', label: 'I have ₹2.8L idle in savings. Where should I move it?', icon: '💸' },
   { category: 'Goals', label: 'Am I on track across all my financial goals?', icon: '🎯' },
+];
+
+export const suggestedPromptsUS = [
+  { category: 'Tax Loss', label: 'Harvest capital losses under IRC § 1091 wash-sale rules', icon: '🌾' },
+  { category: 'Retirement', label: 'Can I retire at 55 with a $3.5M portfolio and 4% SWR?', icon: '🌴' },
+  { category: 'Roth IRA', label: 'Should I execute a Backdoor Roth IRA with Form 8606?', icon: '💰' },
+  { category: 'Living Trust', label: 'How do I fund my brokerage account into my Living Trust?', icon: '🛡️' },
+  { category: 'Cash Yield', label: 'Move $15,000 idle checking cash to 4.40% HYSA or T-Bills?', icon: '💸' },
+  { category: 'Business Tax', label: 'Optimize my S-Corp reasonable salary vs K-1 distribution', icon: '🎯' },
 ];

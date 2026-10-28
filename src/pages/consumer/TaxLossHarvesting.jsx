@@ -8,9 +8,16 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useApp } from '../../context/AppContext';
 import { cleanAscii } from '../../utils/fiduciaryPdfBuilder';
+import TaxSuiteNav from '../../components/tax/TaxSuiteNav';
+import USTaxLossHarvester from './us/USTaxLossHarvester';
 
 export default function TaxLossHarvesting() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, isUSMarket } = useApp();
+
+  if (isUSMarket || state?.activeMarket === 'US') {
+    return <USTaxLossHarvester />;
+  }
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notifying, setNotifying] = useState(false);
@@ -290,6 +297,9 @@ export default function TaxLossHarvesting() {
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Tax Suite Tab Navigation */}
+      <TaxSuiteNav />
+
       {/* Toast notification */}
       {toastMessage && (
         <div style={{

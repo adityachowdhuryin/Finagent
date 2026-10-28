@@ -11,9 +11,15 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useApp } from '../../context/AppContext';
 import { cleanAscii } from '../../utils/fiduciaryPdfBuilder';
+import TaxSuiteNav from '../../components/tax/TaxSuiteNav';
+import USForensicAudit from './us/USForensicAudit';
 
 export default function CommissionHunter() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, isUSMarket } = useApp();
+
+  if (isUSMarket || state?.activeMarket === 'US') {
+    return <USForensicAudit />;
+  }
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('ALL'); // 'ALL' | 'READY' | 'PENDING'
@@ -266,6 +272,9 @@ export default function CommissionHunter() {
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Tax Suite Tab Navigation */}
+      <TaxSuiteNav />
+
       {/* Toast notification */}
       {toastMessage && (
         <div style={{
@@ -425,12 +434,22 @@ export default function CommissionHunter() {
               <div className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>Leaked into intermediary pockets</div>
             </div>
 
-            <div className="card">
+            <div
+              className="card"
+              style={{ cursor: 'pointer', transition: 'all 0.2s ease', border: '1px solid rgba(16,185,129,0.3)' }}
+              onClick={() => {
+                setSelectedFilter('READY');
+                document.getElementById('switch-roadmap-table')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              title="Click to view Tranche 1 (Switch Now) in table below"
+            >
               <div className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>Switchable Today (0% Exit Load)</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Space Grotesk', color: 'var(--green)', marginTop: '0.375rem' }}>
                 {data.readyToSwitchCount} of {data.regularFundsCount}
               </div>
-              <div className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>Worth {formatINR(data.immediateSwitchValue)}</div>
+              <div className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>
+                Worth {formatINR(data.immediateSwitchValue)} · <span style={{ color: 'var(--green)', fontWeight: 600 }}>Filter Tranche 1 ↓</span>
+              </div>
             </div>
           </div>
 
@@ -469,40 +488,64 @@ export default function CommissionHunter() {
           </div>
 
           {/* Switch Blueprint Table */}
-          <div className="card">
+          <div className="card" id="switch-roadmap-table">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
-                <h3 className="text-h3">Switch Roadmap & Tax Optimization</h3>
-                <p className="text-xs text-secondary">Fund-by-fund exit load status and direct replacement recommendations</p>
+                <h3 className="text-h3">Step-by-Step Direct Switch Roadmap</h3>
+                <p className="text-xs text-secondary">Fund-by-fund exit load status, direct equivalents, and SEBI Reg 18(2) review</p>
               </div>
 
-              {/* Filter Tabs */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-                <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface-raised)', padding: 3, borderRadius: 'var(--radius)' }}>
-                  {[
-                    ['ALL', `All (${data.blueprints.length})`],
-                    ['READY', `Tranche 1: Switch Now (${data.readyToSwitchCount})`],
-                    ['PENDING', `Tranche 2: Wait for Expiry (${data.blueprints.length - data.readyToSwitchCount})`]
-                  ].map(([val, label]) => (
-                    <button
-                      key={val}
-                      onClick={() => setSelectedFilter(val)}
-                      style={{
-                        padding: '0.25rem 0.65rem',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        borderRadius: 4,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: selectedFilter === val ? 'var(--primary)' : 'transparent',
-                        color: selectedFilter === val ? '#fff' : 'var(--text-secondary)',
-                        transition: 'var(--transition)'
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
+              {/* Filter Tabs & Quick Downloads */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+                  <div style={{ display: 'flex', gap: '0.35rem', background: 'var(--surface-raised)', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--glass-border)' }}>
+                    {[
+                      ['ALL', `All Schemes (${data.blueprints.length})`, 'var(--primary)'],
+                      ['READY', `⚡ Tranche 1: Switch Now (${data.readyToSwitchCount})`, 'var(--green)'],
+                      ['PENDING', `⏳ Tranche 2: Wait for Expiry (${data.blueprints.length - data.readyToSwitchCount})`, 'var(--gold)']
+                    ].map(([val, label, activeBg]) => (
+                      <button
+                        key={val}
+                        onClick={() => setSelectedFilter(val)}
+                        style={{
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          borderRadius: 6,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: selectedFilter === val ? activeBg : 'transparent',
+                          color: selectedFilter === val ? '#fff' : 'var(--text-secondary)',
+                          transition: 'all 0.15s ease',
+                          boxShadow: selectedFilter === val ? '0 2px 8px rgba(0,0,0,0.25)' : 'none',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  <button
+                    onClick={downloadDirectSwitchPDF}
+                    disabled={loading || !data?.blueprints?.length || isExportingPdf}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    title="Download official PDF switch slip"
+                  >
+                    <Download size={13} /> {isExportingPdf ? 'Exporting...' : 'Download PDF'}
+                  </button>
+                  <button
+                    onClick={downloadMFCentralCSV}
+                    disabled={loading || !data?.blueprints?.length}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    title="Export CSV for MF Central batch switch"
+                  >
+                    <FileText size={13} /> Export CSV
+                  </button>
                 </div>
               </div>
             </div>

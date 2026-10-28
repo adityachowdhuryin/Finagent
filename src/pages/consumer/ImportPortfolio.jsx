@@ -2,8 +2,9 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle, ChevronRight, FileText, Edit3, Database } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { parseBrokerageFile } from '../../utils/usBrokerageParser';
 
-const DEMO_HOLDINGS = [
+const DEMO_HOLDINGS_IN = [
   { fund: 'Axis Bluechip Fund - Growth', scheme: 'Axis Bluechip Fund - Growth', name: 'Axis Bluechip Fund - Growth', category: 'Large Cap', units: 892.456, nav: 58.32, value: 52032, currentValue: 52032, folio: 'AXS/001234', amc: 'Axis Mutual Fund' },
   { fund: 'Mirae Asset Large Cap Fund - Growth', scheme: 'Mirae Asset Large Cap Fund - Growth', name: 'Mirae Asset Large Cap Fund - Growth', category: 'Large Cap', units: 421.123, nav: 98.45, value: 41472, currentValue: 41472, folio: 'MIR/005678', amc: 'Mirae Asset Mutual Fund' },
   { fund: 'HDFC Mid-Cap Opportunities Fund', scheme: 'HDFC Mid-Cap Opportunities Fund', name: 'HDFC Mid-Cap Opportunities Fund', category: 'Mid Cap', units: 312.789, nav: 142.10, value: 44448, currentValue: 44448, folio: 'HDFC/009012', amc: 'HDFC Mutual Fund' },
@@ -11,17 +12,38 @@ const DEMO_HOLDINGS = [
   { fund: 'Parag Parikh Flexi Cap Fund - Growth', scheme: 'Parag Parikh Flexi Cap Fund - Growth', name: 'Parag Parikh Flexi Cap Fund - Growth', category: 'Flexi Cap', units: 198.567, nav: 76.45, value: 15184, currentValue: 15184, folio: 'PPFAS/007890', amc: 'PPFAS Mutual Fund' },
 ];
 
-const SOURCES = [
+const DEMO_HOLDINGS_US = [
+  { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', fund: 'Vanguard S&P 500 ETF', category: 'Large Cap Blend', units: 340.5, nav: 540.20, price: 540.20, value: 183938, currentValue: 183938, folio: 'SCHW-8821', amc: 'Vanguard', expenseRatio: '0.03%' },
+  { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', fund: 'Vanguard Total Stock Market ETF', category: 'Total US Market', units: 480.0, nav: 285.50, price: 285.50, value: 137040, currentValue: 137040, folio: 'FID-2041', amc: 'Vanguard', expenseRatio: '0.03%' },
+  { symbol: 'QQQ', name: 'Invesco QQQ Trust (Nasdaq 100)', fund: 'Invesco QQQ Trust', category: 'Large Cap Growth', units: 185.2, nav: 492.10, price: 492.10, value: 91137, currentValue: 91137, folio: 'SCHW-8821', amc: 'Invesco', expenseRatio: '0.20%' },
+  { symbol: 'BND', name: 'Vanguard Total Bond Market ETF', fund: 'Vanguard Total Bond Market ETF', category: 'Total Bond Market', units: 620.0, nav: 72.40, price: 72.40, value: 44888, currentValue: 44888, folio: 'NETBEN-401K', amc: 'Vanguard', expenseRatio: '0.03%' },
+  { symbol: 'AAPL', name: 'Apple Inc.', fund: 'Apple Inc.', category: 'Technology', units: 250.0, nav: 228.30, price: 228.30, value: 57075, currentValue: 57075, folio: 'SCHW-8821', amc: 'Equity', expenseRatio: '0.00%' },
+  { symbol: 'MSFT', name: 'Microsoft Corp.', fund: 'Microsoft Corp.', category: 'Technology', units: 140.0, nav: 448.20, price: 448.20, value: 62748, currentValue: 62748, folio: 'SCHW-8821', amc: 'Equity', expenseRatio: '0.00%' },
+];
+
+const SOURCES_IN = [
   { id: 'cams', icon: '📄', title: 'CAMS Consolidated Statement', desc: 'Upload your CAMS CAS PDF — covers Axis, HDFC, SBI, Nippon & more', badge: 'Recommended' },
   { id: 'kfintech', icon: '📑', title: 'KFintech Statement', desc: 'Upload KFintech CAS PDF — covers Mirae, PPFAS, Kotak & more', badge: null },
   { id: 'manual', icon: '✏️', title: 'Manual Entry', desc: 'Add each fund manually with folio, units and NAV details', badge: null },
+];
+
+const SOURCES_US = [
+  { id: 'schwab', icon: '🏦', title: 'Charles Schwab Statement', desc: 'Upload Schwab brokerage, Roth IRA, or Trust account PDF', badge: 'Recommended' },
+  { id: 'fidelity', icon: '🟢', title: 'Fidelity Investments Statement', desc: 'Upload Fidelity brokerage or NetBenefits 401(k) PDF', badge: null },
+  { id: 'vanguard', icon: '🔴', title: 'Vanguard Group Statement', desc: 'Upload Vanguard account or mutual fund statement PDF', badge: null },
+  { id: 'robinhood', icon: '🏹', title: 'Robinhood / Webull Statement', desc: 'Upload Apex Clearing or Robinhood monthly statement PDF', badge: null },
+  { id: 'manual', icon: '✏️', title: 'Manual USD Entry', desc: 'Add US stocks, ETFs, 401(k), and IRAs manually', badge: null },
 ];
 
 const STEPS = ['Choose Source', 'Upload / Enter', 'Review Holdings', 'Done'];
 
 export default function ImportPortfolio() {
   const navigate = useNavigate();
-  const { state, dispatch, persistHoldings } = useApp();
+  const { state, dispatch, persistHoldings, isUSMarket } = useApp();
+  const currencySymbol = isUSMarket ? '$' : '₹';
+  const SOURCES = isUSMarket ? SOURCES_US : SOURCES_IN;
+  const DEMO_HOLDINGS = isUSMarket ? DEMO_HOLDINGS_US : DEMO_HOLDINGS_IN;
+
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(null);
   const [holdings, setHoldings] = useState(DEMO_HOLDINGS);
@@ -34,8 +56,36 @@ export default function ImportPortfolio() {
   const fileRef = useRef();
 
   const handleFileDrop = useCallback(async (file) => {
-    if (!file || file.type !== 'application/pdf') {
-      setUploadError('Please upload a valid PDF file.');
+    if (!file) return;
+
+    // Zero-vision deterministic parser for CSV, OFX, QFX
+    const isCsvOrOfx = file.name.endsWith('.csv') || file.name.endsWith('.ofx') || file.name.endsWith('.qfx') || file.name.endsWith('.qbo') || file.type.includes('csv') || file.type.includes('xml');
+
+    if (isCsvOrOfx) {
+      setUploading(true);
+      setUploadError(null);
+      try {
+        const text = await file.text();
+        const parsed = parseBrokerageFile(text, file.name);
+        if (parsed.holdings && parsed.holdings.length > 0) {
+          setHoldings(parsed.holdings);
+          setUploading(false);
+          setStep(2);
+          return;
+        } else {
+          setUploadError(`Could not detect valid holdings in ${file.name}. Please ensure standard Schwab, Fidelity, Vanguard, Robinhood or OFX format.`);
+          setUploading(false);
+          return;
+        }
+      } catch (err) {
+        setUploadError(`Error reading ${file.name}: ${err.message}`);
+        setUploading(false);
+        return;
+      }
+    }
+
+    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      setUploadError('Please upload a valid CSV, OFX, or PDF statement.');
       return;
     }
     setUploading(true);
@@ -94,7 +144,7 @@ export default function ImportPortfolio() {
       setUploading(false);
       setStep(2);
     }
-  }, [source]);
+  }, [source, DEMO_HOLDINGS]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -188,12 +238,35 @@ export default function ImportPortfolio() {
     });
 
     const currentHoldings = state.consumer?.holdings || {};
-    const existingMFs = currentHoldings.mutualFunds || currentHoldings.mf || [];
-    const updatedHoldings = {
-      ...currentHoldings,
-      mutualFunds: [...existingMFs, ...newMFs],
-      mf: [...existingMFs, ...newMFs],
-    };
+    let updatedHoldings;
+
+    if (isUSMarket) {
+      const existingEquities = currentHoldings.equities || [];
+      const newEquities = holdings.map(h => ({
+        symbol: h.symbol || (h.name || h.fund || 'ETF').slice(0, 4).toUpperCase(),
+        name: h.name || h.fund,
+        qty: Number(h.units) || 10,
+        ltp: Number(h.nav || h.price) || 100,
+        avgCost: Number(h.nav || h.price || 100) * 0.9,
+        value: Number(h.value ?? h.currentValue) || 1000,
+        pnl: Math.round((Number(h.value ?? h.currentValue) || 1000) * 0.1),
+        pnlPct: 10.0,
+        holdingDays: 420,
+        taxType: 'LTCG',
+        sector: h.category || 'Large Cap Blend',
+      }));
+      updatedHoldings = {
+        ...currentHoldings,
+        equities: [...existingEquities, ...newEquities],
+      };
+    } else {
+      const existingMFs = currentHoldings.mutualFunds || currentHoldings.mf || [];
+      updatedHoldings = {
+        ...currentHoldings,
+        mutualFunds: [...existingMFs, ...newMFs],
+        mf: [...existingMFs, ...newMFs],
+      };
+    }
 
     dispatch({ type: 'UPDATE_HOLDINGS', payload: updatedHoldings });
     try {
@@ -293,18 +366,22 @@ export default function ImportPortfolio() {
                   transition: 'all 0.2s', borderRadius: 'var(--radius)',
                 }}
               >
-                <input ref={fileRef} type="file" accept=".pdf" style={{ display: 'none' }}
+                <input ref={fileRef} type="file" accept=".pdf,.csv,.ofx,.qfx,.qbo,text/csv,application/pdf" style={{ display: 'none' }}
                   onChange={e => handleFileDrop(e.target.files[0])} />
                 {uploading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ width: 48, height: 48, border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    <div style={{ color: 'var(--text-secondary)' }}>Parsing your statement with AI…</div>
+                    <div style={{ color: 'var(--text-secondary)' }}>Parsing your statement deterministically…</div>
                   </div>
                 ) : (
                   <>
                     <Upload size={40} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-                    <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.5rem' }}>Drop your {source === 'cams' ? 'CAMS' : 'KFintech'} PDF here</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>or click to browse · Max 10 MB</div>
+                    <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.5rem' }}>
+                      {isUSMarket
+                        ? 'Drop Charles Schwab, Fidelity, Vanguard, Robinhood CSV / OFX, or PDF here'
+                        : `Drop your ${source === 'cams' ? 'CAMS' : 'KFintech'} CAS PDF or portfolio export here`}
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>Instantaneous zero-vision parsing · CSV, OFX & PDF supported</div>
                     <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}>Browse Files</button>
                   </>
                 )}
@@ -318,11 +395,11 @@ export default function ImportPortfolio() {
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <h3 className="text-h3">Add Fund Manually</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
-                {[['fund', 'Fund Name', 'e.g. Axis Bluechip Fund - Growth'],
-                  ['folio', 'Folio Number', 'e.g. AXS/001234'],
-                  ['units', 'Units', 'e.g. 892.456'],
-                  ['nav', 'Current NAV (₹)', 'e.g. 58.32'],
-                  ['value', 'Current Value (₹)', 'Auto-calculated'],
+                {[['fund', isUSMarket ? 'Ticker / Asset Name' : 'Fund Name', isUSMarket ? 'e.g. VOO / Apple Inc.' : 'e.g. Axis Bluechip Fund - Growth'],
+                  ['folio', isUSMarket ? 'Account / Custodian' : 'Folio Number', isUSMarket ? 'e.g. Schwab / Fidelity' : 'e.g. AXS/001234'],
+                  ['units', isUSMarket ? 'Shares / Units' : 'Units', isUSMarket ? 'e.g. 150.0' : 'e.g. 892.456'],
+                  ['nav', `Price / NAV (${currencySymbol})`, isUSMarket ? 'e.g. 540.20' : 'e.g. 58.32'],
+                  ['value', `Current Value (${currencySymbol})`, 'Auto-calculated'],
                 ].map(([field, label, placeholder]) => (
                   <div key={field} style={{ gridColumn: field === 'fund' ? '1 / -1' : 'auto' }}>
                     <label style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.375rem', display: 'block' }}>{label}</label>
@@ -349,8 +426,8 @@ export default function ImportPortfolio() {
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{holdings.length} fund(s) added</div>
                   {holdings.map((h, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', fontSize: '0.875rem' }}>
-                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{h.fund}</span>
-                      <span style={{ color: 'var(--green)', fontWeight: 600 }}>₹{h.value.toLocaleString('en-IN')}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{h.name || h.fund}</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 600 }}>{currencySymbol}{h.value.toLocaleString(isUSMarket ? 'en-US' : 'en-IN')}</span>
                     </div>
                   ))}
                   <button className="btn btn-primary" style={{ marginTop: '1rem', width: '100%' }} onClick={() => setStep(2)}>Review Holdings →</button>
@@ -369,11 +446,11 @@ export default function ImportPortfolio() {
               <button className="btn btn-ghost btn-sm" onClick={() => setStep(1)}>← Back</button>
               <div>
                 <h2 className="text-h2">Review Your Holdings</h2>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{holdings.length} funds · Total ₹{totalValue.toLocaleString('en-IN')}</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{holdings.length} assets · Total {currencySymbol}{totalValue.toLocaleString(isUSMarket ? 'en-US' : 'en-IN')}</p>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="badge badge-green">{holdings.length} Funds Found</span>
+              <span className="badge badge-green">{holdings.length} Assets Found</span>
               <button className="btn btn-primary" onClick={handleConfirmImport}>Confirm Import →</button>
             </div>
           </div>
@@ -383,8 +460,8 @@ export default function ImportPortfolio() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--surface-raised)', borderBottom: '1px solid var(--glass-border)' }}>
-                    {['Fund Name', 'Category', 'Folio', 'Units', 'NAV (₹)', 'Value (₹)', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '0.875rem 1rem', textAlign: h === 'Value (₹)' ? 'right' : 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                    {['Asset / Holding Name', 'Category', 'Account / Folio', 'Units / Shares', `Price (${currencySymbol})`, `Value (${currencySymbol})`, 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '0.875rem 1rem', textAlign: h.startsWith('Value') ? 'right' : 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -422,16 +499,17 @@ export default function ImportPortfolio() {
                       ) : (
                         <>
                           <td style={{ padding: '0.875rem 1rem' }}>
-                            <div style={{ fontWeight: 500, color: 'var(--text-primary)', maxWidth: 260, lineHeight: 1.4 }}>{h.scheme || h.fund || h.name || 'Mutual Fund'}</div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 260, lineHeight: 1.4 }}>{h.name || h.scheme || h.fund || 'Holding'}</div>
+                            {h.symbol && <span className="badge badge-primary" style={{ fontSize: '0.65rem', marginTop: 2 }}>{h.symbol}</span>}
                             {h.amc && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{h.amc}</div>}
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
                             <span className="chip" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>{h.category || 'Equity'}</span>
                           </td>
                           <td style={{ padding: '0.875rem 1rem', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>{h.folio || '—'}</td>
-                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk', fontWeight: 600 }}>{(Number(h.units) || 0).toFixed(3)}</td>
-                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk' }}>₹{(Number(h.nav) || 0).toFixed(2)}</td>
-                          <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 700, color: 'var(--green)' }}>₹{(Number(h.value ?? h.currentValue) || 0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk', fontWeight: 600 }}>{(Number(h.units) || 0).toFixed(2)}</td>
+                          <td style={{ padding: '0.875rem 1rem', fontFamily: 'Space Grotesk' }}>{currencySymbol}{(Number(h.nav || h.price) || 0).toFixed(2)}</td>
+                          <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 700, color: 'var(--green)' }}>{currencySymbol}{(Number(h.value ?? h.currentValue) || 0).toLocaleString(isUSMarket ? 'en-US' : 'en-IN')}</td>
                           <td style={{ padding: '0.875rem 1rem' }}>
                             <div style={{ display: 'flex', gap: '0.375rem' }}>
                               <button className="btn btn-ghost btn-sm" onClick={() => startEdit(idx)} title="Edit" style={{ padding: '0.25rem 0.5rem' }}>
@@ -450,7 +528,7 @@ export default function ImportPortfolio() {
                 <tfoot>
                   <tr style={{ background: 'var(--surface-raised)', borderTop: '2px solid var(--glass-border)' }}>
                     <td colSpan={5} style={{ padding: '0.875rem 1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Total Portfolio Value</td>
-                    <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-light)' }}>₹{totalValue.toLocaleString('en-IN')}</td>
+                    <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-light)' }}>{currencySymbol}{totalValue.toLocaleString(isUSMarket ? 'en-US' : 'en-IN')}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -484,13 +562,13 @@ export default function ImportPortfolio() {
           <div>
             <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1.75rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Portfolio Imported! 🎉</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              {holdings.length} funds · ₹{totalValue.toLocaleString('en-IN')} total value successfully synced
+              {holdings.length} assets · {currencySymbol}{totalValue.toLocaleString(isUSMarket ? 'en-US' : 'en-IN')} total value successfully synced
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', width: '100%', maxWidth: 480 }}>
             {[
-              { label: 'Funds Imported', value: holdings.length, icon: '📊' },
-              { label: 'Total Value', value: `₹${(totalValue / 100000).toFixed(1)}L`, icon: '💰' },
+              { label: 'Assets Imported', value: holdings.length, icon: '📊' },
+              { label: 'Total Value', value: isUSMarket ? `$${(totalValue / 1000).toFixed(0)}k` : `₹${(totalValue / 100000).toFixed(1)}L`, icon: '💰' },
               { label: 'Last Updated', value: 'Just now', icon: '🕐' },
             ].map((s, i) => (
               <div key={i} style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: '1rem', border: '1px solid var(--glass-border)' }}>

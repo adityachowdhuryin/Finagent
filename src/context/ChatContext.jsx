@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useRef } from 'react';
 import { findResponse } from '../data/mockChatResponses';
 import { streamChat, checkHealth } from '../services/geminiService';
 import { useAuth } from './AuthContext';
+import { useApp } from './AppContext';
 import { db } from '../config/firebase';
 import { collection, doc, setDoc, getDocs, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 
@@ -73,6 +74,7 @@ export function ChatProvider({ children }) {
   const streamRef = useRef(null);
   const backendChecked = useRef(false);
   const { currentUser } = useAuth();
+  const { isUSMarket, state: appState } = useApp();
   
   const stateRef = useRef(state);
   React.useEffect(() => { stateRef.current = state; }, [state]);
@@ -206,12 +208,22 @@ export function ChatProvider({ children }) {
     const msgId = Date.now() + 1;
     const currentState = stateRef.current;
     const backendAvailable = currentState.backendStatus?.status === 'ok' && currentState.backendStatus?.gemini;
+    const currentMarket = isUSMarket ? 'US' : 'IN';
+
+    const mergedContext = {
+      market: currentMarket,
+      currency: isUSMarket ? 'USD' : 'INR',
+      netWorth: appState?.consumer?.netWorth?.total || (isUSMarket ? 1420000 : 12400000),
+      holdings: appState?.consumer?.holdings,
+      user: appState?.consumer?.user,
+      ...portfolioContext,
+    };
 
     // Try live Gemini first, fall back to mock if backend isn't running
     if (backendAvailable) {
-      await sendLiveMessage(userText, msgId, portfolioContext);
+      await sendLiveMessage(userText, msgId, mergedContext);
     } else {
-      await sendMockMessage(userText, msgId);
+      await sendMockMessage(userText, msgId, currentMarket);
     }
     
     await saveSession();
@@ -234,6 +246,7 @@ export function ChatProvider({ children }) {
         history,
         portfolioContext,
         (token) => dispatch({ type: 'APPEND_TOKEN', id: msgId, token }),
+        (card) => dispatch({ type: 'SET_CARD', id: msgId, card }),
       );
 
       // Check if response mentions "order" or "buy" or "sell" → show order confirm
@@ -259,8 +272,8 @@ export function ChatProvider({ children }) {
   }
 
   // ── Mock streaming (existing behavior) ──
-  async function sendMockMessage(userText, msgId) {
-    const response = findResponse(userText);
+  async function sendMockMessage(userText, msgId, currentMarket = (isUSMarket ? 'US' : 'IN')) {
+    const response = findResponse(userText, currentMarket);
     dispatch({ type: 'ADD_AI_MESSAGE', id: msgId, isLive: false });
 
     for (const chunk of response.chunks) {
@@ -290,7 +303,7 @@ export function ChatProvider({ children }) {
   }
 
   async function fallbackStream(userText, msgId) {
-    const response = findResponse(userText);
+    const response = findResponse(userText, isUSMarket ? 'US' : 'IN');
     const allChunks = [...(response.chunks || []), ...(response.trailing_chunks || [])];
     for (const chunk of allChunks) {
       for (let i = 0; i < chunk.length; i++) {

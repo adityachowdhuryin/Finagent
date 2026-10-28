@@ -13,7 +13,7 @@ const { analyzeCashflow } = require('./routes/cashflow');
 
 const { analyzePortfolio, sendDailyDigest } = require('./routes/doctor');
 const { getMarketData, getSIPRecommendations } = require('./routes/sipOptimizer');
-const { debateCouncil } = require('./routes/council');
+const { debateCouncil, challengeCouncil } = require('./routes/council');
 const { generateLetter, dispatchEmail, preAuthorizeAgreement, settleSavings } = require('./routes/negotiators');
 const { generateChart } = require('./routes/reportStudio');
 
@@ -61,6 +61,7 @@ app.post('/api/cashflow/analyze', analyzeCashflow);
 
 // Agentic AI Systems
 app.post('/api/council/debate', debateCouncil);
+app.post('/api/council/challenge', challengeCouncil);
 app.post('/api/negotiator/generate-letter', generateLetter);
 app.post('/api/negotiator/dispatch-email', dispatchEmail);
 app.post('/api/negotiator/pre-authorize', preAuthorizeAgreement);
@@ -118,10 +119,20 @@ app.post('/api/reports/monthly/send-now', sendReportNow);
 app.get('/api/reports/monthly/cron', cronSend);
 
 // Tax Engine
-const { computeLots, generateITRXML, tracker80C } = require('./routes/taxEngine');
+const {
+  computeLots,
+  generateITRXML,
+  tracker80C,
+  handleScheduleFA,
+  handleSurchargeMarginalRelief,
+  handleParseDocument,
+} = require('./routes/taxEngine');
 app.post('/api/tax/compute-lots', computeLots);
 app.post('/api/tax/generate-itr-xml', generateITRXML);
 app.post('/api/tax/80c-tracker', tracker80C);
+app.post('/api/tax/schedule-fa', handleScheduleFA);
+app.post('/api/tax/surcharge-marginal-relief', handleSurchargeMarginalRelief);
+app.post('/api/tax/parse-document', handleParseDocument);
 
 // Portfolio X-Ray
 const { analyze: analyzeXRay } = require('./routes/xray');
@@ -142,7 +153,10 @@ const {
   onboardClient,
   listAdvisorClients,
   listAdvisorDispatches,
-  listAuditEvents
+  listAuditEvents,
+  createClientIPS,
+  signAndBridgeExecution,
+  getSEBIInspectionLog
 } = require('./routes/advisorAdmin');
 app.post('/api/advisor/dispatch-recommendation', dispatchRecommendation);
 app.post('/api/advisor/generate-recommendations', generateRecommendations);
@@ -150,6 +164,9 @@ app.post('/api/advisor/onboard-client', onboardClient);
 app.get('/api/advisor/clients', listAdvisorClients);
 app.get('/api/advisor/dispatches', listAdvisorDispatches);
 app.get('/api/advisor/audit-events', listAuditEvents);
+app.post('/api/advisor/create-ips', createClientIPS);
+app.post('/api/advisor/sign-and-bridge', signAndBridgeExecution);
+app.get('/api/advisor/sebi-inspection-dossier', getSEBIInspectionLog);
 
 // ── 5 High-WTP Features ───────────────────────────────────────────────────────
 
@@ -158,10 +175,11 @@ const { auditCommission } = require('./routes/commissionHunter');
 app.post('/api/commission/audit', auditCommission);
 
 // 2. Multi-PAN Family Office Hub
-const { getProfiles: getFamilyProfiles, addOrUpdateProfile: addFamilyProfile, optimizeTax: optimizeFamilyTax } = require('./routes/familyHub');
+const { getProfiles: getFamilyProfiles, addOrUpdateProfile: addFamilyProfile, optimizeTax: optimizeFamilyTax, simulateGifting } = require('./routes/familyHub');
 app.get('/api/family/profiles', getFamilyProfiles);
 app.post('/api/family/profile', addFamilyProfile);
 app.post('/api/family/optimize-tax', optimizeFamilyTax);
+app.post('/api/family/simulate-gifting', simulateGifting);
 
 // 3. Family Emergency Vault & Inactivity Protocol
 const { getStatus: getVaultStatus, pingHeartbeat, updateConfig: updateVaultConfig, testTrigger: testVaultTrigger, nomineeAudit } = require('./routes/emergencyVault');
@@ -170,6 +188,7 @@ app.post('/api/vault/ping', pingHeartbeat);
 app.post('/api/vault/config', updateVaultConfig);
 app.post('/api/vault/test-trigger', testVaultTrigger);
 app.get('/api/vault/nominee-audit', nomineeAudit);
+app.post('/api/vault/nominee-audit', nomineeAudit);
 
 // 4. Account Aggregator (AA) 1-Click Sync
 const { initiateConsent, verifyOtp, syncPortfolio, getStatus: getAAStatus } = require('./routes/accountAggregator');
@@ -231,16 +250,32 @@ const { estimateUSTax } = require('./routes/usTaxEngine');
 app.post('/api/us-tax/estimate', estimateUSTax);
 
 // US Wash-Sale & Proxy ETF Harvester (IRC § 1091)
-const { harvestTaxLoss } = require('./routes/usWashSale');
+const {
+  harvestTaxLoss,
+  scanHarvestingOpportunitiesUS,
+  sendHarvestNotificationUS,
+} = require('./routes/usWashSale');
 app.post('/api/us-wash-sale/harvest', harvestTaxLoss);
+app.post('/api/us-wash-sale/scan', scanHarvestingOpportunitiesUS);
+app.post('/api/us-wash-sale/notify', sendHarvestNotificationUS);
 
 // Silicon Valley Equity OS (RSU Under-Withholding, ISO/AMT Form 6251, 83b)
 const { analyzeEquity } = require('./routes/usEquityCompensation');
 app.post('/api/us-equity/analyze', analyzeEquity);
 
-// 30-Year Mortgage Arbitrage & PMI Removal (HPA 1998)
-const { auditMortgage } = require('./routes/usMortgageRefi');
+// 30-Year Mortgage Arbitrage, FHFA Limits, Points NPV, ARM Shock, FCRA 609 & RESPA § 10 Escrow
+const {
+  auditMortgage,
+  computePointsNPV,
+  simulateArmShock,
+  generateFCRALetter,
+  auditEscrow,
+} = require('./routes/usMortgageRefi');
 app.post('/api/us-mortgage/audit', auditMortgage);
+app.post('/api/us-mortgage/points-npv', computePointsNPV);
+app.post('/api/us-mortgage/arm-shock', simulateArmShock);
+app.post('/api/us-mortgage/fcra-dispute', generateFCRALetter);
+app.post('/api/us-mortgage/escrow-audit', auditEscrow);
 
 // US Points & Miles Maximizer (Chase 5/24 & Amex/Chase points router)
 const { getUSCardDatabase, optimizeSpend: optimizeUSCards } = require('./routes/usCardOptimizer');
@@ -274,11 +309,33 @@ app.get('/api/stripe/invoices', getStripeInvoices);
 app.post('/api/stripe/webhook', handleStripeWebhook);
 
 // ── Autonomous Execution & Subscription Engines ──────────────────────────────
-const { getBrokerStatus, executeRebalance, executeHarvest, executeSweep } = require('./routes/brokerExecution');
+const {
+  getBrokerStatus,
+  executeRebalance,
+  executeHarvest,
+  executeSweep,
+  executeMFSwitch,
+  executeOverlapConsolidation,
+  cancelSubscriptionMandate,
+  getExecutionHistory,
+  executeBridgedOrder
+} = require('./routes/brokerExecution');
 app.get('/api/broker/status', getBrokerStatus);
 app.post('/api/broker/execute-rebalance', executeRebalance);
 app.post('/api/broker/execute-harvest', executeHarvest);
 app.post('/api/broker/execute-sweep', executeSweep);
+app.post('/api/broker/execute-mf-switch', executeMFSwitch);
+app.post('/api/broker/execute-overlap-consolidation', executeOverlapConsolidation);
+app.post('/api/broker/execute-bridged-order', executeBridgedOrder);
+app.post('/api/subscriptions/cancel-mandate', cancelSubscriptionMandate);
+app.get('/api/broker/execution-history', getExecutionHistory);
+
+// ── Indian HUF (Hindu Undivided Family) Tax Studio ───────────────────────────
+const { getHUFProfile, createHUFDeed, assessCapitalInfusion, simulateArbitrage } = require('./routes/hufStudio');
+app.get('/api/huf/profile', getHUFProfile);
+app.post('/api/huf/create-deed', createHUFDeed);
+app.post('/api/huf/capital-infusion', assessCapitalInfusion);
+app.post('/api/huf/simulate-arbitrage', simulateArbitrage);
 
 const { getDetectedSubscriptions, cancelSubscription, negotiateBill } = require('./routes/subscriptionNegotiator');
 app.get('/api/subscriptions/detected', getDetectedSubscriptions);
@@ -362,20 +419,74 @@ app.post('/api/broker-router/place-order', placeOrder);
 app.post('/api/broker-router/smart-allocation', triggerSmartAllocation);
 
 // ── Vector 1: Direct Indexing & Tax-Alpha Harvester ───────────────────────────
-const { getDirectIndexModels, rebalanceDirectIndex, enrollWrapFee, getCashSweepYield } = require('./routes/directIndexing');
+const { getDirectIndexModels, rebalanceDirectIndex, harvestConstituentLots, enrollWrapFee, getCashSweepYield } = require('./routes/directIndexing');
 app.get('/api/direct-indexing/models', getDirectIndexModels);
 app.post('/api/direct-indexing/rebalance', rebalanceDirectIndex);
+app.post('/api/direct-indexing/harvest-lots', harvestConstituentLots);
 app.post('/api/direct-indexing/enroll-wrap', enrollWrapFee);
 app.get('/api/direct-indexing/cash-sweep-yield', getCashSweepYield);
 
 // ── Vector 2: Direct Government Tax & Statutory Legal E-Filing Rails ──────────
-const { generateTaxSchema, lintTaxFiling, transmitEFile, notarizeDocument, generateFBAR } = require('./routes/taxEFiling');
+const {
+  generateTaxSchema,
+  lintTaxFiling,
+  reconcileAISData,
+  transmitEFile,
+  notarizeDocument,
+  generateFBAR,
+  getSavedReturnHandler,
+  saveReturnHandler,
+  lockReturnHandler,
+  getDocumentsHandler,
+} = require('./routes/taxEFiling');
 app.post('/api/e-file/generate-schema', generateTaxSchema);
 app.post('/api/e-file/lint', lintTaxFiling);
+app.post('/api/e-file/reconcile-ais', reconcileAISData);
+app.post('/api/e-file/reconcile-1099', reconcileAISData);
 app.post('/api/e-file/transmit', transmitEFile);
 app.post('/api/efile/transmit', transmitEFile);
 app.post('/api/e-file/notarize', notarizeDocument);
 app.post('/api/e-file/fbar', generateFBAR);
+
+// Multi-Tenant Persistence & CPA / CA Workpaper Rails
+app.get('/api/tax/return/:market/:year', getSavedReturnHandler);
+app.post('/api/tax/return/save', saveReturnHandler);
+app.post('/api/tax/return/lock', lockReturnHandler);
+app.get('/api/tax/documents/:userId?', getDocumentsHandler);
+
+// ── US Federal & 50-State Income Tax Rails ─────────────────────────────────────
+const {
+  calculateFederalAndStateTax,
+  calculateAMTTax,
+  calculatePTETTax,
+  calculateQuarterlyEstimatedTax,
+  calculateScheduleDNettingHandler,
+  calculateTaxShieldOptimizerHandler,
+  calculateForm8606AndFBARHandler,
+  handleParseUSDocument,
+} = require('./routes/usTax');
+app.post('/api/us-tax/calculate-federal-and-state', calculateFederalAndStateTax);
+app.post('/api/us-tax/calculate-amt', calculateAMTTax);
+app.post('/api/us-tax/calculate-ptet', calculatePTETTax);
+app.post('/api/us-tax/quarterly-estimated', calculateQuarterlyEstimatedTax);
+app.post('/api/us-tax/schedule-d-netting', calculateScheduleDNettingHandler);
+app.post('/api/us-tax/tax-shield-optimizer', calculateTaxShieldOptimizerHandler);
+app.post('/api/us-tax/form-8606-fbar', calculateForm8606AndFBARHandler);
+app.post('/api/us-tax/parse-document', handleParseUSDocument);
+
+// ── US S-Corporation / LLC Pass-Through Tax Studio ─────────────────────────────
+const {
+  optimizeSCorpPassThrough,
+  getBasisWorksheet,
+  getLLCOperatingAgreement,
+  getCorporateBankingResolutionHandler,
+  getFinCENBOIReportHandler,
+} = require('./routes/usBusinessTax');
+app.post('/api/us-scorp/optimize', optimizeSCorpPassThrough);
+app.post('/api/us-scorp/basis-worksheet', getBasisWorksheet);
+app.post('/api/us-scorp/operating-agreement', getLLCOperatingAgreement);
+app.post('/api/us-scorp/banking-resolution', getCorporateBankingResolutionHandler);
+app.post('/api/us-scorp/fincen-boi', getFinCENBOIReportHandler);
 
 // ── Vector 4: Alternative Investments & Pre-IPO Secondary Marketplace ─────────
 const { getSyndicateDeals, commitToSyndicate } = require('./routes/syndicates');
@@ -461,6 +572,12 @@ app.get('/api/embedded-wealth/config', getPartnerConfig);
 app.post('/api/embedded-wealth/save-config', savePartnerConfig);
 app.post('/api/embedded-wealth/simulate-sweep', simulateDepositSweep);
 app.get('/api/embedded-wealth/developer-docs', getDeveloperDocs);
+
+// 6. Institutional SEC RIA Compliance & Fiduciary Oversight (/api/sec/*)
+const { getSecAlerts, generateFormAdv, generateFormCrs } = require('./routes/secCompliance');
+app.get('/api/sec/alerts', getSecAlerts);
+app.post('/api/sec/generate-form-adv', generateFormAdv);
+app.post('/api/sec/generate-form-crs', generateFormCrs);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 if (require.main === module || !process.env.VERCEL) {

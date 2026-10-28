@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
+import { useApp } from '../../context/AppContext';
 import ChatMessage from './ChatMessage';
 import SuggestedPrompts from './SuggestedPrompts';
 import OrderConfirmCard from './OrderConfirmCard';
@@ -8,6 +9,7 @@ import VoiceOrb from './VoiceOrb';
 
 export default function ChatWindow() {
   const { state, sendMessage } = useChat();
+  const { isUSMarket } = useApp();
   const [input, setInput] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
   const messagesEndRef = useRef(null);
@@ -59,7 +61,13 @@ export default function ChatWindow() {
           <div style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: '0.9375rem' }}>FinAgent AI</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor, display: 'inline-block', animation: state.isStreaming ? 'pulse-dot 1s ease infinite' : 'none' }} />
-            {state.streamError ? 'Connection failed' : state.isStreaming ? 'FinAgent is generating...' : isLive ? 'Live Gemini AI · India-aware · Audit-logged' : 'Demo mode · India-aware · Audit-logged'}
+            {state.streamError
+              ? 'Connection failed'
+              : state.isStreaming
+                ? 'FinAgent is generating...'
+                : isLive
+                  ? (isUSMarket ? 'Live Gemini AI · SEC RIA Fiduciary · Audit-logged' : 'Live Gemini AI · India-aware · Audit-logged')
+                  : (isUSMarket ? 'Demo mode · SEC RIA Compliant · Audit-logged' : 'Demo mode · India-aware · Audit-logged')}
           </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -85,11 +93,16 @@ export default function ChatWindow() {
             <div style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: '1.125rem', color: 'var(--text-primary)' }}>
               Your AI Wealth Co-pilot
             </div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: 360, lineHeight: 1.6 }}>
-              {isLive
-                ? 'Ask me anything — I\'m powered by live Gemini AI with full context of your ₹1.24 Crore portfolio.'
-                : 'Ask me anything about your ₹1.24 Crore across 7 asset classes — tax, goals, insurance, rebalancing, or just "what should I do with my bonus?"'
-              }
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: 380, lineHeight: 1.6 }}>
+              {isUSMarket ? (
+                isLive
+                  ? 'Ask me anything — I\'m powered by live Gemini AI with full context of your $1,420,000 portfolio across equities, ETFs, 401(k), and real estate.'
+                  : 'Ask me anything about your $1,420,000 portfolio — IRS Form 1040, 401(k) matching, Backdoor Roth, wash-sales, living trust, or cash yield optimization.'
+              ) : (
+                isLive
+                  ? 'Ask me anything — I\'m powered by live Gemini AI with full context of your ₹1.24 Crore portfolio.'
+                  : 'Ask me anything about your ₹1.24 Crore across 7 asset classes — tax, goals, insurance, rebalancing, or just "what should I do with my bonus?"'
+              )}
             </div>
             {voiceMode && (
               <div style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', background: 'var(--primary-glow)', borderRadius: 'var(--radius-full)', fontSize: '0.8125rem', color: 'var(--primary-light)' }}>

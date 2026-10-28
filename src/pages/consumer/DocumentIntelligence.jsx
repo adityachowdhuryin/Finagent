@@ -7,13 +7,22 @@ import {
 import { extractDocument } from '../../services/geminiService';
 import { useApp } from '../../context/AppContext';
 
-const GENERAL_DOC_TYPES = [
+const GENERAL_DOC_TYPES_IN = [
   { id: 'bank_statement', label: 'Bank Statement', icon: '🏦', accept: 'image/*,.pdf' },
   { id: 'insurance_policy', label: 'Insurance Policy', icon: '🛡️', accept: 'image/*,.pdf' },
   { id: 'epf_passbook', label: 'EPF Passbook', icon: '📘', accept: 'image/*,.pdf' },
   { id: 'salary_slip', label: 'Salary Slip', icon: '💼', accept: 'image/*,.pdf' },
   { id: 'itr', label: 'ITR / Tax Return', icon: '📋', accept: 'image/*,.pdf' },
   { id: 'fd_receipt', label: 'FD Receipt', icon: '🏛️', accept: 'image/*,.pdf' },
+];
+
+const GENERAL_DOC_TYPES_US = [
+  { id: 'w2', label: 'IRS Form W-2 (Wage & Tax)', icon: '💼', accept: 'image/*,.pdf' },
+  { id: 'form_1099', label: 'Form 1099-B / DIV / INT', icon: '📈', accept: 'image/*,.pdf' },
+  { id: 'form_1098', label: 'Form 1098 Mortgage Interest', icon: '🏠', accept: 'image/*,.pdf' },
+  { id: 'brokerage_stmt', label: 'Brokerage Statement (Schwab / Fidelity)', icon: '🏦', accept: 'image/*,.pdf' },
+  { id: 'retirement_401k', label: '401(k) / HSA Annual Statement', icon: '🛡️', accept: 'image/*,.pdf' },
+  { id: 'bank_statement', label: 'Bank Checking & Savings Statement', icon: '🏛️', accept: 'image/*,.pdf' },
 ];
 
 const FORENSIC_CLASSES = [
@@ -41,9 +50,10 @@ const FORENSIC_CLASSES = [
 ];
 
 export default function DocumentIntelligence() {
-  const { state, dispatch } = useApp();
-  const market = state.market || 'US';
-  const cur = market === 'US' ? '$' : '₹';
+  const { state, dispatch, isUSMarket } = useApp();
+  const market = state.market || (isUSMarket ? 'US' : 'IN');
+  const cur = (isUSMarket || market === 'US') ? '$' : '₹';
+  const GENERAL_DOC_TYPES = (isUSMarket || market === 'US') ? GENERAL_DOC_TYPES_US : GENERAL_DOC_TYPES_IN;
 
   // Mode: 'forensic' | 'general'
   const [activeMode, setActiveMode] = useState('forensic');
@@ -51,7 +61,7 @@ export default function DocumentIntelligence() {
   // General OCR state
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [selectedType, setSelectedType] = useState('insurance_policy');
+  const [selectedType, setSelectedType] = useState((isUSMarket || market === 'US') ? 'w2' : 'insurance_policy');
   const [status, setStatus] = useState('idle');
   const [result, setResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -72,20 +82,25 @@ export default function DocumentIntelligence() {
     setSaved(false);
 
     const name = f.name.toLowerCase();
-    if (name.includes('epf') || name.includes('provident')) setSelectedType('epf_passbook');
+    if (name.includes('w-2') || name.includes('w2')) setSelectedType('w2');
+    else if (name.includes('1099')) setSelectedType('form_1099');
+    else if (name.includes('1098')) setSelectedType('form_1098');
+    else if (name.includes('schwab') || name.includes('fidelity') || name.includes('vanguard') || name.includes('brokerage')) setSelectedType('brokerage_stmt');
+    else if (name.includes('401k') || name.includes('hsa') || name.includes('retirement')) setSelectedType('retirement_401k');
+    else if (name.includes('epf') || name.includes('provident')) setSelectedType('epf_passbook');
     else if (name.includes('insurance') || name.includes('policy')) {
       setSelectedType('insurance_policy');
       setSelectedForensicClass('insurance_fineprint');
     }
     else if (name.includes('offer') || name.includes('esop') || name.includes('grant')) {
-      setSelectedType('salary_slip');
+      setSelectedType((isUSMarket || market === 'US') ? 'w2' : 'salary_slip');
       setSelectedForensicClass('esop_offer');
     }
     else if (name.includes('notice') || name.includes('143') || name.includes('cp2000') || name.includes('irs')) {
-      setSelectedType('itr');
+      setSelectedType((isUSMarket || market === 'US') ? 'w2' : 'itr');
       setSelectedForensicClass('tax_notice');
     }
-    else if (name.includes('salary') || name.includes('payslip')) setSelectedType('salary_slip');
+    else if (name.includes('salary') || name.includes('payslip')) setSelectedType((isUSMarket || market === 'US') ? 'w2' : 'salary_slip');
     else if (name.includes('itr') || name.includes('income tax')) setSelectedType('itr');
     else if (name.includes('fd') || name.includes('fixed')) setSelectedType('fd_receipt');
     else if (name.includes('bank') || name.includes('statement')) setSelectedType('bank_statement');
@@ -750,10 +765,82 @@ Taxpayer`
 
 function getDemoResult(type, filename) {
   const demos = {
+    w2: {
+      documentType: 'w2',
+      holderName: 'Alex Chen',
+      institution: 'Acme Technologies Inc. (EIN: 12-3456789)',
+      date: '2026-01-28',
+      keyValues: [
+        { label: 'Box 1: Wages, Tips, Other Comp', value: '$185,000.00', category: 'income' },
+        { label: 'Box 2: Federal Income Tax Withheld', value: '$34,220.00', category: 'tax' },
+        { label: 'Box 3: Social Security Wages', value: '$168,600.00', category: 'income' },
+        { label: 'Box 12a: 401(k) Elective Deferral (Code D)', value: '$23,000.00', category: 'investment' },
+        { label: 'Box 12b: HSA Pre-Tax Cafeteria (Code W)', value: '$4,150.00', category: 'investment' }
+      ],
+      summary: '2025 Form W-2 parsed: $185k wages, statutory $23,000 401(k) limit maximized, $4,150 Section 125 HSA deduction, and $34,220 federal withholding. Ready for Form 1040 Schedule 1 reconciliation.',
+      anomalies: []
+    },
+    form_1099: {
+      documentType: 'form_1099',
+      holderName: 'Alex Chen',
+      institution: 'Charles Schwab & Co. (Consolidated 1099)',
+      date: '2026-02-14',
+      keyValues: [
+        { label: '1099-DIV: Total Ordinary Dividends', value: '$8,420.00', category: 'income' },
+        { label: '1099-DIV: Qualified Dividends (15% rate)', value: '$7,110.00', category: 'income' },
+        { label: '1099-B: Total Realized Capital Gain', value: '$24,850.00', category: 'income' },
+        { label: '1099-B: Disallowed Wash Sale Loss (Box 1g)', value: '$1,420.00', category: 'tax' },
+        { label: '1099-INT: Total Taxable Interest', value: '$2,140.00', category: 'income' }
+      ],
+      summary: 'Consolidated Schwab 1099 parsed: $7,110 in qualified dividends eligible for 15% preferential tax treatment, $24,850 capital gain, and $1,420 disallowed wash sale basis adjustment.',
+      anomalies: ['Disallowed wash-sale loss of $1,420 added back to stock cost basis under IRC § 1091']
+    },
+    form_1098: {
+      documentType: 'form_1098',
+      holderName: 'Alex Chen',
+      institution: 'Wells Fargo Home Mortgage',
+      date: '2026-01-18',
+      keyValues: [
+        { label: 'Box 1: Mortgage Interest Received', value: '$38,420.00', category: 'expense' },
+        { label: 'Box 2: Outstanding Mortgage Principal', value: '$742,000.00', category: 'balance' },
+        { label: 'Box 5: Mortgage Insurance Premiums (PMI)', value: '$2,340.00', category: 'expense' },
+        { label: 'Box 10: Real Estate Property Taxes', value: '$11,850.00', category: 'expense' }
+      ],
+      summary: 'Form 1098 Mortgage Statement parsed: $38,420 mortgage interest deductible on Schedule A Itemized Deductions. Property tax of $11,850 subject to $10,000 SALT limitation.',
+      anomalies: ['Property tax exceeds $10,000 statutory SALT cap by $1,850']
+    },
+    brokerage_stmt: {
+      documentType: 'brokerage_stmt',
+      holderName: 'Alex Chen',
+      institution: 'Charles Schwab Individual Brokerage',
+      date: '2026-09-30',
+      keyValues: [
+        { label: 'Total Portfolio Value', value: '$536,838.00', category: 'balance' },
+        { label: 'Core Money Market (SWVXX)', value: '$38,200.00', category: 'balance' },
+        { label: 'Index ETFs (VOO / VTI / QQQ)', value: '$412,115.00', category: 'investment' },
+        { label: 'YTD Realized Capital Gain', value: '$19,450.00', category: 'income' }
+      ],
+      summary: 'Schwab Brokerage Statement parsed: 83.8% passive broad-market index ETF allocation, $38.2k cash yielding 5.12% in SWVXX, and clean tax lot accounting.',
+      anomalies: []
+    },
+    retirement_401k: {
+      documentType: 'retirement_401k',
+      holderName: 'Alex Chen',
+      institution: 'Fidelity NetBenefits 401(k) & HSA',
+      date: '2026-09-30',
+      keyValues: [
+        { label: 'Total 401(k) Vested Balance', value: '$285,400.00', category: 'balance' },
+        { label: 'Employer Match Received YTD', value: '$7,425.00', category: 'income' },
+        { label: 'HSA Invested Balance', value: '$38,920.00', category: 'balance' },
+        { label: 'HSA Cash Balance', value: '$2,000.00', category: 'balance' }
+      ],
+      summary: 'NetBenefits 401(k) & HSA summary parsed: 100% employer match captured ($7,425 YTD), HSA invested 95% in S&P 500 index fund following optimal shoebox strategy.',
+      anomalies: []
+    },
     bank_statement: { documentType: 'bank_statement', holderName: 'Arjun Sharma', institution: 'HDFC Bank', date: '2026-08-31', accountNumber: '****4521', keyValues: [{ label: 'Opening Balance', value: '₹1,24,350', category: 'balance' }, { label: 'Total Credits', value: '₹2,85,000', category: 'income' }, { label: 'Total Debits', value: '₹1,92,400', category: 'expense' }, { label: 'Closing Balance', value: '₹2,16,950', category: 'balance' }], summary: 'August 2026 statement showing a net savings of ₹92,600 with salary credit of ₹2,10,000 on 1st Aug. No unusual transactions detected.', anomalies: [] },
     epf_passbook: { documentType: 'epf_passbook', holderName: 'Arjun Sharma', institution: 'EPFO', date: '2026-09-01', balance: 2130720, employeeContribution: 121200, employerContribution: 121200, interestRate: 8.15, keyValues: [{ label: 'Employee Contribution (FY26)', value: '₹1,21,200', category: 'investment' }, { label: 'Employer Contribution', value: '₹1,21,200', category: 'investment' }, { label: 'Total Balance', value: '₹21,30,720', category: 'balance' }, { label: 'Interest Earned', value: '₹1,76,241', category: 'income' }], summary: 'EPF balance of ₹21.3 Lakh growing at 8.15% p.a. On track to reach ₹48 Lakh by retirement at 60.', anomalies: ['Nominee not updated — consider adding spouse as nominee via EPFO portal'] },
     insurance_policy: { documentType: 'insurance_policy', holderName: 'Arjun Sharma', institution: 'LIC of India', date: '2026-01-15', keyValues: [{ label: 'Sum Assured', value: '₹50,00,000', category: 'insurance' }, { label: 'Annual Premium', value: '₹18,400', category: 'expense' }, { label: 'Policy Term', value: '30 years', category: 'insurance' }, { label: 'Maturity Year', value: '2051', category: 'insurance' }], summary: 'Term insurance of ₹50 Lakh. Coverage appears insufficient — for income of ₹25L, recommended coverage is ₹1.5–2.5 Crore.', anomalies: ['Coverage (₹50L) is significantly below recommended 10x income (₹2.5 Crore)', 'No critical illness rider — consider adding'] },
     fd_receipt: { documentType: 'fd_receipt', holderName: 'Arjun Sharma', institution: 'HDFC Bank', date: '2026-01-10', bank: 'HDFC Bank', principal: 200000, amount: 200000, interestRate: 7.1, maturityDate: '2027-01-10', maturityAmount: 214200, keyValues: [{ label: 'Principal', value: '₹2,00,000', category: 'investment' }, { label: 'Interest Rate', value: '7.1% p.a.', category: 'income' }, { label: 'Maturity Date', value: '10 Jan 2027', category: 'balance' }, { label: 'Maturity Amount', value: '₹2,14,200', category: 'income' }], summary: 'Fixed Deposit of ₹2 Lakh at 7.1% p.a. maturing on 10 Jan 2027 with interest of ₹14,200.', anomalies: [] },
   };
-  return demos[type] || demos.bank_statement;
+  return demos[type] || demos.w2 || demos.bank_statement;
 }

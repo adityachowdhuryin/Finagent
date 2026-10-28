@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { db } from '../../config/firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import USRetirementStudio from './us/USRetirementStudio';
 
 const SCHEME_TYPES = {
   PPF: { name: 'Public Provident Fund (PPF)', rate: 7.1, section: '80C' },
@@ -17,7 +18,11 @@ const SCHEME_TYPES = {
 
 export default function GovtSchemes() {
   const { currentUser } = useAuth();
-  const { state } = useApp();
+  const { state, isUSMarket } = useApp();
+
+  if (isUSMarket) {
+    return <USRetirementStudio />;
+  }
   
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);

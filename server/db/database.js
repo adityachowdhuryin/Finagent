@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // ── 1. Local SQLite Engine Setup ──────────────────────────────────────────────
@@ -208,6 +209,71 @@ function initSchema() {
       market TEXT,
       data TEXT,
       updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS tax_returns (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      market TEXT NOT NULL,
+      tax_year INTEGER NOT NULL,
+      regime TEXT NOT NULL,
+      filing_status TEXT NOT NULL,
+      taxpayer_name TEXT,
+      taxpayer_id TEXT,
+      summary_json TEXT,
+      status TEXT DEFAULT 'DRAFT',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS tax_lots (
+      id TEXT PRIMARY KEY,
+      return_id TEXT NOT NULL,
+      market TEXT NOT NULL,
+      asset_type TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      isin_or_cusip TEXT,
+      buy_date TEXT NOT NULL,
+      sell_date TEXT,
+      units REAL NOT NULL,
+      buy_price REAL NOT NULL,
+      sell_price REAL,
+      gain_loss REAL,
+      term TEXT,
+      wash_sale_disallowed REAL DEFAULT 0,
+      exempt_amount REAL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS tax_schedules (
+      id TEXT PRIMARY KEY,
+      return_id TEXT NOT NULL,
+      schedule_type TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      is_valid INTEGER DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS tax_documents (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      market TEXT NOT NULL,
+      document_type TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      file_hash TEXT,
+      parsed_payload_json TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS preparer_audit_trail (
+      id TEXT PRIMARY KEY,
+      return_id TEXT NOT NULL,
+      actor_role TEXT NOT NULL,
+      actor_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      details TEXT,
+      seal_hash TEXT,
+      created_at TEXT NOT NULL
     );
   `);
 }
@@ -855,6 +921,176 @@ function getEmbeddedWealthState(partnerId = 'partner_apex_bank') {
   return row ? JSON.parse(row.data) : null;
 }
 
+// ── Tax Studio Persistent Multi-Tenant Architecture ─────────────────────────
+function saveTaxReturn(returnData, broadcastToCloud = true) {
+  const userId = returnData.user_id || returnData.userId || 'default_taxpayer';
+  const market = returnData.market || 'IN';
+  const taxYear = returnData.tax_year || returnData.taxYear || 2026;
+  const id = returnData.id || `ret_${market}_${taxYear}_${userId}`;
+  const regime = returnData.regime || 'new';
+  const filingStatus = returnData.filing_status || returnData.filingStatus || 'Individual';
+  const taxpayerName = returnData.taxpayer_name || returnData.taxpayerName || 'Taxpayer';
+  const taxpayerId = returnData.taxpayer_id || returnData.taxpayerId || 'PAN/SSN';
+  const summaryJson = JSON.stringify(returnData.summary || returnData.summary_json || {});
+  const status = returnData.status || 'DRAFT';
+  const now = new Date().toISOString();
+
+  if (db) {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO tax_returns 
+      (id, user_id, market, tax_year, regime, filing_status, taxpayer_name, taxpayer_id, summary_json, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM tax_returns WHERE id = ?), ?), ?)
+    `);
+    stmt.run(id, userId, market, taxYear, regime, filingStatus, taxpayerName, taxpayerId, summaryJson, status, id, now, now);
+  }
+
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(
+      `INSERT INTO tax_returns (id, user_id, market, tax_year, regime, filing_status, taxpayer_name, taxpayer_id, summary_json, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (id) DO UPDATE SET regime = EXCLUDED.regime, summary_json = EXCLUDED.summary_json, status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
+      [id, userId, market, taxYear, regime, filingStatus, taxpayerName, taxpayerId, summaryJson, status, now, now]
+    ).catch(err => console.warn('⚠️ Supabase write error (tax_returns):', err.message));
+  }
+
+  return { id, userId, market, taxYear, status, updatedAt: now };
+}
+
+function getTaxReturn(market = 'IN', taxYear = 2026, userId = 'default_taxpayer') {
+  if (!db) return null;
+  const id = `ret_${market}_${taxYear}_${userId}`;
+  const row = db.prepare(`SELECT * FROM tax_returns WHERE id = ?`).get(id);
+  if (!row) return null;
+  return {
+    ...row,
+    summary: row.summary_json ? JSON.parse(row.summary_json) : {},
+  };
+}
+
+function lockTaxReturn(returnId, preparerInfo = {}, broadcastToCloud = true) {
+  if (!db) return null;
+  const now = new Date().toISOString();
+  const row = db.prepare(`SELECT * FROM tax_returns WHERE id = ?`).get(returnId);
+  if (!row) throw new Error('Tax return not found');
+
+  // Compute cryptographic SHA-256 seal of return content
+  const sealContent = `${row.id}_${row.market}_${row.tax_year}_${row.summary_json}_${preparerInfo.preparerId || 'PREPARER'}`;
+  const sealHash = crypto.createHash('sha256').update(sealContent).digest('hex');
+
+  db.prepare(`UPDATE tax_returns SET status = 'LOCKED', updated_at = ? WHERE id = ?`).run(now, returnId);
+
+  // Record preparer audit event
+  logPreparerAudit({
+    return_id: returnId,
+    actor_role: preparerInfo.role || (row.market === 'IN' ? 'CA' : 'CPA'),
+    actor_id: preparerInfo.preparerId || preparerInfo.membershipNo || 'PREP_CERTIFIED',
+    action: 'LOCKED',
+    details: `Return locked and digitally certified. Signer: ${preparerInfo.name || 'Fiduciary Preparer'}, Reg: ${preparerInfo.registrationNo || 'VERIFIED'}`,
+    seal_hash: sealHash,
+  }, broadcastToCloud);
+
+  if (broadcastToCloud && pgPool) {
+    pgPool.query(`UPDATE tax_returns SET status = 'LOCKED', updated_at = $1 WHERE id = $2`, [now, returnId])
+      .catch(err => console.warn('⚠️ Supabase lock update error:', err.message));
+  }
+
+  return { returnId, status: 'LOCKED', sealHash, lockedAt: now };
+}
+
+function saveTaxLots(returnId, market, lots = [], broadcastToCloud = true) {
+  if (!db || !lots.length) return [];
+  const now = new Date().toISOString();
+  const insertStmt = db.prepare(`
+    INSERT OR REPLACE INTO tax_lots
+    (id, return_id, market, asset_type, symbol, isin_or_cusip, buy_date, sell_date, units, buy_price, sell_price, gain_loss, term, wash_sale_disallowed, exempt_amount, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  lots.forEach((lot, i) => {
+    const lotId = `${returnId}_lot_${i + 1}`;
+    insertStmt.run(
+      lotId,
+      returnId,
+      market,
+      lot.assetType || 'EQUITY',
+      lot.symbol || lot.schemeName || 'SECURITY',
+      lot.isin || lot.cusip || null,
+      lot.buyDate || lot.purchaseDate || now.split('T')[0],
+      lot.sellDate || lot.saleDate || null,
+      Number(lot.units || 0),
+      Number(lot.buyPrice || lot.costPerUnit || 0),
+      Number(lot.sellPrice || lot.saleNav || 0),
+      Number(lot.gainLoss || lot.totalGain || 0),
+      lot.term || lot.gainType || 'SHORT_TERM',
+      Number(lot.washSaleDisallowed || 0),
+      Number(lot.exemptAmount || 0),
+      now
+    );
+  });
+
+  return lots;
+}
+
+function getTaxLots(returnId) {
+  if (!db) return [];
+  return db.prepare(`SELECT * FROM tax_lots WHERE return_id = ? ORDER BY created_at ASC`).all(returnId);
+}
+
+function saveTaxDocument(docData, broadcastToCloud = true) {
+  const userId = docData.user_id || docData.userId || 'default_taxpayer';
+  const market = docData.market || 'IN';
+  const docType = docData.document_type || docData.documentType || 'STATEMENT';
+  const filename = docData.filename || 'document.pdf';
+  const id = docData.id || `doc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = new Date().toISOString();
+  const fileHash = docData.file_hash || crypto.createHash('md5').update(filename + now).digest('hex');
+  const payloadJson = JSON.stringify(docData.parsedPayload || docData.parsed_payload_json || {});
+
+  if (db) {
+    db.prepare(`
+      INSERT OR REPLACE INTO tax_documents
+      (id, user_id, market, document_type, filename, file_hash, parsed_payload_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, userId, market, docType, filename, fileHash, payloadJson, now);
+  }
+
+  return { id, userId, market, docType, filename, fileHash, createdAt: now };
+}
+
+function getTaxDocuments(userId = 'default_taxpayer') {
+  if (!db) return [];
+  const rows = db.prepare(`SELECT * FROM tax_documents WHERE user_id = ? ORDER BY created_at DESC`).all(userId);
+  return rows.map(r => ({
+    ...r,
+    parsedPayload: r.parsed_payload_json ? JSON.parse(r.parsed_payload_json) : {},
+  }));
+}
+
+function logPreparerAudit(auditData, broadcastToCloud = true) {
+  const id = `audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const returnId = auditData.return_id || auditData.returnId || 'general';
+  const actorRole = auditData.actor_role || auditData.actorRole || 'SYSTEM';
+  const actorId = auditData.actor_id || auditData.actorId || 'system';
+  const action = auditData.action || 'INSPECT';
+  const details = auditData.details || '';
+  const sealHash = auditData.seal_hash || null;
+  const now = new Date().toISOString();
+
+  if (db) {
+    db.prepare(`
+      INSERT INTO preparer_audit_trail (id, return_id, actor_role, actor_id, action, details, seal_hash, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, returnId, actorRole, actorId, action, details, sealHash, now);
+  }
+
+  return { id, returnId, actorRole, action, createdAt: now };
+}
+
+function getPreparerAuditTrail(returnId) {
+  if (!db) return [];
+  return db.prepare(`SELECT * FROM preparer_audit_trail WHERE return_id = ? ORDER BY created_at ASC`).all(returnId);
+}
+
 module.exports = {
   db,
   pgPool,
@@ -889,4 +1125,13 @@ module.exports = {
   getFamilyLawState,
   saveEmbeddedWealthState,
   getEmbeddedWealthState,
+  saveTaxReturn,
+  getTaxReturn,
+  lockTaxReturn,
+  saveTaxLots,
+  getTaxLots,
+  saveTaxDocument,
+  getTaxDocuments,
+  logPreparerAudit,
+  getPreparerAuditTrail,
 };

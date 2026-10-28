@@ -1,5 +1,7 @@
 // server/routes/creditBureau.js
-// Credit Bureau Gateway (US FICO 300–850 & Indian CIBIL 300–900), Interactive Simulator, and Snowball vs Avalanche Debt Engine
+// Tri-Bureau FICO Score 8/9 & VantageScore Engine (US) + CIBIL / Experian Engine (India)
+// Supports Chase 5/24 rule tracker, utilization danger thresholds (<9%/<30%), hard inquiry aging,
+// and mathematical Snowball vs Avalanche debt payoff engines.
 
 /**
  * GET /api/credit/score
@@ -12,18 +14,87 @@ function getCreditScore(req, res) {
     return res.json({
       success: true,
       market: 'US',
-      bureau: 'Experian / FICO Score 8',
+      bureau: 'Tri-Bureau FICO® & VantageScore Network',
       score: 782,
       scoreRange: { min: 300, max: 850 },
       tier: 'Excellent',
       changeLastMonth: +8,
       lastUpdated: new Date().toISOString(),
+
+      // Tri-Bureau Breakdown
+      triBureau: {
+        experian: {
+          bureau: 'Experian',
+          fico8: 782,
+          fico9: 790,
+          vantageScore3: 775,
+          vantageScore4: 781,
+          inquiries12m: 1,
+          oldestAccountYears: 9,
+          utilizationPct: 11,
+          status: 'Excellent',
+        },
+        equifax: {
+          bureau: 'Equifax',
+          fico8: 778,
+          fico9: 784,
+          vantageScore3: 770,
+          vantageScore4: 776,
+          inquiries12m: 2,
+          oldestAccountYears: 8,
+          utilizationPct: 11,
+          status: 'Very Good',
+        },
+        transunion: {
+          bureau: 'TransUnion',
+          fico8: 785,
+          fico9: 788,
+          vantageScore3: 780,
+          vantageScore4: 784,
+          inquiries12m: 1,
+          oldestAccountYears: 9,
+          utilizationPct: 11,
+          status: 'Excellent',
+        },
+      },
+
+      // Credit Card Utilization Details (<9% optimal, <30% acceptable, >30% danger)
+      utilizationMetrics: {
+        totalLimit: 38000,
+        totalBalance: 4180,
+        utilizationPct: 11,
+        optimalThresholdPct: 9,
+        dangerThresholdPct: 30,
+        status: 'Optimal (<30%)',
+        alert: 'Utilization is 11%. Paying down $760 will bring utilization under 9%, unlocking ~12 additional FICO points.',
+      },
+
+      // Chase 5/24 Rule Status
+      chase524: {
+        accountsOpened24Months: 3,
+        status: '3/24 (Eligible)',
+        slotsRemaining: 2,
+        ruleExplanation: 'Chase automatically denies new credit card applications for consumers who have opened 5 or more personal credit cards across all issuers in the past 24 months.',
+        nextDropOffDate: 'Nov 14, 2026',
+        recentCards: [
+          { card: 'Apple Card (Goldman Sachs)', openedDate: 'Jan 2025', dropOffDate: 'Jan 2027' },
+          { card: 'Bilt World Elite Mastercard (Wells Fargo)', openedDate: 'Jun 2025', dropOffDate: 'Jun 2027' },
+          { card: 'Chase Sapphire Reserve', openedDate: 'Nov 2024', dropOffDate: 'Nov 2026' },
+        ],
+      },
+
+      // Hard Inquiry Aging
+      inquiryAging: [
+        { inquiry: 'Chase Card Services', date: 'Nov 14, 2024', bureau: 'Experian', scoreImpact: 0, status: 'Aged Past 12 Mos (Zero Score Impact)' },
+        { inquiry: 'Wells Fargo / Bilt', date: 'Jun 02, 2025', bureau: 'Equifax', scoreImpact: -3, status: 'Active (Drops off Jun 2027)' },
+      ],
+
       factors: [
         { name: 'Payment History', rating: 'Exceptional', weight: '35%', detail: '100% on-time payments (48/48 cycles)', status: 'good' },
         { name: 'Credit Utilization', rating: 'Excellent', weight: '30%', detail: '11% ($4,180 used of $38,000 total limit)', status: 'good' },
         { name: 'Credit Age', rating: 'Good', weight: '15%', detail: '7 yrs 4 mos average account age', status: 'good' },
         { name: 'Credit Mix', rating: 'Good', weight: '10%', detail: '5 Revolving Cards, 1 Auto Loan, 1 Mortgage', status: 'good' },
-        { name: 'Hard Inquiries', rating: 'Very Good', weight: '10%', detail: '1 inquiry in past 12 months', status: 'good' },
+        { name: 'Hard Inquiries', rating: 'Very Good', weight: '10%', detail: '1 active inquiry in past 12 months', status: 'good' },
       ],
       accounts: [
         { name: 'Chase Sapphire Reserve', type: 'Credit Card', balance: 1420.00, limit: 15000.00, apr: 22.49, minPayment: 45.00 },
@@ -116,6 +187,11 @@ function simulateCreditScore(req, res) {
       case 'INCREASE_CREDIT_LIMIT':
         delta = +14;
         rationale = 'Instant reduction in revolving utilization without increasing debt load.';
+        break;
+
+      case 'INQUIRY_AGE_12_MONTHS':
+        delta = +6;
+        rationale = 'Hard inquiries older than 12 months lose all negative impact on FICO scoring models.';
         break;
 
       default:

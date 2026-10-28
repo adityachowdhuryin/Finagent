@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import HealthScoreRing from '../../components/cards/HealthScoreRing';
 import { formatLakh } from '../../utils/formatters';
-import { ArrowLeft, Sparkles, Send, CheckCircle2, Download, FileText } from 'lucide-react';
+import { ArrowLeft, Sparkles, Send, CheckCircle2, Download, FileText, Shield, Scale, Check } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { buildClientIPSPDF } from '../../utils/fiduciaryPdfBuilder';
 
-const TABS = ['Overview', 'Holdings', 'AI Recommendations', 'Audit Log'];
+const TABS = ['Overview', 'Holdings', 'AI Recommendations', 'Investment Policy Statement (IPS)', 'Audit Log'];
 
 function TabNav({ active, onChange }) {
   return (
@@ -210,6 +211,135 @@ function RecoTab({ clientRecos, navigate, onRunAudit, auditing }) {
   );
 }
 
+function IPSTab({ client, advisorProfile, onDownloadPDF, onSaveIPS, savingIps, executedIpsDigest }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* IPS Header Card */}
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, rgba(49, 46, 129, 0.1), rgba(99, 102, 241, 0.05))',
+        border: '1px solid rgba(99, 102, 241, 0.3)',
+        padding: '1.25rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+            <Shield size={20} color="var(--primary)" />
+            <h3 className="text-h3" style={{ margin: 0, fontWeight: 800 }}>
+              Statutory Investment Policy Statement (IPS)
+            </h3>
+            <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+              SEBI Reg. 17 Mandate
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            Mandatory fiduciary covenant establishing risk capacity, asset allocation boundaries, return hurdles, and tactical direct indexing parameters.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            onClick={onSaveIPS}
+            disabled={savingIps}
+          >
+            <Check size={14} /> {savingIps ? 'Executing...' : 'Generate & Sign Investment Policy Statement (IPS)'}
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            onClick={onDownloadPDF}
+          >
+            <Download size={14} /> Download Statutory IPS (PDF)
+          </button>
+        </div>
+      </div>
+
+      {/* Grid of Covenants */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+        {/* Mandate & Hurdle */}
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 700, textTransform: 'uppercase' }}>
+            Return Hurdle & Risk Profile
+          </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+            12.5% p.a. Hurdle Rate
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+            Nifty 50 TRI + 150 bps alpha premium over a 10-year rolling investment horizon.
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <span className="badge badge-green">Risk Profile: {client.riskProfile || 'Moderate Growth'}</span>
+            <span className="badge badge-surface">Horizon: 10+ Years</span>
+          </div>
+        </div>
+
+        {/* Strategic Allocation Bands */}
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 700, textTransform: 'uppercase' }}>
+            Strategic Asset Allocation Bands
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8125rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Equity Exposure:</span>
+              <strong style={{ color: 'var(--primary-light)' }}>55% - 70% (Target: 60%)</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Fixed Income / Debt:</span>
+              <strong style={{ color: 'var(--green)' }}>20% - 35% (Target: 25%)</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Gold & Cash Equivalents:</span>
+              <strong style={{ color: 'var(--gold)' }}>10% - 15% (Target: 15%)</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Tactical Rebalancing & Tax Harvesting */}
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 700, textTransform: 'uppercase' }}>
+            Direct Indexing & Tax-Loss Harvesting
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '0.5rem' }}>
+            Constituent lot-level tax harvesting executed quarterly. Rebalancing triggered on ±5.0% allocation drift with 31-day sector ETF swap rule.
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <span className="badge badge-surface">Quarterly Harvest</span>
+            <span className="badge badge-primary">25 bps Wrap Fee</span>
+          </div>
+        </div>
+
+        {/* Bilateral Fiduciary Signatures */}
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 700, textTransform: 'uppercase' }}>
+            Fiduciary Co-Signatures (SEBI Reg. 19)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CheckCircle2 size={15} color="var(--green)" />
+              <span>Advisor: <strong>{advisorProfile?.name || 'Meera Kapoor'}</strong> (SEBI Reg {advisorProfile?.sebiRegNo || 'INA000014523'})</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CheckCircle2 size={15} color="var(--green)" />
+              <span>Client: <strong>{client.name}</strong> (PAN: {client.pan || 'ABCDE1234F'})</span>
+            </div>
+            {executedIpsDigest && (
+              <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 6, border: '1px solid var(--green)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Cryptographic Digest:</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-primary)' }}>{executedIpsDigest}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ClientAuditTab({ auditLog, clientName }) {
   const logs = auditLog.filter(l => l.clientName === clientName);
   if (logs.length === 0) return <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No audit entries for this client yet.</div>;
@@ -236,7 +366,62 @@ export default function ClientProfile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
   const [auditing, setAuditing] = useState(false);
+  const [savingIps, setSavingIps] = useState(false);
+  const [executedIpsDigest, setExecutedIpsDigest] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
+
+  const advisorProfile = state.advisor?.profile || {
+    name: 'Meera Kapoor',
+    sebiRegNo: 'INA000014523',
+    baslId: 'BASL-1842',
+    firmName: 'WEALTHWISE ADVISORY SERVICES'
+  };
+
+  const handleDownloadIPSPDF = () => {
+    try {
+      const doc = buildClientIPSPDF(client, advisorProfile);
+      doc.save(`SEBI_RIA_IPS_${client.name.replace(/\s+/g, '_')}.pdf`);
+      setToastMsg(`Statutory Investment Policy Statement (PDF) for ${client.name} generated & downloaded!`);
+      setTimeout(() => setToastMsg(''), 5000);
+    } catch (err) {
+      console.error('IPS PDF export error:', err);
+      alert('Failed to generate IPS PDF: ' + err.message);
+    }
+  };
+
+  const handleSaveIPS = async () => {
+    setSavingIps(true);
+    try {
+      const res = await fetch('/api/advisor/create-ips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id,
+          clientName: client.name,
+          pan: client.pan || 'ABCDE1234F',
+          riskProfile: client.riskProfile || 'Moderate Growth',
+          horizonYears: 10,
+          targetReturnHurdle: '12.5% p.a. (Nifty 50 TRI + 150 bps)',
+          equityBand: '55% - 70% (Target: 60%)',
+          debtBand: '20% - 35% (Target: 25%)',
+          goldCashBand: '10% - 15% (Target: 15%)',
+          esgExclusions: 'Tobacco, Weapons, Thermal Coal, Alcohol',
+          rebalanceTrigger: '±5.0% asset class drift'
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setExecutedIpsDigest(json.integrityDigest);
+        setToastMsg(`✓ Statutory IPS executed under SEBI Reg INA000014523 (Digest: ${json.integrityDigest.slice(0, 10)}...)`);
+        setTimeout(() => setToastMsg(''), 5000);
+        handleDownloadIPSPDF();
+      }
+    } catch (err) {
+      console.error('Failed to save IPS:', err);
+    } finally {
+      setSavingIps(false);
+    }
+  };
 
   const client = (state.advisor.clients || []).find(c => c.id === clientId) || state.advisor.clients[0];
   const clientRecos = (state.advisor.pendingRecommendations || []).filter(r => r.clientName === client?.name);
@@ -390,6 +575,16 @@ export default function ClientProfile() {
           {activeTab === 'Overview' && <OverviewTab client={client} clientRecos={clientRecos} navigate={navigate} onRunAudit={handleRunAudit} auditing={auditing} />}
           {activeTab === 'Holdings' && <HoldingsTab client={client} />}
           {activeTab === 'AI Recommendations' && <RecoTab clientRecos={clientRecos} navigate={navigate} onRunAudit={handleRunAudit} auditing={auditing} />}
+          {activeTab === 'Investment Policy Statement (IPS)' && (
+            <IPSTab
+              client={client}
+              advisorProfile={advisorProfile}
+              onDownloadPDF={handleDownloadIPSPDF}
+              onSaveIPS={handleSaveIPS}
+              savingIps={savingIps}
+              executedIpsDigest={executedIpsDigest}
+            />
+          )}
           {activeTab === 'Audit Log' && <ClientAuditTab auditLog={state.advisor.auditLog} clientName={client.name} />}
         </div>
       </div>

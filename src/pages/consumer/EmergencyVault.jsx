@@ -3,11 +3,15 @@ import {
   Shield, Lock, AlertTriangle, CheckCircle2, Heart, Download,
   Send, RefreshCw, Key, Users, FileText, ExternalLink, ShieldCheck, Eye, EyeOff
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { buildEmergencyDossierPDF } from '../../utils/fiduciaryPdfBuilder';
 
 export default function EmergencyVault() {
+  const navigate = useNavigate();
   const { state } = useApp();
+  const { currentUser } = useAuth();
   const [status, setStatus] = useState(null);
   const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,20 +20,42 @@ export default function EmergencyVault() {
   const [testSent, setTestSent] = useState(false);
   const [heartbeatSuccess, setHeartbeatSuccess] = useState(false);
 
+  const cachedWillEscrow = React.useMemo(() => {
+    try {
+      const item = localStorage.getItem('finagent_vault_will_escrow');
+      return item ? JSON.parse(item) : null;
+    } catch {
+      return null;
+    }
+  }, [status]);
+
+  const escrowedWill = status?.escrowedWill || cachedWillEscrow || {
+    hash: '8f3e2b1c9a0d4e7f5b6a1c8d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f',
+    testatorName: 'Arjun Sharma',
+    executor: 'Priya Sharma',
+    guardian: 'Sunita Sharma',
+    debtDirectives: 'HDFC Home Loan (₹54,00,000) prioritized from liquid FDs',
+    syncedAt: new Date().toISOString(),
+    status: 'ACTIVE_ESCROW',
+  };
+
   useEffect(() => {
     fetchVaultData();
-  }, []);
+  }, [state?.consumer?.holdings]);
 
   async function fetchVaultData() {
     setLoading(true);
     try {
-      const [sRes, aRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vault/status`),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vault/nominee-audit`),
-      ]);
+      const sRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vault/status`);
       const sData = await sRes.json();
-      const aData = await aRes.json();
       if (sData.success) setStatus(sData);
+
+      const aRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vault/nominee-audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ holdings: state?.consumer?.holdings })
+      });
+      const aData = await aRes.json();
       if (aData.success) setAudit(aData);
     } catch (e) {
       console.error('Failed to load vault status:', e);
@@ -71,80 +97,13 @@ export default function EmergencyVault() {
       return;
     }
 
-    const doc = new jsPDF();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(99, 102, 241);
-    doc.text('FAMILY EMERGENCY FINANCIAL DOSSIER', 20, 22);
+    const userProfile = {
+      name: currentUser?.displayName || state?.consumer?.user?.name || 'Arjun Sharma',
+      email: currentUser?.email || state?.consumer?.user?.email || 'aditya.chowdhury.in@gmail.com'
+    };
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    doc.text(`CONFIDENTIAL · Generated on ${new Date().toLocaleDateString('en-IN')} · FinAgent Vault`, 20, 30);
-    doc.text(`Master Emergency Unlock PIN: ${pin}`, 20, 36);
-
-    doc.setDrawColor(226, 232, 240);
-    doc.line(20, 42, 190, 42);
-
-    let y = 52;
-
-    // Nominee Section
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text('1. Designated Emergency Nominee', 20, y);
-    y += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Primary Nominee: ${status?.nominee?.name || 'Pooja Chowdhury'} (${status?.nominee?.relationship || 'Spouse'})`, 24, y);
-    y += 6;
-    doc.text(`Contact: ${status?.nominee?.email || 'spouse@gmail.com'} | ${status?.nominee?.phone || '+91 98765 43210'}`, 24, y);
-    y += 12;
-
-    // Assets Summary
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text('2. Master Assets & Institution Checklist', 20, y);
-    y += 8;
-
-    const items = audit?.auditItems || [];
-    items.forEach((item, idx) => {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text(`${idx + 1}. ${item.assetType} — ${item.provider}`, 24, y);
-      y += 5;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 116, 139);
-      doc.text(`   Account/Folio: ${item.account} | Nominee Status: ${item.nomineeStatus === 'VERIFIED' ? item.nomineeName : 'MISSING (Action Required)'}`, 24, y);
-      y += 8;
-
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-    });
-
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(220, 38, 38);
-    doc.text('Critical Emergency Contacts in India:', 20, y);
-    y += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(71, 85, 105);
-    doc.text('• CAMS / KFintech Investor Support: 1800-419-2267', 24, y);
-    y += 5;
-    doc.text('• EPFO Grievance & Death Claim Helpdesk: 1800-118-005', 24, y);
-    y += 5;
-    doc.text('• IRDAI Insurance Claims Assistance: 155255 / 1800-4254-732', 24, y);
-
-    doc.save(`Family_Emergency_Dossier_${new Date().getFullYear()}.pdf`);
+    const doc = buildEmergencyDossierPDF(status || {}, audit?.auditItems || [], pin, userProfile);
+    doc.save(`FinAgent_Family_Emergency_Dossier_${new Date().getFullYear()}.pdf`);
   }
 
   return (
@@ -272,6 +231,69 @@ export default function EmergencyVault() {
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
           >
             <Download size={14} /> Download Secure Dossier (PDF)
+          </button>
+        </div>
+      </div>
+
+      {/* Escrowed Testamentary Will & Dead-Man's Switch Directive */}
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(99, 102, 241, 0.04))',
+        border: '1px solid rgba(168, 85, 247, 0.3)',
+        borderRadius: 'var(--radius)',
+        padding: '1.25rem'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <FileText size={18} color="#c084fc" />
+            <h3 className="text-h3" style={{ margin: 0 }}>Escrowed Testamentary Will (SHA-256 Protocol)</h3>
+          </div>
+          <span className="badge badge-purple" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(168, 85, 247, 0.15)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)' }}>
+            <ShieldCheck size={13} /> DEAD-MAN'S SWITCH LINKED
+          </span>
+        </div>
+
+        <p className="text-xs text-secondary" style={{ marginBottom: '1rem', lineHeight: 1.5 }}>
+          Your Last Will and Testament cryptographic fingerprint is escrowed into FinAgent's automated inactivity rails. If no heartbeat ping is recorded for 90 days, release credentials will be unlocked and dispatched directly to your primary executor.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: '0.625rem 0.875rem' }}>
+            <div className="text-xs text-muted">Testator / Grantor</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: 2 }}>{escrowedWill.testatorName}</div>
+          </div>
+
+          <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: '0.625rem 0.875rem' }}>
+            <div className="text-xs text-muted">Primary Legal Executor</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: 2 }}>{escrowedWill.executor} (Spouse)</div>
+          </div>
+
+          <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: '0.625rem 0.875rem' }}>
+            <div className="text-xs text-muted">Minor Guardian (Aarav)</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: 2 }}>{escrowedWill.guardian}</div>
+          </div>
+
+          <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: '0.625rem 0.875rem' }}>
+            <div className="text-xs text-muted">Debt Clearance Priority</div>
+            <div style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--gold)', marginTop: 2 }}>
+              {escrowedWill.debtDirectives || 'HDFC ₹54L Home Loan Prioritized'}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', border: '1px solid var(--glass-border)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-muted)' }}>SHA-256 Escrow Fingerprint:</span>
+            <span style={{ fontFamily: 'monospace', color: 'var(--primary-light)', fontWeight: 600 }}>
+              {escrowedWill.hash}
+            </span>
+          </div>
+
+          <button
+            onClick={() => navigate('/app/digital-will')}
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--primary-light)' }}
+          >
+            Review Will Clauses <ExternalLink size={12} />
           </button>
         </div>
       </div>

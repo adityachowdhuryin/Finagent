@@ -96,6 +96,27 @@ function getFallbackLetter(type, market, symbol, userProfile, details) {
     };
   }
 
+  if (type === 'pmi_cancellation') {
+    const homeVal = Number(details.homeValue || 950000);
+    const balance = Number(details.outstandingBalance || 742000);
+    const ltv = ((balance / homeVal) * 100).toFixed(2);
+    const pmi = Number(details.monthlyPMI || 195);
+    const annualSavings = pmi * 12;
+
+    return {
+      subject: `FORMAL REQUEST: Cancellation of Private Mortgage Insurance (PMI) — Account #${details.loanAccount || 'WF-89102482'}`,
+      recipientTitle: 'Escrow & Loan Servicing Department — PMI Cancellation Unit',
+      letterBody: `Date: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\nTo:\n${details.bankName || 'Wells Fargo Home Mortgage'}\nEscrow & Loan Servicing Department\nAccount No: ${details.loanAccount || 'WF-89102482'}\n\nRE: FORMAL DEMAND FOR PMI CANCELLATION UNDER 12 U.S. CODE § 4902 (HOMEOWNERS PROTECTION ACT OF 1998)\n\nDear Servicing Representative,\n\nI am writing to formally request the immediate cancellation of Private Mortgage Insurance (PMI) on the above-referenced mortgage account pursuant to the Homeowners Protection Act of 1998 (12 U.S.C. § 4902).\n\nProperty & Loan Particulars:\n- Estimated Property Market Value: $${homeVal.toLocaleString()}\n- Current Unpaid Principal Balance: $${balance.toLocaleString()}\n- Calculated Loan-to-Value (LTV) Ratio: ${ltv}%\n- Monthly PMI Premium: $${pmi.toLocaleString()}/month ($${annualSavings.toLocaleString()}/year)\n\nStatutory Eligibility & Compliance:\n1. The current LTV ratio has reached the 80.0% threshold mandated under 12 U.S.C. § 4902(a) for borrower-initiated cancellation.\n2. The account has a flawless payment history with zero 30-day late payments in the past 12 months and zero 60-day late payments in the past 24 months.\n3. There are no subordinate liens, second mortgages, or encumbrances against the property.\n\nPlease confirm in writing within 30 days the effective termination date of PMI premiums, adjust the monthly escrow deduction accordingly, and refund any unearned premiums paid past this cancellation date.\n\nSincerely,\n\n________________________________________\n${name}\nAuthorized Borrower\nAccount No: ${details.loanAccount || 'WF-89102482'}`,
+      phoneScript: [
+        `"Hello, I am calling regarding mortgage account #${details.loanAccount || 'WF-89102482'}. My loan-to-value ratio is currently ${ltv}%, meeting the statutory 80% threshold under the Homeowners Protection Act."`,
+        `"I am requesting immediate cancellation of the $${pmi}/month Private Mortgage Insurance premium. My payment record is 100% on-time."`,
+        `"Please confirm that this written request is logged and provide the tracking case number for the escrow payment reduction."`
+      ],
+      estimatedSavings: `$${annualSavings.toLocaleString()}/year in deleted PMI premiums`,
+      statutoryBasis: '12 U.S. Code § 4902 (Homeowners Protection Act of 1998)'
+    };
+  }
+
   return {
     subject: `Dispute & Refund Request: Account Maintenance Charge on Account #${details.accountNumber || 'ACC-9921'}`,
     recipientTitle: 'Customer Care & Grievance Redressal Officer',

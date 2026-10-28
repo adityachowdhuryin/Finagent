@@ -6,6 +6,7 @@ import {
 import { analyze } from '../../services/geminiService';
 import { useApp } from '../../context/AppContext';
 import { jsPDF } from 'jspdf';
+import SECComplianceWatchdog from './us/SECComplianceWatchdog';
 
 const CATEGORY_COLORS = {
   'Mutual Funds': 'var(--primary)',
@@ -19,7 +20,12 @@ const CATEGORY_COLORS = {
 };
 
 export default function ComplianceWatchdog() {
-  const { state } = useApp();
+  const { state, isUSMarket } = useApp();
+  const jurisdiction = localStorage.getItem('finagent_advisor_jurisdiction') || (isUSMarket ? 'SEC' : 'SEBI');
+  if (jurisdiction === 'SEC' || isUSMarket) {
+    return <SECComplianceWatchdog />;
+  }
+
   const [circulars, setCirculars] = useState([]);
   const [loading, setLoading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState(null);

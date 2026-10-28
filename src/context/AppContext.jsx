@@ -238,12 +238,42 @@ function buildConsumerState(profile, isDemo) {
   };
 }
 
+const RECO_STORAGE_KEY = 'finagent_advisor_recommendations_v2';
+
+function loadStoredRecommendations() {
+  try {
+    const raw = localStorage.getItem(RECO_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return null;
+}
+
+function saveStoredRecommendations(recos) {
+  try {
+    localStorage.setItem(RECO_STORAGE_KEY, JSON.stringify(recos));
+  } catch {}
+}
+
+function getInitialRecommendations() {
+  const stored = loadStoredRecommendations();
+  if (stored && Array.isArray(stored)) {
+    const storedIds = new Set(stored.map(r => r.id));
+    const missingDefaults = pendingRecommendations.filter(r => !storedIds.has(r.id));
+    return [...stored, ...missingDefaults];
+  }
+  return pendingRecommendations;
+}
+
 function buildAdvisorState(profile, isDemo) {
+  const activeRecos = getInitialRecommendations();
   if (isDemo || !profile) {
     return {
       profile: advisorProfile,
       clients,
-      pendingRecommendations,
+      pendingRecommendations: activeRecos,
       auditLog,
       aumByAsset: advisorAUMByAsset,
       riskBreakdown: riskProfileBreakdown,
@@ -258,7 +288,7 @@ function buildAdvisorState(profile, isDemo) {
       feeStructure: profile.feeStructure || { type: 'both', aumPct: 1.0, flatFee: 50000 },
     },
     clients: profile.clients || [],
-    pendingRecommendations,
+    pendingRecommendations: activeRecos,
     auditLog,
     aumByAsset: advisorAUMByAsset,
     riskBreakdown: riskProfileBreakdown,
@@ -332,6 +362,7 @@ function appReducer(state, action) {
       const updated = state.advisor.pendingRecommendations.map(r =>
         r.id === action.payload.id ? { ...r, status: 'approved', advisorEdit: action.payload.text } : r
       );
+      saveStoredRecommendations(updated);
       const newEntry = {
         id: `al${Date.now()}`,
         clientName: action.payload.clientName,
@@ -357,6 +388,7 @@ function appReducer(state, action) {
       const updated = state.advisor.pendingRecommendations.map(r =>
         r.id === action.payload.id ? { ...r, status: 'rejected', advisorEdit: action.payload.reason } : r
       );
+      saveStoredRecommendations(updated);
       const newEntry = {
         id: `al${Date.now()}`,
         clientName: action.payload.clientName,
@@ -382,6 +414,7 @@ function appReducer(state, action) {
       const updated = state.advisor.pendingRecommendations.map(r =>
         r.id === action.payload.id ? { ...r, status: 'dispatched', dispatchedAt: action.payload.sentAt, dispatchId: action.payload.dispatchId } : r
       );
+      saveStoredRecommendations(updated);
       const newEntry = {
         id: `al${Date.now()}`,
         clientName: action.payload.clientName,
@@ -424,11 +457,13 @@ function appReducer(state, action) {
       const existing = state.advisor.pendingRecommendations || [];
       const existingIds = new Set(existing.map(r => r.id));
       const toAdd = newRecos.filter(r => !existingIds.has(r.id));
+      const combined = [...toAdd, ...existing];
+      saveStoredRecommendations(combined);
       return {
         ...state,
         advisor: {
           ...state.advisor,
-          pendingRecommendations: [...toAdd, ...existing],
+          pendingRecommendations: combined,
         },
       };
     }

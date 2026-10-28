@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { Bot, User, ChevronDown, ChevronUp, ExternalLink, Bookmark, Shield } from 'lucide-react';
 import { formatLakh, formatCurrency, formatPct } from '../../utils/formatters';
 import { useChat } from '../../context/ChatContext';
+import InChatBasketOrderCard from './cards/InChatBasketOrderCard';
+import InChatPrepaymentSliderCard from './cards/InChatPrepaymentSliderCard';
+import InChatFundCompareCard from './cards/InChatFundCompareCard';
+import InChatDossierExportCard from './cards/InChatDossierExportCard';
 
 function renderMarkdown(text) {
   // Simple markdown renderer for bold, italic, line breaks
@@ -188,7 +192,12 @@ function RetryErrorCard({ card }) {
 
 function RecoCardRenderer({ card }) {
   if (!card) return null;
-  switch (card.type) {
+  const cardType = card.cardType || card.type;
+  switch (cardType) {
+    case 'basket_order': return <InChatBasketOrderCard card={card} />;
+    case 'prepayment_slider': return <InChatPrepaymentSliderCard card={card} />;
+    case 'fund_comparison': return <InChatFundCompareCard card={card} />;
+    case 'dossier_export': return <InChatDossierExportCard card={card} />;
     case 'tax_harvest': return <TaxHarvestCard card={card} />;
     case 'goal_projection': return <GoalProjectionCard card={card} />;
     case 'allocation': return <AllocationCard card={card} />;

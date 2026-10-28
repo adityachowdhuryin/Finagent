@@ -185,6 +185,33 @@ export const clients = [
 
 export const pendingRecommendations = [
   {
+    id: 'r_tax_loss_harvest',
+    clientId: 'c5',
+    clientName: 'Karan Mehta',
+    type: 'tax_harvesting',
+    urgency: 'high',
+    confidence: 96,
+    createdAt: '2026-10-15T08:30:00Z',
+    title: 'Harvest ₹1,71,000 capital loss in dipping equities & paired swap into Nifty 50 Index',
+    summary: 'Proactive dip harvest under Section 70 of Indian IT Act. Offset Short-Term Capital Gains at 20% to save ₹34,200 in tax liabilities, paired with immediate Nifty 50 Index swap to maintain 100% equity exposure.',
+    impact: {
+      'Tax Saved (Sec 70)': '₹34,200',
+      'Capital Loss Harvested': '₹1,71,000',
+      'Replacement Asset': 'UTI Nifty 50 Index Fund',
+      'Equity Beta Retained': '1.00 (Zero Market Drag)',
+    },
+    aiRationale: [
+      'Unrealized short-term loss of ₹1,71,000 in dipping equities qualifies for immediate 20% STCG offset under Section 70 of the Income Tax Act.',
+      'Indian tax code has zero 30-day wash-sale restrictions, enabling immediate reinvestment into correlated replacement assets.',
+      'Simultaneous paired entry into Nifty 50 Index Fund prevents market exit drag and preserves compounding trajectory.',
+      'Client\'s aggressive growth profile requires maintaining high equity participation throughout cyclical corrections.',
+    ],
+    recommendation: 'Sell dipping equity lots on exchange and deploy ₹4,85,000 into UTI Nifty 50 Index Direct Growth.',
+    action: 'Sell Dipping Lots -> Deploy into Nifty 50 Index Direct',
+    status: 'pending',
+    advisorEdit: '',
+  },
+  {
     id: 'r1',
     clientId: 'c1',
     clientName: 'Rajesh Kumar',

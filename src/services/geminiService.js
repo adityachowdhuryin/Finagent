@@ -7,11 +7,11 @@ const API_BASE = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
  * @param {Function} onToken - called with each streamed token string
  * @returns {Promise<string>} full response text
  */
-export async function streamChat(messages, portfolioContext, onToken) {
+export async function streamChat(messages, portfolioContext, onToken, onCard) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, portfolioContext }),
+    body: JSON.stringify({ messages, portfolioContext, stream: true }),
   });
 
   if (!res.ok) {
@@ -37,10 +37,13 @@ export async function streamChat(messages, portfolioContext, onToken) {
       const data = line.slice(6).trim();
       if (data === '[DONE]') continue;
       try {
-        const { token } = JSON.parse(data);
-        if (token) {
-          fullText += token;
-          onToken(token);
+        const parsed = JSON.parse(data);
+        if (parsed.card && onCard) {
+          onCard(parsed.card);
+        }
+        if (parsed.token) {
+          fullText += parsed.token;
+          onToken(parsed.token);
         }
       } catch (_) {}
     }

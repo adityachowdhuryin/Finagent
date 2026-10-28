@@ -120,7 +120,11 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isWorkPortal = location.pathname.startsWith('/work');
-  const crumbs = breadcrumbs[location.pathname] || ['FinAgent'];
+  let crumbs = breadcrumbs[location.pathname] || ['FinAgent'];
+  if (currentMarket === 'US') {
+    if (location.pathname === '/app/govt-schemes') crumbs = ['FinAgent', 'Family & Wealth', 'US Retirement Studio'];
+    if (location.pathname === '/app/digital-will') crumbs = ['FinAgent', 'Family & Wealth', 'Living Trust Package'];
+  }
   const isAdvisor = state?.activeRole === 'advisor' || userRole === 'advisor';
   const isDark = theme === 'dark';
 
@@ -287,9 +291,59 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
             </button>
           </div>
 
-          {/* Desktop Controls (visible only on ultra-wide screens >=1720px) */}
+          {/* Persistent 1-Click Persona Switcher (Always visible on all screens) */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'var(--surface-raised)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 20,
+            padding: '2px',
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => { switchRole?.('investor'); navigate('/app/dashboard'); }}
+              style={{
+                border: 'none',
+                background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'var(--primary)' : 'transparent',
+                color: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="Investor Cockpit: Personal wealth, portfolio & tax"
+            >
+              <span>👤</span> Investor
+            </button>
+            <button
+              onClick={() => { switchRole?.('advisor'); navigate('/advisor/clients'); }}
+              style={{
+                border: 'none',
+                background: isAdvisor ? 'var(--primary)' : 'transparent',
+                color: isAdvisor ? '#fff' : 'var(--text-muted)',
+                borderRadius: 16,
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="SEBI RIA Advisor Practice: Client book, recommendations & execution bridge"
+            >
+              <span>🏢</span> Advisor
+            </button>
+          </div>
+
+          {/* Desktop Controls (visible on screens >=1100px) */}
           <div className="topbar-desktop-controls">
-            {/* Multi-Tenant Role Switcher Pill (Investor ⇋ Advisor ⇋ CPA ⇋ Work) */}
+            {/* Extended Enterprise Roles (CPA ⇋ Work) */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -300,42 +354,6 @@ export default function TopBar({ onMenuClick, onSearchClick }) {
               fontSize: '0.72rem',
               fontWeight: 700,
             }}>
-              <button
-                onClick={() => { switchRole?.('investor'); navigate('/app/dashboard'); }}
-                style={{
-                  border: 'none',
-                  background: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? 'var(--primary)' : 'transparent',
-                  color: (!isAdvisor && !isWorkPortal && location.pathname !== '/cpa') ? '#fff' : 'var(--text-muted)',
-                  borderRadius: 16,
-                  padding: '0.2rem 0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                }}
-                title="Investor Cockpit: Personal wealth, portfolio & tax"
-              >
-                <span>👤</span> Investor
-              </button>
-              <button
-                onClick={() => { switchRole?.('advisor'); navigate('/advisor/clients'); }}
-                style={{
-                  border: 'none',
-                  background: isAdvisor ? 'var(--primary)' : 'transparent',
-                  color: isAdvisor ? '#fff' : 'var(--text-muted)',
-                  borderRadius: 16,
-                  padding: '0.2rem 0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                }}
-                title="Advisor Practice: Client book, recommendations, AUM"
-              >
-                <span>🏢</span> Advisor
-              </button>
               <button
                 onClick={() => navigate('/cpa')}
                 style={{

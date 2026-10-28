@@ -94,6 +94,9 @@ const emptyForm = {
 
 const PROFESSIONS = ['Salaried', 'Business Owner', 'Self-Employed', 'Doctor/Lawyer', 'Government Employee', 'Retired', 'Student'];
 const TAX_BRACKETS = ['0% (No Tax)', '5%', '20%', '30%'];
+const US_TAX_BRACKETS = ['10%', '12%', '22%', '24%', '32%', '35%', '37%'];
+const US_ACCOUNT_TYPES = ['Individual Taxable', 'Joint WROS', 'Traditional IRA', 'Roth IRA', 'SEP-IRA', 'Solo 401(k)', 'Revocable Living Trust'];
+const US_STATES = ['CA', 'NY', 'NJ', 'MA', 'TX', 'FL', 'WA', 'IL', 'PA', 'CO', 'VA', 'GA'];
 
 function SignatureCanvas({ label, sigRef }) {
   const canvasRef = useRef();
@@ -149,9 +152,15 @@ function SignatureCanvas({ label, sigRef }) {
 
 export default function ClientOnboarding() {
   const navigate = useNavigate();
-  const { dispatch } = useApp();
+  const { dispatch, isUSMarket } = useApp();
+  const jurisdiction = localStorage.getItem('finagent_advisor_jurisdiction') || (isUSMarket ? 'SEC' : 'SEBI');
+  const isUS = Boolean(isUSMarket || jurisdiction === 'SEC');
+
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(emptyForm);
+  const [accountType, setAccountType] = useState('Individual Taxable');
+  const [usState, setUsState] = useState('CA');
+  const [formCrsAcknowledged, setFormCrsAcknowledged] = useState(false);
   const [answers, setAnswers] = useState(Array(RISK_QUESTIONS.length).fill(null));
   const [ipsText, setIpsText] = useState('');
   const [loadingIPS, setLoadingIPS] = useState(false);
@@ -265,18 +274,21 @@ export default function ClientOnboarding() {
       case 0:
         return (
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Personal Details</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>Basic KYC and contact information</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+              {isUS ? 'Personal Details & Account Registration' : 'Personal Details'}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+              {isUS ? 'SEC Rule 204-2 KYC & Custodial Account Setup' : 'Basic KYC and contact information'}
+            </div>
             <div style={styles.formGrid}>
               {[
-                { key: 'name', label: 'Full Name', placeholder: 'Rahul Mehta', type: 'text' },
+                { key: 'name', label: 'Full Legal Name', placeholder: isUS ? 'Jennifer Miller' : 'Rahul Mehta', type: 'text' },
                 { key: 'dob', label: 'Date of Birth', placeholder: '', type: 'date' },
-                { key: 'pan', label: 'PAN Number', placeholder: 'ABCDE1234F', type: 'text' },
-                { key: 'aadhaar', label: 'Aadhaar (Last 4 digits)', placeholder: '****', type: 'text', maxLen: 4 },
-                { key: 'email', label: 'Email Address', placeholder: 'rahul@example.com', type: 'email' },
-                { key: 'phone', label: 'Mobile Number', placeholder: '+91 98765 43210', type: 'tel' },
-                { key: 'city', label: 'City', placeholder: 'Mumbai', type: 'text' },
-                { key: 'income', label: 'Annual Income (₹)', placeholder: '1200000', type: 'number' },
+                { key: 'pan', label: isUS ? 'SSN (Last 4) / Tax ID' : 'PAN Number', placeholder: isUS ? '***-**-4891' : 'ABCDE1234F', type: 'text' },
+                { key: 'email', label: 'Email Address', placeholder: isUS ? 'jennifer@example.com' : 'rahul@example.com', type: 'email' },
+                { key: 'phone', label: 'Mobile Number', placeholder: isUS ? '+1 (415) 555-0192' : '+91 98765 43210', type: 'tel' },
+                { key: 'city', label: isUS ? 'City / Metro Area' : 'City', placeholder: isUS ? 'San Francisco' : 'Mumbai', type: 'text' },
+                { key: 'income', label: isUS ? 'Annual Household Income ($)' : 'Annual Income (₹)', placeholder: isUS ? '280000' : '1200000', type: 'number' },
               ].map(f => (
                 <div key={f.key} style={styles.fieldGroup}>
                   <label style={styles.label}>{f.label}</label>
@@ -287,20 +299,55 @@ export default function ClientOnboarding() {
                   />
                 </div>
               ))}
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Profession</label>
-                <select style={styles.input} value={form.profession} onChange={e => setForm({ ...form, profession: e.target.value })}>
-                  <option value="">Select…</option>
-                  {PROFESSIONS.map(p => <option key={p}>{p}</option>)}
-                </select>
-              </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Tax Bracket</label>
-                <select style={styles.input} value={form.taxBracket} onChange={e => setForm({ ...form, taxBracket: e.target.value })}>
-                  <option value="">Select…</option>
-                  {TAX_BRACKETS.map(t => <option key={t}>{t}</option>)}
-                </select>
-              </div>
+
+              {isUS ? (
+                <>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Account Registration Type</label>
+                    <select style={styles.input} value={accountType} onChange={e => setAccountType(e.target.value)}>
+                      {US_ACCOUNT_TYPES.map(a => <option key={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>State of Residence</label>
+                    <select style={styles.input} value={usState} onChange={e => setUsState(e.target.value)}>
+                      {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Federal Tax Bracket</label>
+                    <select style={styles.input} value={form.taxBracket} onChange={e => setForm({ ...form, taxBracket: e.target.value })}>
+                      <option value="">Select…</option>
+                      {US_TAX_BRACKETS.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Aadhaar (Last 4 digits)</label>
+                    <input
+                      style={styles.input} type="text" placeholder="****"
+                      value={form.aadhaar} maxLength={4}
+                      onChange={e => setForm({ ...form, aadhaar: e.target.value })}
+                    />
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Profession</label>
+                    <select style={styles.input} value={form.profession} onChange={e => setForm({ ...form, profession: e.target.value })}>
+                      <option value="">Select…</option>
+                      {PROFESSIONS.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Tax Bracket</label>
+                    <select style={styles.input} value={form.taxBracket} onChange={e => setForm({ ...form, taxBracket: e.target.value })}>
+                      <option value="">Select…</option>
+                      {TAX_BRACKETS.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );
@@ -357,6 +404,14 @@ export default function ClientOnboarding() {
                   <button className="btn btn-ghost" onClick={generateIPS}>🔄 Regenerate IPS</button>
                   {!ipsText && <button className="btn btn-primary" onClick={generateIPS}>✨ Generate IPS</button>}
                 </div>
+                {isUS && (
+                  <div style={{ marginTop: 14, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid var(--green)', borderRadius: 'var(--radius-sm)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                      <input type="checkbox" checked={formCrsAcknowledged} onChange={e => setFormCrsAcknowledged(e.target.checked)} />
+                      <span>I confirm that SEC Form CRS (Customer Relationship Summary) and Form ADV Part 2A were delivered to client and acknowledged under Rule 17a-14.</span>
+                    </label>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -379,7 +434,9 @@ export default function ClientOnboarding() {
               </div>
             </div>
             <div style={{ marginTop: 20, padding: 14, background: 'var(--surface-raised)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--text-muted)' }}>
-              🔒 Signatures are encrypted and stored securely. This constitutes a legally binding digital agreement under the IT Act, 2000.
+              {isUS
+                ? '🔒 Signatures are encrypted and stored securely pursuant to SEC Books & Records Rule 204-2. This constitutes a legally binding discretionary Investment Advisory Agreement under Section 206 of the Investment Advisers Act of 1940.'
+                : '🔒 Signatures are encrypted and stored securely. This constitutes a legally binding digital agreement under the IT Act, 2000.'}
             </div>
           </div>
         );

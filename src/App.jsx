@@ -25,6 +25,7 @@ import AIAdvisor from './pages/consumer/AIAdvisor';
 import HealthScore from './pages/consumer/HealthScore';
 import Goals from './pages/consumer/Goals';
 import TaxHarvester from './pages/consumer/TaxHarvester';
+import TaxForensicStudio from './pages/consumer/TaxForensicStudio';
 // AI Features (Consumer)
 import DocumentIntelligence from './pages/consumer/DocumentIntelligence';
 import NewsFeed from './pages/consumer/NewsFeed';
@@ -98,6 +99,7 @@ import PlaidSync from './pages/consumer/us/PlaidSync';
 
 // Autonomous Execution, Institutional Credit & Multi-Player Wealth
 import ExecutionHub from './pages/consumer/ExecutionHub';
+import HUFStudio from './pages/consumer/HUFStudio';
 import CreditHub from './pages/consumer/CreditHub';
 import PayrollHub from './pages/consumer/PayrollHub';
 import RoundUps from './pages/consumer/RoundUps';
@@ -164,10 +166,10 @@ function ProtectedRoute({ children, requiredRole }) {
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && currentUser?.isDemo && requiredRole && userRole && userRole !== requiredRole) {
+    if (!loading && requiredRole && userRole && userRole !== requiredRole) {
       switchRole(requiredRole);
     }
-  }, [loading, currentUser?.isDemo, requiredRole, userRole, switchRole]);
+  }, [loading, requiredRole, userRole, switchRole]);
 
   if (loading) {
     return (
@@ -183,15 +185,12 @@ function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (requiredRole && userRole && userRole !== requiredRole) {
-    if (currentUser?.isDemo) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid var(--primary)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Switching to {requiredRole === 'advisor' ? 'Advisor Portal' : 'Investor Cockpit'}…</div>
-        </div>
-      );
-    }
-    return <Navigate to={userRole === 'advisor' ? '/advisor' : '/app'} replace />;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid var(--primary)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Switching to {requiredRole === 'advisor' ? 'Advisor Portal' : 'Investor Cockpit'}…</div>
+      </div>
+    );
   }
 
   return children;
@@ -231,7 +230,7 @@ function AppRoutes() {
         <Route path="ai-advisor" element={<AIAdvisor />} />
         <Route path="health-score" element={<HealthScore />} />
         <Route path="goals" element={<Goals />} />
-        <Route path="tax" element={<FeatureGate feature="tax_harvester" featureName="Tax Harvester"><TaxHarvester /></FeatureGate>} />
+        <Route path="tax" element={<TaxForensicStudio />} />
         {/* AI Features */}
         <Route path="documents" element={<FeatureGate feature="documents" featureName="Document Intelligence"><DocumentIntelligence /></FeatureGate>} />
         <Route path="news" element={<NewsFeed />} />
@@ -290,6 +289,7 @@ function AppRoutes() {
 
         {/* Autonomous Execution & Institutional Wealth Modules */}
         <Route path="execution" element={<ExecutionHub />} />
+        <Route path="huf-studio" element={<Navigate to="/app/tax?tab=huf" replace />} />
         <Route path="credit" element={<CreditHub />} />
         <Route path="payroll" element={<PayrollHub />} />
         <Route path="roundups" element={<RoundUps />} />
@@ -315,7 +315,7 @@ function AppRoutes() {
 
         {/* Frontier Venture-Scale Expansion Routes */}
         <Route path="direct-indexing" element={<DirectIndexingHub />} />
-        <Route path="e-file" element={<TaxEFilingHub />} />
+        <Route path="e-file" element={<Navigate to="/app/tax?tab=e-file" replace />} />
         <Route path="notary" element={<EstateNotaryHub />} />
         <Route path="esop-financing" element={<ESOPFinancingMarketplace />} />
         <Route path="syndicates" element={<AlternativeSyndicateHub />} />

@@ -6,7 +6,7 @@ import {
   CalendarCheck, Receipt, ShieldCheck,
   Download, DollarSign,
   UserPlus, Layers, Mail, Lock, Zap,
-  Building2, Briefcase, Landmark, Scale, Heart, Globe
+  Building2, Briefcase, Landmark, Scale, Heart, Globe, Cpu, ChevronDown
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -24,9 +24,10 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
     },
     {
       to: '/app/execution',
-      label: '1-Click Execution',
+      label: 'Autonomous Execution & Alpha',
       icon: Zap,
-      matchPrefixes: ['/app/execution', '/app/broker-router', '/app/roundups', '/app/payroll'],
+      badge: 'Alpha',
+      matchPrefixes: ['/app/execution', '/app/direct-indexing', '/app/broker-router', '/app/roundups', '/app/payroll'],
     },
     {
       to: '/app/portfolio',
@@ -35,14 +36,15 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       matchPrefixes: ['/app/portfolio', '/app/private-equity', '/app/performance', '/app/xray', '/app/stress-test', '/app/rebalancing', '/app/sip-optimizer', '/app/watchlist', '/app/news'],
     },
     {
-      to: '/app/wash-sale',
-      label: 'Tax & Alpha',
+      to: '/app/tax',
+      label: 'Tax & Forensic Studio',
       icon: DollarSign,
+      badge: 'Save $12k',
       matchPrefixes: [
-        '/app/wash-sale', '/app/w2-optimizer', '/app/equity-os', '/app/us-cards', '/app/cross-border',
+        '/app/tax', '/app/wash-sale', '/app/w2-optimizer', '/app/equity-os', '/app/us-cards', '/app/cross-border',
         '/app/commission-hunter', '/app/ctc-optimizer', '/app/forensic-audit', '/app/esop-rsu',
-        '/app/card-optimizer', '/app/tax', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
-        '/app/credit', '/app/offers', '/app/residency-arbitrage'
+        '/app/card-optimizer', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
+        '/app/credit', '/app/offers', '/app/residency-arbitrage', '/app/direct-indexing', '/app/e-file'
       ],
     },
     {
@@ -50,11 +52,18 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       label: 'Family & Wealth',
       icon: Users,
       matchPrefixes: [
-        '/app/living-trust', '/app/mortgage-refi', '/app/fee-hunter',
+        '/app/living-trust', '/app/fee-hunter',
         '/app/family-hub', '/app/emergency-vault', '/app/digital-will', '/app/goals', '/app/fire',
-        '/app/loan', '/app/insurance', '/app/govt-schemes', '/app/household', '/app/succession',
+        '/app/insurance', '/app/govt-schemes', '/app/household', '/app/succession',
         '/app/real-estate-avm', '/app/prenup', '/app/zk-vault'
       ],
+    },
+    {
+      to: '/app/loan',
+      label: 'Loan & Fee Negotiator',
+      icon: Landmark,
+      badge: 'Refi',
+      matchPrefixes: ['/app/loan', '/app/negotiator', '/app/mortgage-refi'],
     },
     {
       to: '/app/ai-advisor',
@@ -85,9 +94,10 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
     },
     {
       to: '/app/execution',
-      label: '1-Click Execution',
+      label: 'Autonomous Execution & Alpha',
       icon: Zap,
-      matchPrefixes: ['/app/execution', '/app/broker-router', '/app/roundups', '/app/payroll'],
+      badge: 'Alpha',
+      matchPrefixes: ['/app/execution', '/app/direct-indexing', '/app/broker-router', '/app/roundups', '/app/payroll'],
     },
     {
       to: '/app/portfolio',
@@ -96,13 +106,14 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       matchPrefixes: ['/app/portfolio', '/app/private-equity', '/app/performance', '/app/xray', '/app/stress-test', '/app/rebalancing', '/app/sip-optimizer', '/app/watchlist', '/app/news'],
     },
     {
-      to: '/app/commission-hunter',
-      label: 'Tax & Alpha',
+      to: '/app/tax',
+      label: 'Tax & Forensic Studio',
       icon: DollarSign,
+      badge: 'Save ₹3L',
       matchPrefixes: [
-        '/app/commission-hunter', '/app/ctc-optimizer', '/app/forensic-audit', '/app/esop-rsu',
-        '/app/card-optimizer', '/app/tax', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
-        '/app/credit', '/app/offers', '/app/residency-arbitrage'
+        '/app/tax', '/app/commission-hunter', '/app/ctc-optimizer', '/app/forensic-audit', '/app/esop-rsu',
+        '/app/card-optimizer', '/app/tax-loss-bot', '/app/itr', '/app/cashflow',
+        '/app/credit', '/app/offers', '/app/residency-arbitrage', '/app/direct-indexing', '/app/e-file', '/app/huf-studio'
       ],
     },
     {
@@ -111,9 +122,16 @@ function getConsumerNav(isUSMarket, experienceMode = 'pro') {
       icon: Users,
       matchPrefixes: [
         '/app/family-hub', '/app/emergency-vault', '/app/digital-will', '/app/goals',
-        '/app/fire', '/app/loan', '/app/insurance', '/app/govt-schemes', '/app/household',
-        '/app/succession', '/app/real-estate-avm', '/app/prenup', '/app/zk-vault'
+        '/app/fire', '/app/insurance', '/app/govt-schemes', '/app/household',
+        '/app/succession', '/app/real-estate-avm', '/app/prenup', '/app/zk-vault', '/app/huf-studio'
       ],
+    },
+    {
+      to: '/app/loan',
+      label: 'Loan & Fee Negotiator',
+      icon: Landmark,
+      badge: 'Cut EMI',
+      matchPrefixes: ['/app/loan', '/app/negotiator'],
     },
     {
       to: '/app/ai-advisor',
@@ -190,6 +208,9 @@ export default function Sidebar({ open, onClose }) {
   const experienceMode = state?.experienceMode || 'pro';
   const nav = isAdvisor ? advisorNav : getConsumerNav(isUSMarket, experienceMode);
 
+  const isEnterprisePath = ['/treasury', '/syndicates', '/work', '/giving', '/divorce', '/cpa', '/bank-embed'].some(p => location.pathname.startsWith(p));
+  const [enterpriseOpen, setEnterpriseOpen] = React.useState(isEnterprisePath);
+
   const displayName = isAdvisor
     ? (userProfile?.name || currentUser?.displayName || state.advisor?.profile?.name || 'Advisor')
     : (state.consumer?.user?.name || userProfile?.name || currentUser?.displayName || 'Investor');
@@ -226,19 +247,56 @@ export default function Sidebar({ open, onClose }) {
 
           {nav.map((item, i) => {
             if (item.divider) {
+              const isEnterpriseDivider = item.label === 'Enterprise & Practice';
               return (
                 <React.Fragment key={`divider-${i}`}>
                   <div className="divider" style={{ margin: '0.5rem 0' }} />
-                  <div className="nav-section-label">{item.label}</div>
+                  {isEnterpriseDivider ? (
+                    <button
+                      type="button"
+                      onClick={() => setEnterpriseOpen(prev => !prev)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '0.25rem 0',
+                        color: 'inherit',
+                      }}
+                    >
+                      <span className="nav-section-label" style={{ margin: 0 }}>{item.label}</span>
+                      <ChevronDown
+                        size={13}
+                        style={{
+                          transform: enterpriseOpen ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.2s ease',
+                          color: 'var(--text-muted)',
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <div className="nav-section-label">{item.label}</div>
+                  )}
                 </React.Fragment>
               );
             }
 
             const { to, label, icon: Icon, badge, gate, matchPrefixes } = item;
+            const isEnterpriseItem = ['/treasury', '/syndicates', '/work', '/giving', '/divorce', '/cpa', '/bank-embed'].includes(to);
+            if (isEnterpriseItem && !enterpriseOpen) {
+              return null;
+            }
+
             const isLocked = gate && !canAccess(gate);
             const isCustomActive = matchPrefixes
               ? matchPrefixes.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))
               : location.pathname === to;
+
+            const pendingRecoCount = (state.advisor?.pendingRecommendations || []).filter(r => r.status === 'pending').length;
+            const effectiveBadge = to === '/advisor/recommendations' ? (pendingRecoCount || null) : badge;
 
             return (
               <NavLink
@@ -251,7 +309,7 @@ export default function Sidebar({ open, onClose }) {
                 <Icon className="nav-item-icon" size={17} />
                 <span style={{ flex: 1 }}>{label}</span>
                 {isLocked && <Lock size={11} style={{ opacity: 0.6, flexShrink: 0 }} />}
-                {!isLocked && badge && <span className="nav-badge">{badge}</span>}
+                {!isLocked && effectiveBadge && <span className="nav-badge">{effectiveBadge}</span>}
               </NavLink>
             );
           })}

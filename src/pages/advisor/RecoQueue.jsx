@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Check, X, Edit2, ChevronDown, ChevronUp, Shield, Send, Sparkles, FileText, Download, CheckCircle2 } from 'lucide-react';
+import { Check, X, Edit2, ChevronDown, ChevronUp, Shield, Send, Sparkles, FileText, Download, CheckCircle2, Zap } from 'lucide-react';
 import { buildFiduciaryRecoPDF } from '../../utils/fiduciaryPdfBuilder';
+import StickyActionDock from '../../components/common/StickyActionDock';
 
 function SendToClientModal({ reco, onClose, onDispatched }) {
   const { state, dispatch } = useApp();
@@ -383,7 +384,7 @@ function AIAdvisorAuditModal({ clients, onClose, onAuditCompleted }) {
   );
 }
 
-function RecoCard({ reco, onApprove, onReject }) {
+function RecoCard({ reco, onApprove, onReject, onSignAndBridge }) {
   const [edit, setEdit] = useState('');
   const [showEdit, setShowEdit] = useState(false);
   const [showRationale, setShowRationale] = useState(false);
@@ -395,14 +396,18 @@ function RecoCard({ reco, onApprove, onReject }) {
   const isApproved = reco.status === 'approved';
   const isDispatched = reco.status === 'dispatched';
 
+  const typeKey = (reco.type || '').toLowerCase();
   const typeColors = {
     portfolio_rebalance: 'var(--primary)',
     tax_harvesting: 'var(--green)',
+    tax_loss_harvesting: 'var(--green)',
+    regular_to_direct_switch: 'var(--gold)',
     goal_review: 'var(--gold)',
     insurance_gap: 'var(--red)',
     sip_increase: 'var(--purple)',
+    estate_succession: '#a855f7',
   };
-  const typeColor = typeColors[reco.type] || 'var(--primary)';
+  const typeColor = typeColors[typeKey] || typeColors[reco.type] || 'var(--primary)';
 
   return (
     <>
@@ -418,7 +423,10 @@ function RecoCard({ reco, onApprove, onReject }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.875rem', paddingRight: isPending ? 0 : '7rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-surface">{reco.type?.replace(/_/g, ' ').toUpperCase()}</span>
+              <span className="badge badge-surface">
+                {typeKey.includes('tax') ? '🌾 ' : typeKey.includes('switch') ? '💸 ' : typeKey.includes('estate') ? '📜 ' : ''}
+                {reco.type?.replace(/_/g, ' ').toUpperCase()}
+              </span>
               <span className="badge badge-primary">Confidence {reco.confidence}%</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{reco.urgency} urgency</span>
             </div>
@@ -484,18 +492,32 @@ function RecoCard({ reco, onApprove, onReject }) {
         )}
 
         {isApproved && (
-          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.625rem' }}>
+          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => setShowSendModal(true)}>
               <Send size={14} /> Dispatch Letterhead & Send to Client
+            </button>
+            <button
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => onSignAndBridge?.(reco)}
+            >
+              <Zap size={14} color="var(--gold)" /> SEBI RIA Co-Sign & Bridge to Execution
             </button>
           </div>
         )}
 
         {isDispatched && (
-          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
+          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.625rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <CheckCircle2 size={14} /> Transmitted via Resend with PDF letterhead
             </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => onSignAndBridge?.(reco)}
+            >
+              <Zap size={13} color="var(--gold)" /> Bridge to 1-Click Execution
+            </button>
             <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => setShowSendModal(true)}>
               <FileText size={13} /> View Letterhead
             </button>
@@ -524,6 +546,30 @@ export default function RecoQueue() {
 
   function handleApprove(payload) { dispatch({ type: 'APPROVE_RECO', payload }); }
   function handleReject(payload) { dispatch({ type: 'REJECT_RECO', payload }); }
+
+  const handleSignAndBridge = async (reco) => {
+    try {
+      const res = await fetch('/api/advisor/sign-and-bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recoId: reco.id,
+          reco,
+          clientName: reco.clientName,
+          advisorSig: `${state.advisor?.profile?.name || 'Meera Kapoor'} · SEBI-RIA ${state.advisor?.profile?.sebiRegNo || 'INA000014523'}`
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setToastMsg(`✓ Co-signed under SEBI Reg INA000014523 and bridged to 1-Click Execution queue! View under /app/execution.`);
+        setTimeout(() => setToastMsg(''), 6000);
+      } else {
+        throw new Error(json.error || 'Bridging failed');
+      }
+    } catch (err) {
+      alert('Sign and bridge notice: ' + err.message);
+    }
+  };
 
   const handleAuditCompleted = (newRecos, clientName) => {
     dispatch({ type: 'ADD_RECOMMENDATIONS', payload: newRecos });
@@ -583,8 +629,35 @@ export default function RecoQueue() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {displayed.length === 0 && <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>No recommendations in this category. Click "⚡ Run AI Fiduciary Audit" to generate new ones.</div>}
-        {displayed.map(r => <RecoCard key={r.id} reco={r} onApprove={handleApprove} onReject={handleReject} />)}
+        {displayed.map(r => <RecoCard key={r.id} reco={r} onApprove={handleApprove} onReject={handleReject} onSignAndBridge={handleSignAndBridge} />)}
       </div>
+
+      {/* Universal Sticky Action Dock */}
+      <StickyActionDock
+        title="SEBI RIA Fiduciary Recommendation Queue"
+        subtitle="SEBI Reg: INA000014523 · BASL-1842"
+        badge={`${pendingCount} PENDING`}
+        badgeColor={pendingCount > 0 ? "var(--gold)" : "var(--green)"}
+        metrics={[
+          { label: 'Pending Review', value: pendingCount, color: pendingCount > 0 ? 'var(--gold)' : 'var(--text-primary)' },
+          { label: 'Approved Ready', value: recos.filter(r => r.status === 'approved').length, color: 'var(--green)' },
+        ]}
+        actions={recos.find(r => r.status === 'approved') ? [
+          {
+            label: 'SEBI RIA Co-Sign & Bridge to Execution',
+            icon: Zap,
+            variant: 'primary',
+            onClick: () => handleSignAndBridge(recos.find(r => r.status === 'approved')),
+          }
+        ] : [
+          {
+            label: '⚡ Run AI Fiduciary Audit',
+            icon: Sparkles,
+            variant: 'primary',
+            onClick: () => setShowAuditModal(true),
+          }
+        ]}
+      />
     </div>
   );
 }

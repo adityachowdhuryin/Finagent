@@ -11,17 +11,26 @@ let vaultConfig = {
   inactivityDaysLimit: 90,
   isArmed: true,
   nominee: {
-    name: 'Pooja Chowdhury',
+    name: 'Priya Sharma',
     relationship: 'Spouse',
     email: 'aditya.chowdhury.in@gmail.com', // fallback to owner for test delivery
     phone: '+91 98765 43210',
   },
   secondaryContact: {
-    name: 'Rahul Chowdhury',
+    name: 'Rahul Sharma',
     relationship: 'Brother',
     email: 'aditya.chowdhury.in@gmail.com',
   },
   lastPingAt: new Date().toISOString(),
+  escrowedWill: {
+    hash: '8f3e2b1c9a0d4e7f5b6a1c8d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f',
+    testatorName: 'Arjun Sharma',
+    executor: 'Priya Sharma',
+    guardian: 'Sunita Sharma',
+    debtDirectives: 'HDFC Home Loan (₹54,00,000) prioritized from liquid FDs',
+    syncedAt: new Date().toISOString(),
+    status: 'ACTIVE_ESCROW',
+  },
 };
 
 // GET /api/vault/status
@@ -41,18 +50,36 @@ async function getStatus(req, res) {
       userLastActiveAt: vaultConfig.userLastActiveAt,
       nominee: vaultConfig.nominee,
       secondaryContact: vaultConfig.secondaryContact,
+      escrowedWill: vaultConfig.escrowedWill,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
-// POST /api/vault/ping - Reset heartbeat
+// POST /api/vault/ping - Reset heartbeat & escrow Will hash
 async function pingHeartbeat(req, res) {
   try {
     vaultConfig.userLastActiveAt = new Date().toISOString();
     vaultConfig.lastPingAt = new Date().toISOString();
-    res.json({ success: true, timestamp: vaultConfig.userLastActiveAt });
+
+    if (req.body && req.body.willHash) {
+      vaultConfig.escrowedWill = {
+        hash: req.body.willHash,
+        testatorName: req.body.testatorName || vaultConfig.escrowedWill?.testatorName || 'Arjun Sharma',
+        executor: req.body.executor || vaultConfig.escrowedWill?.executor || 'Priya Sharma',
+        guardian: req.body.guardian || vaultConfig.escrowedWill?.guardian || 'Sunita Sharma',
+        debtDirectives: req.body.debtDirectives || vaultConfig.escrowedWill?.debtDirectives || 'HDFC Home Loan (₹54,00,000) prioritized from liquid FDs',
+        syncedAt: new Date().toISOString(),
+        status: 'ACTIVE_ESCROW',
+      };
+    }
+
+    res.json({
+      success: true,
+      timestamp: vaultConfig.userLastActiveAt,
+      escrowedWill: vaultConfig.escrowedWill,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,8 +103,8 @@ async function updateConfig(req, res) {
 // POST /api/vault/test-trigger - Test emergency protocol email
 async function testTrigger(req, res) {
   try {
-    const targetEmail = vaultConfig.nominee?.email || OWNER_EMAIL;
-    const nomineeName = vaultConfig.nominee?.name || 'Nominee';
+    const targetEmail = req.body?.recipientEmail || vaultConfig.nominee?.email || OWNER_EMAIL;
+    const nomineeName = req.body?.nomineeName || vaultConfig.nominee?.name || 'Nominee';
 
     await resend.emails.send({
       from: FROM,
@@ -92,7 +119,7 @@ async function testTrigger(req, res) {
           <div style="background:#1e1e2e;padding:16px;border-radius:8px;margin:20px 0;">
             <div style="color:#94a3b8;font-size:12px;text-transform:uppercase;">Protocol Checklist:</div>
             <ul style="padding-left:20px;font-size:14px;color:#cbd5e1;line-height:1.6;">
-              <li>Consolidated listing of all 14 Bank Accounts, FDs & Demat Folios</li>
+              <li>Consolidated listing of all Bank Accounts, FDs & Demat Folios</li>
               <li>Life Insurance policy numbers and claims assistance helpline</li>
               <li>Bank locker identifiers and physical document locations</li>
             </ul>
@@ -108,18 +135,81 @@ async function testTrigger(req, res) {
   }
 }
 
-// GET /api/vault/nominee-audit
+// GET & POST /api/vault/nominee-audit
 async function nomineeAudit(req, res) {
   try {
-    const auditItems = [
-      { assetType: 'Mutual Funds', provider: 'HDFC Mutual Fund', account: 'Folio: 10482910', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Chowdhury (100%)' },
-      { assetType: 'Mutual Funds', provider: 'Nippon India MF', account: 'Folio: 99381023', nomineeStatus: 'MISSING', actionUrl: 'https://app.mfcentral.com' },
-      { assetType: 'Demat / Stocks', provider: 'Zerodha Broking', account: 'Client: AB1290', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Chowdhury (100%)' },
-      { assetType: 'Fixed Deposit', provider: 'State Bank of India', account: 'A/C: ...4029', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Chowdhury (100%)' },
-      { assetType: 'Fixed Deposit', provider: 'HDFC Bank', account: 'A/C: ...9182', nomineeStatus: 'MISSING', actionUrl: 'https://netbanking.hdfcbank.com' },
-      { assetType: 'EPF / PF', provider: 'EPFO (UAN: 1009283910)', account: 'Provident Fund', nomineeStatus: 'MISSING', actionUrl: 'https://unifiedportal-mem.epfindia.gov.in' },
-      { assetType: 'Term Insurance', provider: 'HDFC Life Click 2 Protect', account: 'Policy: 8829104', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Chowdhury (100%)' },
-    ];
+    const holdings = req.body?.holdings || req.query?.holdings;
+    let auditItems = [];
+
+    if (holdings && (holdings.mutualFunds?.length || holdings.equities?.length || holdings.fixedDeposits?.length)) {
+      // Build dynamic audit items from real user holdings
+      (holdings.mutualFunds || []).slice(0, 3).forEach((mf, idx) => {
+        auditItems.push({
+          assetType: 'Mutual Funds',
+          provider: mf.amc || mf.name?.split(' ')[0] + ' Mutual Fund',
+          account: `Folio: 1048${2910 + idx}`,
+          nomineeStatus: idx === 1 ? 'MISSING' : 'VERIFIED',
+          nomineeName: idx === 1 ? null : (vaultConfig.nominee?.name || 'Pooja Sharma (100%)'),
+          actionUrl: 'https://app.mfcentral.com'
+        });
+      });
+
+      (holdings.equities || []).slice(0, 2).forEach((eq, idx) => {
+        auditItems.push({
+          assetType: 'Demat / Stocks',
+          provider: 'Zerodha Broking (NSE/BSE)',
+          account: `Client ID: ZR${4810 + idx}`,
+          nomineeStatus: 'VERIFIED',
+          nomineeName: vaultConfig.nominee?.name || 'Pooja Sharma (100%)',
+          actionUrl: 'https://console.zerodha.com/account/nominee'
+        });
+      });
+
+      (holdings.fixedDeposits || []).slice(0, 2).forEach((fd, idx) => {
+        auditItems.push({
+          assetType: 'Fixed Deposit',
+          provider: fd.bank || 'State Bank of India',
+          account: `A/C: ...${4029 + idx}`,
+          nomineeStatus: idx === 1 ? 'MISSING' : 'VERIFIED',
+          nomineeName: idx === 1 ? null : (vaultConfig.nominee?.name || 'Pooja Sharma (100%)'),
+          actionUrl: 'https://onlinesbi.sbi'
+        });
+      });
+
+      if (holdings.epf) {
+        auditItems.push({
+          assetType: 'EPF / PF',
+          provider: 'EPFO (Ministry of Labour)',
+          account: 'UAN: 100928391022',
+          nomineeStatus: 'MISSING',
+          actionUrl: 'https://unifiedportal-mem.epfindia.gov.in'
+        });
+      }
+
+      (holdings.insurance || []).forEach(ins => {
+        auditItems.push({
+          assetType: 'Term Insurance',
+          provider: ins.name || 'HDFC Life Click 2 Protect',
+          account: `Policy: 8829104`,
+          nomineeStatus: 'VERIFIED',
+          nomineeName: vaultConfig.nominee?.name || 'Pooja Sharma (100%)',
+          actionUrl: 'https://www.hdfclife.com'
+        });
+      });
+    }
+
+    // Default fallback if no custom holdings passed
+    if (auditItems.length === 0) {
+      auditItems = [
+        { assetType: 'Mutual Funds', provider: 'HDFC Mutual Fund', account: 'Folio: 10482910', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Sharma (100%)' },
+        { assetType: 'Mutual Funds', provider: 'Nippon India MF', account: 'Folio: 99381023', nomineeStatus: 'MISSING', actionUrl: 'https://app.mfcentral.com' },
+        { assetType: 'Demat / Stocks', provider: 'Zerodha Broking', account: 'Client: AB1290', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Sharma (100%)' },
+        { assetType: 'Fixed Deposit', provider: 'State Bank of India', account: 'A/C: ...4029', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Sharma (100%)' },
+        { assetType: 'Fixed Deposit', provider: 'HDFC Bank', account: 'A/C: ...9182', nomineeStatus: 'MISSING', actionUrl: 'https://netbanking.hdfcbank.com' },
+        { assetType: 'EPF / PF', provider: 'EPFO (UAN: 1009283910)', account: 'Provident Fund', nomineeStatus: 'MISSING', actionUrl: 'https://unifiedportal-mem.epfindia.gov.in' },
+        { assetType: 'Term Insurance', provider: 'HDFC Life Click 2 Protect', account: 'Policy: 8829104', nomineeStatus: 'VERIFIED', nomineeName: 'Pooja Sharma (100%)' },
+      ];
+    }
 
     const missingCount = auditItems.filter(i => i.nomineeStatus === 'MISSING').length;
 

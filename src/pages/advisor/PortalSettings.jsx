@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 
 const CLIENTS_INIT = [
   { id: 1, name: 'Rahul Mehta', email: 'rahul@example.com', portalEnabled: true, sections: { Dashboard: true, Portfolio: true, Goals: true, Reports: true }, aiAlerts: true, alertTypes: { Rebalancing: true, GoalDrift: true, MarketEvents: false } },
@@ -124,8 +125,21 @@ import { useToast } from '../../context/ToastContext';
 
 export default function PortalSettings() {
   const { user, userProfile } = useAuth();
+  const { isUSMarket, dispatch } = useApp();
   const { toast } = useToast();
   const uid = user?.uid;
+
+  const [jurisdiction, setJurisdiction] = useState(() => {
+    return localStorage.getItem('finagent_advisor_jurisdiction') || (isUSMarket ? 'SEC' : 'SEBI');
+  });
+
+  function handleJurisdictionChange(newJur) {
+    setJurisdiction(newJur);
+    localStorage.setItem('finagent_advisor_jurisdiction', newJur);
+    dispatch({ type: 'SET_MARKET', payload: newJur === 'SEC' ? 'US' : 'IN' });
+    showToast(`🏛️ Fiduciary jurisdiction switched to ${newJur === 'SEC' ? 'SEC (United States RIA)' : 'SEBI (India RIA)'}`);
+  }
+
   const [advisorCode, setAdvisorCode] = useState('');
   const [pendingLinks, setPendingLinks] = useState([]);
   const [clients, setClients] = useState(CLIENTS_INIT);
@@ -236,7 +250,52 @@ export default function PortalSettings() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.title}><span>⚙️</span> Portal & Dispatch Settings</div>
-        <div style={styles.subtitle}>Manage client access, report delivery, AI alerts, and email templates</div>
+        <div style={styles.subtitle}>Manage client access, regulatory jurisdiction, report delivery, AI alerts, and email templates</div>
+      </div>
+
+      {/* Regulatory Jurisdiction & Fiduciary Framework Selector */}
+      <div style={styles.section}>
+        <div style={styles.sectionHeader}>🏛️ Firm Regulatory Jurisdiction & Fiduciary Framework</div>
+        <div style={styles.sectionSub}>Select the statutory governing body for your advisory firm's compliance watchdogs, model portfolios, and books & records.</div>
+        <div style={{ ...styles.card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          <div
+            onClick={() => handleJurisdictionChange('SEC')}
+            style={{
+              padding: 16,
+              borderRadius: 'var(--radius)',
+              border: `2px solid ${jurisdiction === 'SEC' ? 'var(--primary)' : 'var(--glass-border)'}`,
+              background: jurisdiction === 'SEC' ? 'rgba(99,102,241,0.08)' : 'var(--surface-raised)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>🇺🇸 SEC (United States RIA)</div>
+              {jurisdiction === 'SEC' && <span className="badge badge-primary">Active</span>}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Governed by Investment Advisers Act of 1940. Activates SEC Risk Alerts, Form ADV Part 2A/2B, Form CRS (Rule 17a-14), Books & Records Rule 204-2, BPS tiered billing, and Schwab/Fidelity custodian routers.
+            </div>
+          </div>
+
+          <div
+            onClick={() => handleJurisdictionChange('SEBI')}
+            style={{
+              padding: 16,
+              borderRadius: 'var(--radius)',
+              border: `2px solid ${jurisdiction === 'SEBI' ? 'var(--primary)' : 'var(--glass-border)'}`,
+              background: jurisdiction === 'SEBI' ? 'rgba(99,102,241,0.08)' : 'var(--surface-raised)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>🇮🇳 SEBI (India RIA)</div>
+              {jurisdiction === 'SEBI' && <span className="badge badge-green">Active</span>}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Governed by SEBI (Investment Advisers) Regulations, 2013 & BASL. Activates SEBI Circulars Watchdog, Regulation 17 Suitability Dossiers, direct mutual fund fee caps, and Zerodha/BSE StAR execution.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* New Section: Your Advisor Code */}

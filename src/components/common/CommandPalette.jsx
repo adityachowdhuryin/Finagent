@@ -108,7 +108,11 @@ const ALL_TOOLS = [
 
   // Frontier Venture-Scale Expansion Suite (The 5 Highest-Impact Vectors)
   { title: 'Direct Indexing Terminal & Tax-Alpha Harvester', category: 'Investments', to: '/app/direct-indexing', icon: Zap, keywords: 'direct indexing custom beta sp500 nifty50 tax loss harvesting tracking error exclusions alpha' },
-  { title: 'Direct Government Tax E-Filing Rails', category: 'Tax & Alpha', to: '/app/e-file', icon: FileText, keywords: 'e file irs mef xml cbdt itr json transmission din receipt 1040 8949 statutory' },
+  { title: 'Direct Government Tax E-Filing Rails & CBDT Gateway', category: 'Tax & Alpha', to: '/app/tax?tab=e-file', icon: FileText, keywords: 'e file irs mef xml cbdt itr json transmission din receipt 1040 8949 statutory direct cbdt api transmission statement pdf' },
+  { title: 'Download ITR-2 Computation Statement (PDF)', category: 'Tax & Alpha', to: '/app/tax?tab=e-file', icon: FileText, keywords: 'itr 2 computation statement pdf download cbdt tax calculation schedule cg' },
+  { title: 'HUF Tax Studio & Legally Stamped Deed (PDF)', category: 'Tax & Alpha', to: '/app/tax?tab=huf', icon: Landmark, keywords: 'huf deed stamped pdf declaration karta pan 49a bank resolution save 3l' },
+  { title: '1-Click Execute All SEBI RIA Co-Signed Orders', category: 'Autonomous', to: '/app/execution', icon: Zap, keywords: 'execute co signed order sebi ria zerodha alpaca vwap demat fill' },
+  { title: 'Export SEBI Inspection Dossier (PDF)', category: 'Advisor Practice', to: '/advisor/audit', icon: FileText, keywords: 'sebi dossier inspection audit pdf tamper flags ledger non repudiation' },
   { title: 'Remote Online Notary (RON) & FinCEN FBAR', category: 'Family & Wealth', to: '/app/notary', icon: FileText, keywords: 'notary ron remote online notarization seal fbar fincen 114 witness trust will' },
   { title: 'Non-Recourse ESOP Exercise Funding Marketplace', category: 'Enterprise', to: '/app/esop-financing', icon: Briefcase, keywords: 'esop financing funding non recourse options exercise term sheet liquidity private credit' },
   { title: 'Pre-IPO Unicorn Secondaries & Private Credit Deal Room', category: 'Investments', to: '/app/syndicates', icon: Briefcase, keywords: 'syndicate secondaries pre ipo spacex stripe openai anthropic databricks private credit spv' },

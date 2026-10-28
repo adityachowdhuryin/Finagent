@@ -1,14 +1,18 @@
 import React from 'react';
-import { suggestedPrompts } from '../../data/mockChatResponses';
+import { suggestedPrompts, suggestedPromptsUS } from '../../data/mockChatResponses';
+import { useApp } from '../../context/AppContext';
 
 export default function SuggestedPrompts({ onPromptClick }) {
+  const { isUSMarket } = useApp();
+  const list = isUSMarket ? suggestedPromptsUS : suggestedPrompts;
+
   return (
     <div style={{ padding: '0 1.25rem 1rem', borderTop: '1px solid var(--glass-border)' }}>
       <div style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem', marginTop: '0.75rem' }}>
-        Suggested questions
+        Suggested questions ({isUSMarket ? 'US Market' : 'India Market'})
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {suggestedPrompts.map((p, i) => (
+        {list.map((p, i) => (
           <button
             key={i}
             onClick={() => onPromptClick(p.label)}
