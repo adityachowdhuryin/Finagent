@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ShieldCheck, Landmark, Scissors, FileSearch, Calculator, Layers,
-  UploadCloud, SlidersHorizontal, Building2, User
+  UploadCloud, SlidersHorizontal, Building2, User, Calendar
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { TaxStudioProvider, useTaxStudio } from '../../context/TaxStudioContext';
@@ -16,6 +16,8 @@ import ZeroKnowledgePrivacyVault from '../../components/tax/ZeroKnowledgePrivacy
 import DirectBrokerPayrollSyncModal from '../../components/tax/DirectBrokerPayrollSyncModal';
 import TaxExecutionPaywallModal from '../../components/tax/TaxExecutionPaywallModal';
 import CpaPracticePortal from '../../components/tax/CpaPracticePortal';
+import QuarterlySafeHarborSentinel from '../../components/tax/QuarterlySafeHarborSentinel';
+import CpaReviewDispatchModal from '../../components/tax/CpaReviewDispatchModal';
 
 // Sub-module components
 import TaxEFilingHub from './TaxEFilingHub';
@@ -42,7 +44,9 @@ function TaxForensicStudioInner() {
     activeWorkspaceMode,
     setActiveWorkspaceMode,
     isBrokerSyncOpen,
-    setIsBrokerSyncOpen
+    setIsBrokerSyncOpen,
+    isCpaReviewModalOpen,
+    setIsCpaReviewModalOpen
   } = useTaxStudio();
 
   const currentTab = searchParams.get('tab') || 'e-file';
@@ -62,6 +66,13 @@ function TaxForensicStudioInner() {
       icon: ShieldCheck,
       badge: isUSMarket ? '1040' : 'AY26-27',
       desc: 'Statutory filing, CBDT/IRS XML/JSON & official DIN transmission',
+    },
+    {
+      id: 'quarterly',
+      label: isUSMarket ? 'Quarterly Safe-Harbor (IRC § 6654)' : 'Advance Tax Autopilot (Sec 234C)',
+      icon: Calendar,
+      badge: 'Year-Round',
+      desc: isUSMarket ? '100% vs 110% safe harbor, quarterly schedule, .ics calendar sync & autopilot' : '15/45/75/100% quarterly schedule, Sec 234B/C interest shield & calendar sync',
     },
     {
       id: 'huf',
@@ -95,6 +106,12 @@ function TaxForensicStudioInner() {
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Universal Paywall Modal (Available App-Wide) */}
       <TaxExecutionPaywallModal />
+
+      {/* Human CPA / CA Review Dispatch Modal */}
+      <CpaReviewDispatchModal
+        isOpen={isCpaReviewModalOpen}
+        onClose={() => setIsCpaReviewModalOpen(false)}
+      />
 
       {/* Direct Broker & Payroll Sync Modal */}
       <DirectBrokerPayrollSyncModal
@@ -312,6 +329,7 @@ function TaxForensicStudioInner() {
           {/* Active Tab Content Area */}
           <div className="tax-studio-content">
             {currentTab === 'e-file' && (isUSMarket ? <US1040EFilingStudio /> : <TaxEFilingHub />)}
+            {currentTab === 'quarterly' && <QuarterlySafeHarborSentinel />}
             {currentTab === 'huf' && (isUSMarket ? <USSCorpStudio /> : <HUFStudio />)}
             {currentTab === 'harvester' && (isUSMarket ? <USTaxLossHarvester /> : <TaxHarvester />)}
             {currentTab === 'forensic' && (isUSMarket ? <USForensicAudit /> : <ForensicAudit />)}

@@ -6,7 +6,7 @@ import {
 import { useTaxStudio } from '../../context/TaxStudioContext';
 
 export default function UniversalDocumentDropzone({ isOpen, onClose }) {
-  const { activeMarket, ingestedDocs, ingestDocument } = useTaxStudio();
+  const { activeMarket, ingestedDocs, ingestDocument, parseAndIngestRealCsv } = useTaxStudio();
   const [isDragging, setIsDragging] = useState(false);
   const [selectedDocForDetails, setSelectedDocForDetails] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
@@ -45,8 +45,18 @@ export default function UniversalDocumentDropzone({ isOpen, onClose }) {
   };
 
   const processFile = (file) => {
-    const newDoc = ingestDocument(file);
-    showToast(`Successfully parsed ${newDoc.name} — synchronized ${newDoc.verifiedFieldsCount} fields with TaxStudioContext!`);
+    if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const newDoc = parseAndIngestRealCsv(text, file.name);
+        showToast(`Successfully parsed ${newDoc.name} — extracted ${newDoc.verifiedFieldsCount} real tax lot attributes!`);
+      };
+      reader.readAsText(file);
+    } else {
+      const newDoc = ingestDocument(file);
+      showToast(`Successfully parsed ${newDoc.name} — synchronized ${newDoc.verifiedFieldsCount} fields with TaxStudioContext!`);
+    }
   };
 
   const handleDemoDocLoad = (demoType) => {
@@ -55,6 +65,18 @@ export default function UniversalDocumentDropzone({ isOpen, onClose }) {
       mockFile = new File(['mock content'], 'W-2_2026_TechCorp_Staff_Eng.pdf', { type: 'application/pdf' });
     } else if (demoType === '1099b') {
       mockFile = new File(['mock content'], '1099-B_Consolidated_Apex_Robinhood_2026.pdf', { type: 'application/pdf' });
+    } else if (demoType === 'schwab_csv') {
+      const csvData = `Symbol,Description,Quantity,Close Date,Cost Basis,Proceeds,Gain/Loss,Term
+AAPL,Apple Inc.,100,02/14/2026,$18500.00,$24200.00,$5700.00,Short-Term
+NVDA,NVIDIA Corp,50,02/18/2026,$21000.00,$38500.00,$17500.00,Long-Term
+TSLA,Tesla Inc.,60,01/20/2026,$15800.00,$12400.00,-$3400.00,Short-Term`;
+      mockFile = new File([csvData], 'Charles_Schwab_Realized_GainLoss_2026.csv', { type: 'text/csv' });
+    } else if (demoType === 'zerodha_csv') {
+      const csvData = `symbol,isin,trade_date,exchange,segment,series,trade_type,quantity,price,trade_id,order_id
+RELIANCE,INE002A01018,2026-02-10,NSE,EQ,EQ,buy,100,2850.00,10928,948271
+RELIANCE,INE002A01018,2026-03-05,NSE,EQ,EQ,sell,100,3120.00,10994,948300
+TCS,INE467B01029,2026-01-15,NSE,EQ,EQ,sell,50,3890.00,10850,948120`;
+      mockFile = new File([csvData], 'Zerodha_Tradebook_FY2025-26.csv', { type: 'text/csv' });
     } else if (demoType === 'form16') {
       mockFile = new File(['mock content'], 'Form16_PartB_Infosys_FY2025-26.pdf', { type: 'application/pdf' });
     } else if (demoType === 'cas') {
@@ -219,6 +241,22 @@ export default function UniversalDocumentDropzone({ isOpen, onClose }) {
             >
               + Ingest Sample 1099-B (Consolidated Brokerage)
             </button>
+            <button
+              type="button"
+              onClick={() => handleDemoDocLoad('schwab_csv')}
+              style={{
+                fontSize: '0.72rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: 4,
+                background: 'rgba(14, 165, 233, 0.12)',
+                border: '1px solid rgba(14, 165, 233, 0.3)',
+                color: '#38bdf8',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              + Parse Real Schwab CSV (Gain/Loss Export)
+            </button>
           </>
         ) : (
           <>
@@ -252,7 +290,23 @@ export default function UniversalDocumentDropzone({ isOpen, onClose }) {
                 fontWeight: 600,
               }}
             >
-              + Ingest Sample CAMS / KFintech CAS Statement
+              + Ingest CAMS/KFintech CAS (MF Portfolio)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDemoDocLoad('zerodha_csv')}
+              style={{
+                fontSize: '0.72rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: 4,
+                background: 'rgba(14, 165, 233, 0.12)',
+                border: '1px solid rgba(14, 165, 233, 0.3)',
+                color: '#38bdf8',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              + Parse Real Zerodha Tradebook CSV
             </button>
           </>
         )}

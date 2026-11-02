@@ -324,7 +324,34 @@ export default function US1040EFilingStudio() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {taxStudio?.exportTxfBundle && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  taxStudio.exportTxfBundle();
+                  taxStudio.exportForm8949Csv();
+                }}
+                title="Export TurboTax/Drake .TXF and Form 8949 CSV for your CPA"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(99, 102, 241, 0.4)', color: '#c7d2fe' }}
+              >
+                <Download size={14} color="#818cf8" />
+                <span>Export CPA Handshake (TXF & 8949)</span>
+              </button>
+            )}
+            {taxStudio?.exportAttestationPdf && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => taxStudio.exportAttestationPdf()}
+                title="Download IRS Form 8879 E-File Signature Attestation Form"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#34d399' }}
+              >
+                <FileText size={14} color="#34d399" />
+                <span>Form 8879 Attestation</span>
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-secondary btn-sm"

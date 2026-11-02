@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Building2, Users, FileCheck, ShieldCheck, Download, Send,
   RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, ArrowRight,
-  Sparkles, Award, Lock, Search, Filter, Copy, Check
+  Sparkles, Award, Lock, Search, Filter, Copy, Check, Video, Clock,
+  CheckSquare, FileText
 } from 'lucide-react';
 import { useTaxStudio } from '../../context/TaxStudioContext';
 
@@ -25,7 +26,15 @@ const IN_CLIENTS = [
 ];
 
 export default function CpaPracticePortal() {
-  const { activeMarket } = useTaxStudio();
+  const {
+    activeMarket,
+    incomingCpaQueue = [],
+    certifyClientReturn,
+    exportTxfBundle,
+    exportForm8949Csv,
+    exportIndiaCgBundle,
+    exportAttestationPdf
+  } = useTaxStudio();
   const isUS = activeMarket === 'US';
   const clients = isUS ? US_CLIENTS : IN_CLIENTS;
 
@@ -231,6 +240,232 @@ export default function CpaPracticePortal() {
             >
               Dismiss
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dispatched Client Reviews (Live Handshake Queue) */}
+      <div
+        className="card"
+        style={{
+          padding: '1.25rem',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))',
+          border: '1px solid rgba(99, 102, 241, 0.35)',
+          borderRadius: 12,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Users size={18} color="#818cf8" />
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Live Handshake Queue: Dispatched Client Reviews ({incomingCpaQueue.length})
+              </h3>
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '0.15rem 0.45rem',
+                  borderRadius: 10,
+                  background: 'rgba(99, 102, 241, 0.2)',
+                  color: '#a5b4fc',
+                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                }}
+              >
+                DUAL-DISPATCH SYNC
+              </span>
+            </div>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Returns submitted from individual taxpayer terminals with booked video review slots, encrypted SHA-256 seals, and diagnostic logs.
+            </p>
+          </div>
+        </div>
+
+        {incomingCpaQueue.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+            No pending returns in review queue. Dispatches from individual clients appear here instantly.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {incomingCpaQueue.map((item) => {
+              const isCertified = item.status === 'certified';
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: 8,
+                    background: isCertified ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isCertified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(99, 102, 241, 0.25)'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.65rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                          {item.clientName}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          ({item.clientEmail})
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: 4,
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            color: '#94a3b8',
+                          }}
+                        >
+                          {item.jurisdiction || 'US'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        {item.formType} • AGI: ${Number(item.agi || 0).toLocaleString()} • Tax Alpha Saved:{' '}
+                        <strong style={{ color: '#34d399' }}>+${Number(item.taxAlpha || 0).toLocaleString()}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          fontSize: '0.72rem',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: 6,
+                          background: 'rgba(99, 102, 241, 0.15)',
+                          border: '1px solid rgba(99, 102, 241, 0.3)',
+                          color: '#a5b4fc',
+                        }}
+                      >
+                        <Video size={12} />
+                        <span>Slot: {item.scheduledSlot || 'Flexible Video Review'}</span>
+                      </span>
+
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: 12,
+                          background: isCertified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                          color: isCertified ? '#34d399' : '#fbbf24',
+                          border: `1px solid ${isCertified ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                        }}
+                      >
+                        {isCertified ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                        <span>{isCertified ? 'Return Certified' : 'Awaiting Review'}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {item.notes && (
+                    <div
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: 6,
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        fontSize: '0.75rem',
+                        color: '#cbd5e1',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      &ldquo;{item.notes}&rdquo;
+                    </div>
+                  )}
+
+                  {/* Actions Strip */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', paddingTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.6875rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                      <Lock size={11} color="#818cf8" />
+                      <span>Seal: {item.sealHash || '0x4f...a92'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => (isUS ? exportTxfBundle() : exportIndiaCgBundle())}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.3rem 0.65rem',
+                          borderRadius: 4,
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Download size={11} />
+                        <span>{isUS ? 'TXF Bundle' : 'Schedule CG JSON'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportAttestationPdf()}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.3rem 0.65rem',
+                          borderRadius: 4,
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#34d399',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <FileText size={11} />
+                        <span>{isUS ? 'Form 8879 Attestation' : 'Form ITR-V Attestation'}</span>
+                      </button>
+
+                      {!isCertified ? (
+                        <button
+                          type="button"
+                          onClick={() => certifyClientReturn(item.id, firmName)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.35rem 0.8rem',
+                            borderRadius: 6,
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          <CheckSquare size={13} />
+                          <span>Certify & Attest Return</span>
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>
+                          ✓ Certified by {item.certifiedBy || firmName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

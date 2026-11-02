@@ -18,12 +18,19 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
     dispatchToCpaCa,
     isTaxProUnlocked,
     triggerPaywall,
-    setIsBrokerSyncOpen
+    setIsBrokerSyncOpen,
+    setIsCpaReviewModalOpen,
+    cpaReviewStatus,
+    exportTxfBundle,
+    exportForm8949Csv,
+    exportIndiaCgBundle,
+    exportAttestationPdf
   } = useTaxStudio();
 
   const [cpaModalOpen, setCpaModalOpen] = useState(false);
   const [cpaNotes, setCpaNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const {
     totalTaxAlpha,
@@ -171,7 +178,7 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
             <span>{computationHash}</span>
           </div>
 
-          {cpaReview.status === 'assigned' ? (
+          {cpaReviewStatus === 'certified' ? (
             <span
               style={{
                 display: 'inline-flex',
@@ -179,20 +186,38 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
                 gap: '0.35rem',
                 padding: '0.25rem 0.6rem',
                 borderRadius: 6,
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
+                background: 'rgba(16, 185, 129, 0.2)',
+                border: '1px solid #10b981',
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 color: '#34d399',
               }}
             >
+              <CheckCircle2 size={13} color="#34d399" />
+              <span>{isUS ? 'CPA Certified ✓' : 'CA Certified ✓'}</span>
+            </span>
+          ) : cpaReviewStatus === 'dispatched' || cpaReview.status === 'assigned' ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: 6,
+                background: 'rgba(99, 102, 241, 0.2)',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#a5b4fc',
+              }}
+            >
               <UserCheck size={13} />
-              <span>{isUS ? 'CPA Assigned' : 'CA Assigned'}</span>
+              <span>{isUS ? 'Dispatched to CPA Queue' : 'Dispatched to CA Queue'}</span>
             </span>
           ) : (
             <button
               type="button"
-              onClick={() => setCpaModalOpen(true)}
+              onClick={() => setIsCpaReviewModalOpen ? setIsCpaReviewModalOpen(true) : setCpaModalOpen(true)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -209,7 +234,7 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
               }}
             >
               <Award size={13} />
-              <span>{isUS ? 'Request CPA Review' : 'Request CA Review'}</span>
+              <span>{isUS ? '🤝 Request Human CPA Sign-Off' : '🤝 Request Human CA Sign-Off'}</span>
             </button>
           )}
         </div>
@@ -328,6 +353,166 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* CPA Handshake Export Button with Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.4rem 0.85rem',
+                borderRadius: 6,
+                background: 'rgba(99, 102, 241, 0.18)',
+                border: '1px solid rgba(99, 102, 241, 0.45)',
+                color: '#c7d2fe',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <FileText size={13} color="#a5b4fc" />
+              <span>💾 CPA Handshake Export</span>
+            </button>
+
+            {showExportMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: '100%',
+                  marginBottom: '0.5rem',
+                  width: 260,
+                  background: '#0f172a',
+                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  borderRadius: 8,
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.6)',
+                  padding: '0.5rem',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem',
+                }}
+              >
+                <div style={{ fontSize: '0.6875rem', color: '#94a3b8', padding: '0.25rem 0.5rem', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  STANDARD TAX SOFTWARE EXPORTS
+                </div>
+
+                {isUS ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportTxfBundle();
+                        setShowExportMenu(false);
+                      }}
+                      style={{
+                        textAlign: 'left',
+                        padding: '0.4rem 0.6rem',
+                        borderRadius: 4,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>TurboTax / Drake (.TXF)</span>
+                      <span style={{ fontSize: '0.625rem', color: '#818cf8', fontFamily: 'monospace' }}>V042</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportForm8949Csv();
+                        setShowExportMenu(false);
+                      }}
+                      style={{
+                        textAlign: 'left',
+                        padding: '0.4rem 0.6rem',
+                        borderRadius: 4,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>Form 8949 CSV (Box A/D)</span>
+                      <span style={{ fontSize: '0.625rem', color: '#34d399', fontFamily: 'monospace' }}>.CSV</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportIndiaCgBundle();
+                      setShowExportMenu(false);
+                    }}
+                    style={{
+                      textAlign: 'left',
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: 4,
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '0.72rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span>Schedule CG Export (JSON)</span>
+                    <span style={{ fontSize: '0.625rem', color: '#38bdf8', fontFamily: 'monospace' }}>ClearTax</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportAttestationPdf();
+                    setShowExportMenu(false);
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    padding: '0.4rem 0.6rem',
+                    borderRadius: 4,
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#34d399',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span>{isUS ? 'Form 8879 Signature Attestation' : 'Form ITR-V Signature Attestation'}</span>
+                  <span style={{ fontSize: '0.625rem', color: '#34d399' }}>PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={handleDownloadBinder}

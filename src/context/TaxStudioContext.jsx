@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 import { useApp } from './AppContext';
 import { useAuth } from './AuthContext';
+import {
+  generateTxfString,
+  generateForm8949CsvString,
+  generateIndiaCgExportString,
+  generatePreFilledAttestationForm
+} from '../utils/taxExportBundles';
+import { parseRealBrokerageCsv } from '../utils/realBrokerParsers';
 
 const TaxStudioContext = createContext(null);
 
@@ -135,6 +142,35 @@ export function TaxStudioProvider({ children }) {
   const [paywallReason, setPaywallReason] = useState('TRANSMISSION');
   const [isBrokerSyncOpen, setIsBrokerSyncOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isCpaReviewModalOpen, setIsCpaReviewModalOpen] = useState(false);
+  const [cpaReviewStatus, setCpaReviewStatus] = useState('UNASSIGNED');
+  const [isQuarterlyModalOpen, setIsQuarterlyModalOpen] = useState(false);
+  const [incomingCpaQueue, setIncomingCpaQueue] = useState([
+    {
+      id: 'rev-01',
+      clientName: 'Jonathan Vance',
+      taxYear: '2025',
+      jurisdiction: 'California (CA)',
+      agi: '$254,936',
+      taxLiability: '$48,250',
+      status: 'PENDING_REVIEW',
+      scheduledSlot: 'March 24, 2026 at 11:00 AM EST',
+      sealHash: 'SHA256-49A82D1E-US-2026-STAMP',
+      flags: ['S-Corp Reasonable Comp $95k', 'Form 8949 Box A/D', 'PTET SALT CA AB 150'],
+    },
+    {
+      id: 'rev-02',
+      clientName: 'Priya Patel',
+      taxYear: 'AY 2026-27',
+      jurisdiction: 'Maharashtra (MH)',
+      agi: '₹31,92,200',
+      taxLiability: '₹6,42,100',
+      status: 'PENDING_REVIEW',
+      scheduledSlot: 'March 25, 2026 at 02:30 PM IST',
+      sealHash: 'SHA256-8B1C902A-IN-2026-STAMP',
+      flags: ['Section 112A ₹1.25L Exemption', 'Schedule FA Foreign RSUs', 'HUF Entity Separate PAN'],
+    },
+  ]);
 
   // ── Fiduciary CPA / CA Review State ────────────────────────────────────────
   const [cpaReview, setCpaReview] = useState({
@@ -339,6 +375,133 @@ export function TaxStudioProvider({ children }) {
     });
   }, [activeMarket]);
 
+  // ── Commercial CPA Practice Queue Dispatch & Certification ─────────────────
+  const dispatchToCpaPractice = useCallback((bookingDetails = {}) => {
+    const isUS = activeMarket === 'US';
+    const newQueueItem = {
+      id: `rev-${Date.now()}`,
+      clientName: isUS ? usTaxpayer.filerName : inTaxpayer.filerName,
+      taxYear: isUS ? '2025' : 'AY 2026-27',
+      jurisdiction: isUS ? `${usTaxpayer.stateCode}` : `${inTaxpayer.stateCode}`,
+      agi: isUS ? `$${(usTaxpayer.salary + usTaxpayer.businessProfit).toLocaleString()}` : `₹${(inTaxpayer.salary + inTaxpayer.businessProfit).toLocaleString('en-IN')}`,
+      taxLiability: isUS ? '$48,250' : '₹6,42,100',
+      status: 'DISPATCHED_TO_PRACTICE_QUEUE',
+      scheduledSlot: `${bookingDetails.scheduledDate || '2026-03-24'} at ${bookingDetails.scheduledTime || '11:00 AM EST'}`,
+      sealHash: 'SHA256-CLIENT-DISPATCHED-STAMP',
+      flags: isUS ? ['12-Page Audit Binder Sealed', 'Circular 230 Certified'] : ['Schedule FA Disclosed', 'Section 288 Verified'],
+      ...bookingDetails,
+    };
+    setIncomingCpaQueue((prev) => [newQueueItem, ...prev]);
+    setCpaReviewStatus('DISPATCHED');
+  }, [activeMarket, usTaxpayer, inTaxpayer]);
+
+  const certifyClientReturn = useCallback((clientId) => {
+    setIncomingCpaQueue((prev) => prev.map((item) => {
+      if (item.id === clientId) {
+        return {
+          ...item,
+          status: 'CERTIFIED_LOCKED',
+          certifiedAt: new Date().toISOString(),
+          certifiedBy: activeMarket === 'US' ? 'Sarah Jenkins, CPA (PTIN: P0192847)' : 'CA Rajesh Aggarwal, FCA (ICAI: 084921)',
+        };
+      }
+      return item;
+    }));
+  }, [activeMarket]);
+
+  // ── File Downloader Utility ────────────────────────────────────────────────
+  const downloadTextFile = (content, filename, mimeType = 'text/plain') => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // ── Export Handshake Methods ───────────────────────────────────────────────
+  const exportTxfBundle = useCallback(() => {
+    const lots = [
+      { symbol: 'AAPL', description: 'Apple Inc.', dateAcquired: '2025-01-15', dateSold: '2025-11-20', proceeds: 28500, costBasis: 22000, term: 'SHORT' },
+      { symbol: 'NVDA', description: 'NVIDIA Corporation', dateAcquired: '2024-03-10', dateSold: '2025-12-05', proceeds: 44000, costBasis: 18000, term: 'LONG' },
+      { symbol: 'TSLA', description: 'Tesla Inc.', dateAcquired: '2025-02-14', dateSold: '2025-10-18', proceeds: 14200, costBasis: 17500, term: 'SHORT' },
+    ];
+    const txfStr = generateTxfString(lots, { ssn: usTaxpayer.ssnMasked, name: usTaxpayer.filerName });
+    downloadTextFile(txfStr, 'finagent_tax_return_2025.txf', 'application/x-txf');
+  }, [usTaxpayer]);
+
+  const exportForm8949Csv = useCallback(() => {
+    const lots = [
+      { symbol: 'AAPL', description: 'Apple Inc. - 120 Shs', dateAcquired: '2025-01-15', dateSold: '2025-11-20', proceeds: 28500, costBasis: 22000, term: 'SHORT' },
+      { symbol: 'NVDA', description: 'NVIDIA Corporation - 40 Shs', dateAcquired: '2024-03-10', dateSold: '2025-12-05', proceeds: 44000, costBasis: 18000, term: 'LONG' },
+      { symbol: 'TSLA', description: 'Tesla Inc. - 60 Shs', dateAcquired: '2025-02-14', dateSold: '2025-10-18', proceeds: 14200, costBasis: 17500, term: 'SHORT' },
+    ];
+    const csvStr = generateForm8949CsvString(lots);
+    downloadTextFile(csvStr, 'form_8949_sales_and_dispositions.csv', 'text/csv');
+  }, []);
+
+  const exportIndiaCgBundle = useCallback(() => {
+    const lots = [
+      { symbol: 'RELIANCE', description: 'Reliance Industries - 100 Shs', dateAcquired: '2025-02-10', dateSold: '2025-10-15', proceeds: 295000, costBasis: 240000, term: 'SHORT' },
+      { symbol: 'TCS', description: 'Tata Consultancy Services - 80 Shs', dateAcquired: '2023-04-12', dateSold: '2025-11-28', proceeds: 340000, costBasis: 210000, term: 'LONG' },
+    ];
+    const jsonStr = generateIndiaCgExportString(lots, { pan: inTaxpayer.pan, name: inTaxpayer.filerName });
+    downloadTextFile(jsonStr, 'schedule_cg_capital_gains.json', 'application/json');
+  }, [inTaxpayer]);
+
+  const exportAttestationPdf = useCallback(() => {
+    const isUS = activeMarket === 'US';
+    const pdfDoc = generatePreFilledAttestationForm({
+      isUS,
+      taxpayerName: isUS ? usTaxpayer.filerName : inTaxpayer.filerName,
+      idNumber: isUS ? usTaxpayer.ssnMasked : inTaxpayer.pan,
+      totalIncome: isUS ? (usTaxpayer.salary + usTaxpayer.businessProfit) : (inTaxpayer.salary + inTaxpayer.businessProfit),
+      taxLiability: isUS ? 48250 : 642100,
+      sealHash: 'SHA256-CERTIFIED-SIGNATURE-AUTH-2026',
+    });
+    pdfDoc.save(isUS ? 'form_8879_signature_authorization.pdf' : 'form_itr_v_verification.pdf');
+  }, [activeMarket, usTaxpayer, inTaxpayer]);
+
+  const parseAndIngestRealCsv = useCallback((csvText, filename = '') => {
+    const parsed = parseRealBrokerageCsv(csvText, filename);
+    const isUS = activeMarket === 'US';
+
+    if (isUS) {
+      setUsTaxpayer((prev) => ({
+        ...prev,
+        stcg: parsed.summary.netShortTerm || prev.stcg,
+        ltcg: parsed.summary.netLongTerm || prev.ltcg,
+        unrealizedLoss: parsed.summary.harvestableLosses || prev.unrealizedLoss,
+      }));
+    } else {
+      setInTaxpayer((prev) => ({
+        ...prev,
+        stcg: parsed.summary.netShortTerm || prev.stcg,
+        ltcg: parsed.summary.netLongTerm || prev.ltcg,
+        unrealizedLoss: parsed.summary.harvestableLosses || prev.unrealizedLoss,
+      }));
+    }
+
+    const docObj = {
+      id: `doc-csv-${Date.now()}`,
+      name: filename || `${parsed.format} Statement Export`,
+      type: `${parsed.format} Realized CSV`,
+      size: `${Math.round(csvText.length / 1024)} KB`,
+      uploadedAt: 'Just now',
+      status: 'VERIFIED_PARSED',
+      verifiedFieldsCount: parsed.lotsCount * 6,
+      issuer: `${parsed.format} Institutional Brokerage`,
+      extractedEntities: parsed.summary,
+      lots: parsed.lots,
+      hash: 'SHA256-REAL-BROKERAGE-INGESTION-STAMP',
+    };
+    setIngestedDocs((prev) => [docObj, ...prev]);
+    return docObj;
+  }, [activeMarket]);
+
   // ── Dynamic Tax & Alpha Mathematical Computations ──────────────────────────
   const computedMetrics = useMemo(() => {
     if (activeMarket === 'US') {
@@ -512,6 +675,23 @@ export function TaxStudioProvider({ children }) {
     // CPA Review
     cpaReview,
     dispatchToCpaCa,
+    // Commercial CPA Review & Practice Queue
+    isCpaReviewModalOpen,
+    setIsCpaReviewModalOpen,
+    cpaReviewStatus,
+    setCpaReviewStatus,
+    incomingCpaQueue,
+    dispatchToCpaPractice,
+    certifyClientReturn,
+    // Quarterly Safe Harbor Sentinel
+    isQuarterlyModalOpen,
+    setIsQuarterlyModalOpen,
+    // Export Handshake Bundles
+    exportTxfBundle,
+    exportForm8949Csv,
+    exportIndiaCgBundle,
+    exportAttestationPdf,
+    parseAndIngestRealCsv,
     // Analytics & Metrics
     computedMetrics,
     computationHash,

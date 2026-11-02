@@ -515,45 +515,70 @@ export default function TaxEFilingHub() {
               </div>
 
               {/* Gateway Transmission Button or Receipt */}
-              {!acknowledgment ? (
-                <button
-                  onClick={handleTransmit}
-                  disabled={transmitting || !lintResult?.valid}
-                  className="btn"
-                  style={{
-                    width: '100%',
-                    padding: '0.9rem',
-                    fontWeight: 800,
-                    fontSize: '0.95rem',
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                    color: '#fff',
-                    borderRadius: 'var(--radius)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.6rem',
-                    boxShadow: '0 4px 20px rgba(99, 102, 241, 0.35)'
-                  }}
-                >
-                  {transmitting ? <RefreshCw size={18} className="spin" /> : <Send size={18} />}
-                  Direct CBDT API Transmission (CPC Bengaluru Gateway)
-                </button>
-              ) : (
-                <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius)', border: '1px solid var(--green)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--green)', fontWeight: 800, marginBottom: '0.5rem', fontSize: '1rem' }}>
-                    <CheckCircle2 size={20} />
-                    <span>Return Electronically Accepted u/s 139</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {!acknowledgment ? (
+                  <button
+                    onClick={handleTransmit}
+                    disabled={transmitting || !lintResult?.valid}
+                    className="btn"
+                    style={{
+                      width: '100%',
+                      padding: '0.9rem',
+                      fontWeight: 800,
+                      fontSize: '0.95rem',
+                      background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                      color: '#fff',
+                      borderRadius: 'var(--radius)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.6rem',
+                      boxShadow: '0 4px 20px rgba(99, 102, 241, 0.35)'
+                    }}
+                  >
+                    {transmitting ? <RefreshCw size={18} className="spin" /> : <Send size={18} />}
+                    Direct CBDT API Transmission (CPC Bengaluru Gateway)
+                  </button>
+                ) : (
+                  <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius)', border: '1px solid var(--green)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--green)', fontWeight: 800, marginBottom: '0.5rem', fontSize: '1rem' }}>
+                      <CheckCircle2 size={20} />
+                      <span>Return Electronically Accepted u/s 139</span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                      Document Identification Number (DIN): <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace' }}>{acknowledgment.submissionId}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Receipt Code: <span style={{ fontFamily: 'monospace' }}>{acknowledgment.receiptCode}</span> · Aadhaar OTP pre-verified
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                    Document Identification Number (DIN): <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace' }}>{acknowledgment.submissionId}</strong>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Receipt Code: <span style={{ fontFamily: 'monospace' }}>{acknowledgment.receiptCode}</span> · Aadhaar OTP pre-verified
-                  </div>
+                )}
+
+                {/* CA Handshake Export Actions */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => taxStudio?.exportIndiaCgBundle && taxStudio.exportIndiaCgBundle()}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.75rem' }}
+                  >
+                    <Download size={13} color="var(--primary)" />
+                    <span>Schedule CG JSON</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => taxStudio?.exportAttestationPdf && taxStudio.exportAttestationPdf()}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--green)' }}
+                  >
+                    <FileText size={13} color="var(--green)" />
+                    <span>ITR-V Attestation PDF</span>
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
