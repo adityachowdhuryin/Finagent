@@ -426,4 +426,109 @@ router.post('/analyze', async (req, res) => {
   }
 });
 
+// ─── POST /api/ai/diagnose-tax ───────────────────────────────────────────────
+// Diagnose user tax persona using Gemini with structured JSON output
+router.post('/diagnose-tax', async (req, res) => {
+  const { prompt, market = 'US' } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+  const validPersonas = market === 'US'
+    ? ['US_SALARIED_STOCKS', 'US_SCORP_FREELANCER', 'US_RENTAL_REAL_ESTATE', 'US_EXPAT_TERRITORY']
+    : ['IN_SALARIED_INVESTOR', 'IN_HUF_FAMILY', 'IN_BUSINESS_PROFESSIONAL', 'IN_FOREIGN_ASSETS_ESOP'];
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.json({
+      success: true,
+      personaKey: validPersonas[0],
+      source: 'rule_fallback',
+      explanation: 'Diagnosed via default fiduciary profile.'
+    });
+  }
+
+  const systemInstruction = `You are FinAgent's Tax Persona Classifier for the ${market} market.
+Given the user's natural language situation, categorize them into EXACTLY ONE of the following keys:
+${validPersonas.map(k => `- "${k}"`).join('\n')}
+
+Respond ONLY with valid JSON in this exact structure:
+{
+  "personaKey": "<one of the exact keys listed above>",
+  "confidence": 0.95,
+  "explanation": "Short 1-sentence reason"
+}`;
+
+  try {
+    const { data } = await callGemini({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${systemInstruction}\n\nUser situation: "${prompt}"` }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 1024
+      }
+    }, apiKey);
+
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let parsed = null;
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.warn('[Gemini Tax Diagnosis JSON parse warn]:', e.message);
+      }
+    }
+
+    let personaKey = validPersonas.find(k => parsed && parsed.personaKey === k);
+    if (!personaKey) {
+      personaKey = validPersonas.find(k => rawText.includes(k));
+    }
+
+    if (!personaKey) {
+      const lower = prompt.toLowerCase();
+      if (market === 'US') {
+        if (lower.includes('expat') || lower.includes('puerto rico') || lower.includes('act 60') || lower.includes('foreign')) personaKey = 'US_EXPAT_TERRITORY';
+        else if (lower.includes('s-corp') || lower.includes('scorp') || lower.includes('llc') || lower.includes('freelanc') || lower.includes('1099')) personaKey = 'US_SCORP_FREELANCER';
+        else if (lower.includes('rental') || lower.includes('property') || lower.includes('schedule e')) personaKey = 'US_RENTAL_REAL_ESTATE';
+        else personaKey = 'US_SALARIED_STOCKS';
+      } else {
+        if (lower.includes('huf') || lower.includes('hindu undivided') || lower.includes('karta')) personaKey = 'IN_HUF_FAMILY';
+        else if (lower.includes('schedule fa') || lower.includes('foreign') || lower.includes('rsu') || lower.includes('esop')) personaKey = 'IN_FOREIGN_ASSETS_ESOP';
+        else if (lower.includes('44ada') || lower.includes('freelanc') || lower.includes('consultant')) personaKey = 'IN_BUSINESS_PROFESSIONAL';
+        else personaKey = 'IN_SALARIED_INVESTOR';
+      }
+    }
+
+    return res.json({
+      success: true,
+      personaKey,
+      confidence: (parsed && parsed.confidence) || 0.95,
+      explanation: (parsed && parsed.explanation) || 'Analyzed via Gemini 2.0 AI Tax Diagnostic'
+    });
+  } catch (err) {
+    console.warn('[Gemini Tax Diagnosis Error]', err.message);
+    const lower = prompt.toLowerCase();
+    let fallbackKey = validPersonas[0];
+    if (market === 'US') {
+      if (lower.includes('s-corp') || lower.includes('scorp') || lower.includes('llc') || lower.includes('freelanc') || lower.includes('1099')) fallbackKey = 'US_SCORP_FREELANCER';
+      else if (lower.includes('rental') || lower.includes('property')) fallbackKey = 'US_RENTAL_REAL_ESTATE';
+      else if (lower.includes('expat') || lower.includes('act 60')) fallbackKey = 'US_EXPAT_TERRITORY';
+    } else {
+      if (lower.includes('huf')) fallbackKey = 'IN_HUF_FAMILY';
+      else if (lower.includes('schedule fa') || lower.includes('foreign') || lower.includes('rsu')) fallbackKey = 'IN_FOREIGN_ASSETS_ESOP';
+      else if (lower.includes('44ada') || lower.includes('freelanc')) fallbackKey = 'IN_BUSINESS_PROFESSIONAL';
+    }
+
+    return res.json({
+      success: true,
+      personaKey: fallbackKey,
+      source: 'semantic_fallback',
+      explanation: 'Diagnosed via semantic matcher.'
+    });
+  }
+});
+
 module.exports = router;

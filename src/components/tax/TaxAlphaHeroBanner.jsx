@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   TrendingUp, ShieldAlert, ShieldCheck, Sparkles, SlidersHorizontal,
   UploadCloud, UserCheck, ArrowRight, CheckCircle2, DollarSign,
-  AlertTriangle, Lock, Award, Clock, Database, FileText, Download
+  AlertTriangle, Lock, Award, Clock, Database, FileText, Download,
+  Compass
 } from 'lucide-react';
 import { useTaxStudio } from '../../context/TaxStudioContext';
 import { buildInstitutionalTaxBinderPDF } from '../../utils/institutionalTaxBinderPdf';
@@ -24,7 +25,10 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
     exportTxfBundle,
     exportForm8949Csv,
     exportIndiaCgBundle,
-    exportAttestationPdf
+    exportAttestationPdf,
+    setIsTaxNavigatorOpen,
+    activeRoadmap,
+    userTaxPersona,
   } = useTaxStudio();
 
   const [cpaModalOpen, setCpaModalOpen] = useState(false);
@@ -157,8 +161,52 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           </div>
         </div>
 
-        {/* Cryptographic SHA Seal & CPA Status */}
+        {/* Cryptographic SHA Seal, AI Navigator & CPA Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {activeRoadmap && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: 6,
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#34d399',
+              }}
+              title="Current AI Tax Navigator diagnosed focus"
+            >
+              <span>🎯 Focus: {activeRoadmap.title}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsTaxNavigatorOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.3rem 0.75rem',
+              borderRadius: 6,
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(99, 102, 241, 0.35))',
+              border: '1px solid rgba(168, 85, 247, 0.5)',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: '#f3e8ff',
+              cursor: 'pointer',
+              boxShadow: '0 0 14px rgba(168, 85, 247, 0.25)',
+              transition: 'all 0.15s ease',
+            }}
+            title="Open AI Tax Navigator to simplify studio or change focus profile"
+          >
+            <Compass size={13} color="#c084fc" />
+            <span>🧭 AI Tax Navigator</span>
+          </button>
+
           <div
             title="Cryptographic verification seal stamping all calculations against statutory rates"
             style={{
@@ -576,6 +624,28 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           >
             <SlidersHorizontal size={13} color="#818cf8" />
             <span>Side-by-Side What-If Sandbox</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsTaxNavigatorOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              borderRadius: 6,
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25))',
+              border: '1px solid rgba(168, 85, 247, 0.45)',
+              color: '#f3e8ff',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Compass size={13} color="#c084fc" />
+            <span>🧭 AI Navigator</span>
           </button>
 
           <button

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ShieldCheck, Landmark, Scissors, FileSearch, Calculator, Layers,
-  UploadCloud, SlidersHorizontal, Building2, User, Calendar
+  UploadCloud, SlidersHorizontal, Building2, User, Calendar, Compass, Sparkles
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { TaxStudioProvider, useTaxStudio } from '../../context/TaxStudioContext';
@@ -18,6 +18,8 @@ import TaxExecutionPaywallModal from '../../components/tax/TaxExecutionPaywallMo
 import CpaPracticePortal from '../../components/tax/CpaPracticePortal';
 import QuarterlySafeHarborSentinel from '../../components/tax/QuarterlySafeHarborSentinel';
 import CpaReviewDispatchModal from '../../components/tax/CpaReviewDispatchModal';
+import AITaxNavigatorModal from '../../components/tax/AITaxNavigatorModal';
+import PersonalizedTaxRoadmapBanner from '../../components/tax/PersonalizedTaxRoadmapBanner';
 
 // Sub-module components
 import TaxEFilingHub from './TaxEFilingHub';
@@ -46,7 +48,13 @@ function TaxForensicStudioInner() {
     isBrokerSyncOpen,
     setIsBrokerSyncOpen,
     isCpaReviewModalOpen,
-    setIsCpaReviewModalOpen
+    setIsCpaReviewModalOpen,
+    isTaxNavigatorOpen,
+    setIsTaxNavigatorOpen,
+    userTaxPersona,
+    isFocusModeActive,
+    toggleFocusMode,
+    activeRoadmap
   } = useTaxStudio();
 
   const currentTab = searchParams.get('tab') || 'e-file';
@@ -54,6 +62,18 @@ function TaxForensicStudioInner() {
   const [isDropzoneOpen, setIsDropzoneOpen] = useState(false);
   const [isScenarioOpen, setIsScenarioOpen] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
+
+  // Auto-launch AI Tax Navigator on initial visit if not previously seen
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem('finagent_tax_navigator_seen');
+      if (!hasSeen) {
+        setIsTaxNavigatorOpen(true);
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, [setIsTaxNavigatorOpen]);
 
   const setTab = (newTab) => {
     setSearchParams({ tab: newTab });
@@ -117,6 +137,12 @@ function TaxForensicStudioInner() {
       <DirectBrokerPayrollSyncModal
         isOpen={isBrokerSyncOpen}
         onClose={() => setIsBrokerSyncOpen(false)}
+      />
+
+      {/* AI Tax Navigator & Persona Intake Modal */}
+      <AITaxNavigatorModal
+        isOpen={isTaxNavigatorOpen}
+        onClose={() => setIsTaxNavigatorOpen(false)}
       />
 
       {/* Top Workspace Mode Switcher (Individual vs CPA Practice) */}
@@ -218,27 +244,82 @@ function TaxForensicStudioInner() {
             onClose={() => setIsVaultOpen(false)}
           />
 
+          {/* Personalized AI Tax Action Roadmap Banner (Adaptive Focus Mode) */}
+          <PersonalizedTaxRoadmapBanner
+            onSelectTab={setTab}
+            onOpenDropzone={() => setIsDropzoneOpen(true)}
+          />
+
           {/* Studio Header & Tab Switcher */}
           <div
             className="card"
             style={{
               padding: '1rem 1.25rem',
               background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.04))',
-              border: '1px solid var(--border-active)',
+              border: isFocusModeActive ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid var(--border-active)',
               borderRadius: 'var(--radius-lg)',
+              boxShadow: isFocusModeActive ? '0 4px 20px rgba(168, 85, 247, 0.12)' : 'none',
+              transition: 'all 0.25s ease',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
-                <h1 className="text-h2" style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span>🛡️</span> Tax & Forensic Studio
-                </h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h1 className="text-h2" style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>🛡️</span> Tax & Forensic Studio
+                  </h1>
+                  {isFocusModeActive && activeRoadmap && (
+                    <span
+                      style={{
+                        fontSize: '0.6875rem',
+                        fontWeight: 800,
+                        padding: '0.15rem 0.55rem',
+                        borderRadius: 12,
+                        background: 'rgba(168, 85, 247, 0.25)',
+                        color: '#d8b4fe',
+                        border: '1px solid rgba(168, 85, 247, 0.5)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                      }}
+                    >
+                      <Sparkles size={11} color="#c084fc" />
+                      ADAPTIVE FOCUS ACTIVE
+                    </span>
+                  )}
+                </div>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  Unified statutory filing, tax-loss alpha harvesting, HUF creation, and forensic fee audit.
+                  {isFocusModeActive && activeRoadmap
+                    ? `Showing streamlined tools prioritized for: ${activeRoadmap.title}`
+                    : 'Unified statutory filing, tax-loss alpha harvesting, HUF creation, and forensic fee audit.'}
                 </p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {activeRoadmap && (
+                  <button
+                    type="button"
+                    onClick={toggleFocusMode}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: 6,
+                      background: isFocusModeActive ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                      border: isFocusModeActive ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid rgba(255, 255, 255, 0.12)',
+                      color: isFocusModeActive ? '#d8b4fe' : 'var(--text-secondary)',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    title={isFocusModeActive ? 'Switch to unconstrained Full Cockpit' : 'Enable streamlined Focus Mode'}
+                  >
+                    <span>{isFocusModeActive ? '🎛️ Full Cockpit' : '🎯 Focus Mode'}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setIsVaultOpen((prev) => !prev)}
@@ -281,12 +362,15 @@ function TaxForensicStudioInner() {
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isSelected = currentTab === tab.id;
+                const isRecommended = isFocusModeActive && activeRoadmap?.relevantTabs?.includes(tab.id);
+                const isDimmed = isFocusModeActive && activeRoadmap && !isRecommended;
 
                 return (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => setTab(tab.id)}
+                    title={tab.desc}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -294,19 +378,46 @@ function TaxForensicStudioInner() {
                       padding: '0.45rem 0.85rem',
                       borderRadius: 20,
                       fontSize: '0.8125rem',
-                      fontWeight: isSelected ? 700 : 500,
-                      color: isSelected ? '#fff' : 'var(--text-secondary)',
-                      background: isSelected ? 'var(--primary)' : 'var(--surface)',
-                      border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--glass-border)'}`,
+                      fontWeight: isSelected ? 700 : isRecommended ? 600 : 500,
+                      color: isSelected ? '#fff' : isDimmed ? 'rgba(148, 163, 184, 0.65)' : 'var(--text-secondary)',
+                      background: isSelected
+                        ? 'var(--primary)'
+                        : isRecommended
+                        ? 'rgba(168, 85, 247, 0.14)'
+                        : 'var(--surface)',
+                      border: isSelected
+                        ? '1px solid var(--primary)'
+                        : isRecommended
+                        ? '1px solid rgba(168, 85, 247, 0.45)'
+                        : '1px solid var(--glass-border)',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       whiteSpace: 'nowrap',
-                      boxShadow: isSelected ? '0 2px 10px rgba(99,102,241,0.3)' : 'none',
+                      opacity: isDimmed ? 0.55 : 1,
+                      boxShadow: isSelected
+                        ? '0 2px 10px rgba(99,102,241,0.3)'
+                        : isRecommended
+                        ? '0 0 10px rgba(168, 85, 247, 0.2)'
+                        : 'none',
                     }}
                   >
-                    <Icon size={14} style={{ color: isSelected ? '#fff' : 'var(--primary-light)' }} />
+                    <Icon size={14} style={{ color: isSelected ? '#fff' : isRecommended ? '#c084fc' : 'var(--primary-light)' }} />
                     <span>{tab.label}</span>
-                    {tab.badge && (
+                    {isRecommended ? (
+                      <span
+                        style={{
+                          fontSize: '0.625rem',
+                          fontWeight: 800,
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: 10,
+                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(168, 85, 247, 0.3)',
+                          color: isSelected ? '#fff' : '#e9d5ff',
+                          border: isSelected ? 'none' : '1px solid rgba(168, 85, 247, 0.45)',
+                        }}
+                      >
+                        🎯 Recommended
+                      </span>
+                    ) : tab.badge ? (
                       <span
                         style={{
                           fontSize: '0.625rem',
@@ -319,7 +430,7 @@ function TaxForensicStudioInner() {
                       >
                         {tab.badge}
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}

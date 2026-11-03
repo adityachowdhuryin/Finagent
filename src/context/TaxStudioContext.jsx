@@ -8,6 +8,11 @@ import {
   generatePreFilledAttestationForm
 } from '../utils/taxExportBundles';
 import { parseRealBrokerageCsv } from '../utils/realBrokerParsers';
+import {
+  classifyTaxIntent,
+  getPersonaFromCards,
+  PERSONA_DEFINITIONS
+} from '../utils/taxPersonaClassifier';
 
 const TaxStudioContext = createContext(null);
 
@@ -171,6 +176,32 @@ export function TaxStudioProvider({ children }) {
       flags: ['Section 112A ₹1.25L Exemption', 'Schedule FA Foreign RSUs', 'HUF Entity Separate PAN'],
     },
   ]);
+
+  // ── AI Tax Navigator & Adaptive Focus Mode State ──────────────────────────
+  const [isTaxNavigatorOpen, setIsTaxNavigatorOpen] = useState(false);
+  const [userTaxPersona, setUserTaxPersona] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_tax_persona_key') || null;
+    } catch {
+      return null;
+    }
+  });
+  const [isFocusModeActive, setIsFocusModeActive] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_tax_focus_mode') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [activeRoadmap, setActiveRoadmap] = useState(() => {
+    try {
+      const savedKey = localStorage.getItem('finagent_tax_persona_key');
+      if (savedKey && PERSONA_DEFINITIONS[savedKey]) {
+        return PERSONA_DEFINITIONS[savedKey];
+      }
+    } catch {}
+    return null;
+  });
 
   // ── Fiduciary CPA / CA Review State ────────────────────────────────────────
   const [cpaReview, setCpaReview] = useState({
@@ -502,6 +533,60 @@ export function TaxStudioProvider({ children }) {
     return docObj;
   }, [activeMarket]);
 
+  // ── AI Tax Navigator & Roadmap Handlers ───────────────────────────────────
+  const setPersonaAndGenerateRoadmap = useCallback((personaKeyOrText, customInput = '') => {
+    let diagnosed = null;
+    if (typeof personaKeyOrText === 'object') {
+      diagnosed = getPersonaFromCards(personaKeyOrText, activeMarket);
+    } else if (PERSONA_DEFINITIONS[personaKeyOrText]) {
+      diagnosed = PERSONA_DEFINITIONS[personaKeyOrText];
+    } else {
+      diagnosed = classifyTaxIntent(personaKeyOrText || customInput, activeMarket);
+    }
+
+    if (diagnosed) {
+      setUserTaxPersona(diagnosed.key);
+      setActiveRoadmap({ ...diagnosed, steps: diagnosed.steps.map((s) => ({ ...s, completed: false })) });
+      setIsFocusModeActive(true);
+      try {
+        localStorage.setItem('finagent_tax_persona_key', diagnosed.key);
+        localStorage.setItem('finagent_tax_focus_mode', 'true');
+        localStorage.setItem('finagent_tax_navigator_seen', 'true');
+      } catch {}
+    }
+    setIsTaxNavigatorOpen(false);
+  }, [activeMarket]);
+
+  const toggleFocusMode = useCallback(() => {
+    setIsFocusModeActive((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('finagent_tax_focus_mode', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const completeRoadmapStep = useCallback((stepId) => {
+    setActiveRoadmap((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        steps: prev.steps.map((s) => s.id === stepId ? { ...s, completed: true } : s),
+      };
+    });
+  }, []);
+
+  const resetPersonaAndRoadmap = useCallback(() => {
+    setUserTaxPersona(null);
+    setActiveRoadmap(null);
+    setIsFocusModeActive(false);
+    try {
+      localStorage.removeItem('finagent_tax_persona_key');
+      localStorage.setItem('finagent_tax_focus_mode', 'false');
+    } catch {}
+  }, []);
+
   // ── Dynamic Tax & Alpha Mathematical Computations ──────────────────────────
   const computedMetrics = useMemo(() => {
     if (activeMarket === 'US') {
@@ -672,6 +757,16 @@ export function TaxStudioProvider({ children }) {
     setActiveScenarioPreset,
     scenarioOverrides,
     setScenarioOverrides,
+    // AI Tax Navigator & Adaptive Focus Mode
+    isTaxNavigatorOpen,
+    setIsTaxNavigatorOpen,
+    userTaxPersona,
+    isFocusModeActive,
+    activeRoadmap,
+    setPersonaAndGenerateRoadmap,
+    toggleFocusMode,
+    completeRoadmapStep,
+    resetPersonaAndRoadmap,
     // CPA Review
     cpaReview,
     dispatchToCpaCa,

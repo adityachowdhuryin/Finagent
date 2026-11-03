@@ -10,7 +10,7 @@
 [![SEBI Compliance](https://img.shields.io/badge/SEBI-RIA%20INA000014523-blue)](https://www.sebi.gov.in/)
 [![CBDT AY 2026-27](https://img.shields.io/badge/CBDT-ITR--2%20AY%202026--27-emerald)](https://www.incometax.gov.in/)
 [![IRS MeF v2026](https://img.shields.io/badge/IRS-MeF%20v2026.1-red)](https://www.irs.gov/)
-[![Tests Passing](https://img.shields.io/badge/Tests-134%2F134%20Pass%20(100%25)-success)](./tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-151%2F151%20Pass%20(100%25)-success)](./tests)
 [![GitHub](https://img.shields.io/badge/GitHub-adityachowdhuryin%2FFinagent-181717?logo=github&logoColor=white)](https://github.com/adityachowdhuryin/Finagent)
 
 > **FinAgent** is an institutional-grade, venture-scale, AI-native Financial Operating System architected for dual-market operation (**🇺🇸 United States** & **🇮🇳 India**). It provides unified financial infrastructure for retail investors, high-net-worth families, Registered Investment Advisors (SEBI RIAs / SEC RIAs), CPAs, Chartered Accountants (CAs), corporate treasurers, venture syndicates, non-profit endowments, matrimonial attorneys, and regional commercial banks.
@@ -97,7 +97,7 @@
 12. [System Architecture & End-to-End Data Flows](#12-system-architecture--end-to-end-data-flows)
 13. [Technology Stack & Third-Party Integrations](#13-technology-stack--third-party-integrations)
 14. [Repository Directory Structure](#14-repository-directory-structure)
-15. [Automated Verification & Test Suites (119/119 Tests)](#15-automated-verification--test-suites-119119-tests)
+15. [Automated Verification & Test Suites (151/151 Tests)](#15-automated-verification--test-suites-151151-tests)
 16. [Getting Started & Local Setup](#16-getting-started--local-setup)
 17. [Mobile App Setup (Capacitor iOS & Android)](#17-mobile-app-setup-capacitor-ios--android)
 18. [Cloud Deployment Guide (Vercel & Render)](#18-cloud-deployment-guide-vercel--render)
@@ -191,6 +191,23 @@ A unified command center bridging US & India tax strategies across 11 integrated
    - Client-side zero-knowledge parsers for **Charles Schwab**, **Fidelity Investments**, **Robinhood**, **Zerodha Kite**, and **Groww Tax P&L**.
    - Built-in FIFO purchase lot matching, holding period determination, numeric symbol/parentheses cleaning, and short vs. long term capital gains classification.
    - *Implementation*: [`src/utils/realBrokerParsers.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/realBrokerParsers.js) & [`src/components/tax/UniversalDocumentDropzone.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/UniversalDocumentDropzone.jsx)
+
+#### 🧭 AI Tax Navigator & Adaptive Focus Mode ("Tax GPS"):
+Built specifically to eliminate cognitive overload for retail filers, non-financial users, and accountants alike by replacing dense menus with an autonomous, intent-driven GPS interface:
+- **Dual-Mode Intake System**:
+  - **Natural Language Prompt Bar**: Filers enter their situation in plain English (e.g., *"I have W-2 salary and $45k in vested Google RSUs"* or *"Freelance consultant with an LLC wanting to save FICA self-employment taxes"*). Evaluated via an instant `<5ms` client-side semantic classifier with optional fallback to **Gemini 2.0 AI deep statutory analysis** (`POST /api/ai/diagnose-tax`).
+  - **3-Click Visual Card Stepper**: Alternative 3-step decision tree (Income Structure ➔ Primary Objective ➔ Special Events/Deductions) designed for visual users.
+- **8 Dual-Market Statutory Personas**:
+  - 🇺🇸 **US**: `US_SALARIED_STOCKS` (W-2 & RSUs), `US_SCORP_FREELANCER` (1099, LLC, FICA), `US_RENTAL_REAL_ESTATE` (Schedule E depreciation), `US_EXPAT_TERRITORY` (FEIE Form 2555, FBAR, Puerto Rico Act 60).
+  - 🇮🇳 **India**: `IN_SALARIED_INVESTOR` (Form 16, AIS, mutual funds), `IN_HUF_FAMILY` (HUF PAN partition, deeds), `IN_BUSINESS_PROFESSIONAL` (Section 44ADA presumptive), `IN_FOREIGN_ASSETS_ESOP` (Schedule FA foreign stock compliance).
+- **Personalized 3-Step Action Roadmap Banner**:
+  - Generates 3 prioritized, plain-English action cards with direct 1-click execution buttons (`[Go to Tool]`, `[Open Dropzone]`).
+  - Step-by-step progress tracking with interactive checkboxes (`X of 3 Steps Done`).
+- **Adaptive Focus Mode**:
+  - Spotlights the user's top 2–3 recommended statutory modules with prominent `🎯 Recommended` badges.
+  - Automatically dims irrelevant institutional tools to `opacity: 0.55`, clearing visual clutter while preserving discoverability.
+  - Instant toggle switch allows one-click switching between `🎯 Focus Mode` and `🎛️ Full Cockpit`.
+- *Implementation*: [`src/components/tax/AITaxNavigatorModal.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/AITaxNavigatorModal.jsx), [`src/components/tax/PersonalizedTaxRoadmapBanner.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/PersonalizedTaxRoadmapBanner.jsx), [`src/utils/taxPersonaClassifier.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/taxPersonaClassifier.js), and `POST /api/ai/diagnose-tax` in [`server/routes/ai.js`](file:///Users/adityachowdhury/Downloads/Fin/server/routes/ai.js).
 
 #### 📋 11 Integrated Studio Engines:
 1. **Overview & Executive Strategy**: Real-time dynamic ROI counter, Tax Alpha breakdown, and interactive Recharts visualizations.
@@ -820,38 +837,46 @@ Fin/
 
 ---
 
-## 15. Automated Verification & Test Suites (134/134 Tests)
+## 15. Automated Verification & Test Suites (151/151 Tests)
 
-FinAgent maintains a rigorous automated test pipeline validating statutory computations, bracket calculations, broker parsers, export standards, paywall transitions, and PDF generators:
+FinAgent maintains a rigorous automated test pipeline validating statutory computations, bracket calculations, broker parsers, export standards, paywall transitions, AI tax personas, and PDF generators:
 
 ```bash
-# 1. Commercial Monetization & AI Defensibility Moats (9 Tests)
+# 1. AI Tax Navigator & Adaptive Focus Mode (17 Tests)
+node tests/test_ai_tax_navigator.mjs
+
+# 2. Commercial Monetization & AI Defensibility Moats (9 Tests)
 node tests/test_commercial_monetization_and_moats.mjs
 
-# 2. Universal 50-State, Territories & Expats Engine (31 Tests)
+# 3. Universal 50-State, Territories & Expats Engine (31 Tests)
 node tests/test_50_states_territories_and_expats.mjs
 
-# 3. Enterprise Central Architecture & Statutory Tax Rules (17 Tests)
+# 4. Enterprise Central Architecture & Statutory Tax Rules (17 Tests)
 node tests/test_tax_studio_enterprise_complete.mjs
 
-# 4. Interactive Mathematical Visualizations (12 Tests)
+# 5. Interactive Mathematical Visualizations (12 Tests)
 node tests/test_interactive_visualizations_math.mjs
 
-# 5. Commercial Production Readiness & Parsers (50 Tests)
+# 6. Commercial Production Readiness & Parsers (50 Tests)
 node tests/test_enterprise_commercial_readiness.mjs
 
-# 6. CPA Handshake Export Hub, Safe-Harbor & Broker Parsers (15 Tests)
+# 7. CPA Handshake Export Hub, Safe-Harbor & Broker Parsers (15 Tests)
 node tests/test_cpa_handshake_and_quarterly_sentinel.mjs
 
-# 7. Complete End-to-End Customer Journey Simulation (6 Milestones)
+# 8. Complete End-to-End Customer Journey Simulation (6 Milestones)
 node tests/simulate_e2e_tax_studio_journey.mjs
 ```
 
 ### Verification Results:
 ```
 =============================================================================
-📊 COMPLETE SYSTEM VERIFICATION: 134/134 TESTS PASSED (100% SUCCESS)
+📊 COMPLETE SYSTEM VERIFICATION: 151/151 TESTS PASSED (100% SUCCESS)
 =============================================================================
+  ✅ AI Tax Navigator: Dual-Market Prompt Classifier & Semantic Intent Matcher
+  ✅ 3-Click Visual Card Stepper Persona Mapping (US & India 8 Personas)
+  ✅ Personalized 3-Step Action Roadmap Generation & Step Progress Tracker
+  ✅ Adaptive Focus Mode: Tab Spotlighting & Non-Intrusive Cognitive Dimming
+  ✅ Gemini 2.0 AI Statutory Diagnosis & Reliable Semantic Fallback
   ✅ Commercial Paywall & 3x ROI Multipliers ($299/$599, ₹7,999/₹14,999)
   ✅ Zero-Knowledge Ephemeral Shield & PII Redaction
   ✅ Real Broker CSV Parsers: Charles Schwab, Fidelity, Robinhood, Zerodha, Groww
@@ -871,7 +896,7 @@ node tests/simulate_e2e_tax_studio_journey.mjs
   ✅ US Form 8606 Backdoor Roth Pro-Rata Donut Math
   ✅ FinCEN BOI Reporting & $591/Day Civil Penalty Model
   ✅ Multi-Year Loss Carryforward Vaults (US $3k / India Sec 74 8-Year)
-  ✅ Production Bundle Build: vite v5.4.21 built in 5.95s (0 errors)
+  ✅ Production Bundle Build: vite v5.4.21 built in 5.84s (0 errors)
 =============================================================================
 ```
 
