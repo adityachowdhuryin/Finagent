@@ -10,7 +10,7 @@
 [![SEBI Compliance](https://img.shields.io/badge/SEBI-RIA%20INA000014523-blue)](https://www.sebi.gov.in/)
 [![CBDT AY 2026-27](https://img.shields.io/badge/CBDT-ITR--2%20AY%202026--27-emerald)](https://www.incometax.gov.in/)
 [![IRS MeF v2026](https://img.shields.io/badge/IRS-MeF%20v2026.1-red)](https://www.irs.gov/)
-[![Tests Passing](https://img.shields.io/badge/Tests-151%2F151%20Pass%20(100%25)-success)](./tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-164%2F164%20Pass%20(100%25)-success)](./tests)
 [![GitHub](https://img.shields.io/badge/GitHub-adityachowdhuryin%2FFinagent-181717?logo=github&logoColor=white)](https://github.com/adityachowdhuryin/Finagent)
 
 > **FinAgent** is an institutional-grade, venture-scale, AI-native Financial Operating System architected for dual-market operation (**🇺🇸 United States** & **🇮🇳 India**). It provides unified financial infrastructure for retail investors, high-net-worth families, Registered Investment Advisors (SEBI RIAs / SEC RIAs), CPAs, Chartered Accountants (CAs), corporate treasurers, venture syndicates, non-profit endowments, matrimonial attorneys, and regional commercial banks.
@@ -207,7 +207,20 @@ Built specifically to eliminate cognitive overload for retail filers, non-financ
   - Spotlights the user's top 2–3 recommended statutory modules with prominent `🎯 Recommended` badges.
   - Automatically dims irrelevant institutional tools to `opacity: 0.55`, clearing visual clutter while preserving discoverability.
   - Instant toggle switch allows one-click switching between `🎯 Focus Mode` and `🎛️ Full Cockpit`.
-- *Implementation*: [`src/components/tax/AITaxNavigatorModal.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/AITaxNavigatorModal.jsx), [`src/components/tax/PersonalizedTaxRoadmapBanner.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/PersonalizedTaxRoadmapBanner.jsx), [`src/utils/taxPersonaClassifier.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/taxPersonaClassifier.js), and `POST /api/ai/diagnose-tax` in [`server/routes/ai.js`](file:///Users/adityachowdhury/Downloads/Fin/server/routes/ai.js).
+- **Global Plain English (ELI5) Engine & Studio Toggle**:
+  - Activated by default via `[🗣️ Plain English Mode | ⚖️ Institutional Mode]` in the top header.
+  - Translates dense statutory jargon into human terms across hero metrics, tab navigation headers, and feature summaries. Preferences persist to `localStorage`.
+- **Universal Hover-to-Translate Glossary (`<TaxTerm />`)**:
+  - Embedded dotted purple underline triggers with instant popovers across 25+ statutory concepts (FICA, QBI, Wash Sale, Safe Harbor, PTET, Augusta Rule, Form 7203, FEIE, FBAR, HUF, Section 115BAC, Section 112A, Section 111A, Section 44ADA, AIS/TIS, Schedule FA, Section 234C, Section 80CCD2).
+  - Popovers break down every term into a 5th-grade explanation, real-world dollar impact ("Why it matters"), and official statutory citations.
+- **Persistent In-Tab Co-Pilot Drawer (`TaxGPSCoPilotDrawer.jsx`)**:
+  - Docks smoothly in the bottom-right corner across every studio tab.
+  - Features persona mission guidance, `[🎯 Show Me Where]` interactive spotlighting, `[💡 Explain Page]` plain-English breakdown, and a `[✓ Mark Step Done & Next Tool ➔]` one-click progression bridge.
+- **Visual Target Spotlighting Engine**:
+  - Seamlessly scrolls to and highlights key UI controls (`scorp-salary-slider`, `harvest-execute-btn`, `safe-harbor-ics-sync-btn`, `huf-deed-btn`) with an animated 2.6s pulsating glow (`@keyframes taxSpotlightPulse`).
+- **Sub-Module Progressive Disclosure**:
+  - In Focus Mode, advanced corporate accounting sub-tabs (Form 7203 Debt Basis, AAA Waterfall, LLC Agreements, FinCEN BOI) are gracefully tucked behind an expander toggle, keeping everyday users focused on their primary calculation.
+- *Implementation*: [`src/components/tax/AITaxNavigatorModal.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/AITaxNavigatorModal.jsx), [`src/components/tax/PersonalizedTaxRoadmapBanner.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/PersonalizedTaxRoadmapBanner.jsx), [`src/components/tax/TaxGPSCoPilotDrawer.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/TaxGPSCoPilotDrawer.jsx), [`src/components/tax/TaxTerm.jsx`](file:///Users/adityachowdhury/Downloads/Fin/src/components/tax/TaxTerm.jsx), [`src/utils/taxPlainEnglishDictionary.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/taxPlainEnglishDictionary.js), [`src/utils/taxPersonaClassifier.js`](file:///Users/adityachowdhury/Downloads/Fin/src/utils/taxPersonaClassifier.js), and `POST /api/ai/diagnose-tax` in [`server/routes/ai.js`](file:///Users/adityachowdhury/Downloads/Fin/server/routes/ai.js).
 
 #### 📋 11 Integrated Studio Engines:
 1. **Overview & Executive Strategy**: Real-time dynamic ROI counter, Tax Alpha breakdown, and interactive Recharts visualizations.

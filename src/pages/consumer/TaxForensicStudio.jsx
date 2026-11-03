@@ -20,6 +20,7 @@ import QuarterlySafeHarborSentinel from '../../components/tax/QuarterlySafeHarbo
 import CpaReviewDispatchModal from '../../components/tax/CpaReviewDispatchModal';
 import AITaxNavigatorModal from '../../components/tax/AITaxNavigatorModal';
 import PersonalizedTaxRoadmapBanner from '../../components/tax/PersonalizedTaxRoadmapBanner';
+import TaxGPSCoPilotDrawer from '../../components/tax/TaxGPSCoPilotDrawer';
 
 // Sub-module components
 import TaxEFilingHub from './TaxEFilingHub';
@@ -54,7 +55,8 @@ function TaxForensicStudioInner() {
     userTaxPersona,
     isFocusModeActive,
     toggleFocusMode,
-    activeRoadmap
+    activeRoadmap,
+    isPlainEnglishMode,
   } = useTaxStudio();
 
   const currentTab = searchParams.get('tab') || 'e-file';
@@ -82,43 +84,67 @@ function TaxForensicStudioInner() {
   const tabs = [
     {
       id: 'e-file',
-      label: isUSMarket ? 'IRS MeF E-Filing' : 'ITR E-Filing & AIS',
+      label: isPlainEnglishMode
+        ? 'E-Filing & Document Dropzone'
+        : (isUSMarket ? 'IRS MeF E-Filing' : 'ITR E-Filing & AIS'),
       icon: ShieldCheck,
       badge: isUSMarket ? '1040' : 'AY26-27',
-      desc: 'Statutory filing, CBDT/IRS XML/JSON & official DIN transmission',
+      desc: isPlainEnglishMode
+        ? 'Auto-fill your tax return directly from W-2, 1099-B, or Form 16 statements'
+        : 'Statutory filing, CBDT/IRS XML/JSON & official DIN transmission',
     },
     {
       id: 'quarterly',
-      label: isUSMarket ? 'Quarterly Safe-Harbor (IRC § 6654)' : 'Advance Tax Autopilot (Sec 234C)',
+      label: isPlainEnglishMode
+        ? 'Quarterly Zero-Penalty Autopilot'
+        : (isUSMarket ? 'Quarterly Safe-Harbor (IRC § 6654)' : 'Advance Tax Autopilot (Sec 234C)'),
       icon: Calendar,
       badge: 'Year-Round',
-      desc: isUSMarket ? '100% vs 110% safe harbor, quarterly schedule, .ics calendar sync & autopilot' : '15/45/75/100% quarterly schedule, Sec 234B/C interest shield & calendar sync',
+      desc: isPlainEnglishMode
+        ? 'Never pay IRS interest fines: calculate your exact quarterly payments and sync to calendar'
+        : (isUSMarket ? '100% vs 110% safe harbor, quarterly schedule, .ics calendar sync & autopilot' : '15/45/75/100% quarterly schedule, Sec 234B/C interest shield & calendar sync'),
     },
     {
       id: 'huf',
-      label: isUSMarket ? 'S-Corp / LLC Pass-Through' : 'HUF Tax Studio',
+      label: isPlainEnglishMode
+        ? (isUSMarket ? 'S-Corp Small Business Shield' : 'Family Tax Shield & HUF')
+        : (isUSMarket ? 'S-Corp / LLC Pass-Through' : 'HUF Tax Studio'),
       icon: Landmark,
       badge: isUSMarket ? 'Save $28k' : 'Save ₹3L',
-      desc: isUSMarket ? 'W-2 reasonable salary, 15.3% FICA savings & Form 2553' : 'Separate legal PAN entity & foundational deed generator',
+      desc: isPlainEnglishMode
+        ? (isUSMarket ? 'Cut self-employment taxes by splitting profits into salary vs distributions' : 'Create a second legal PAN entity for your family to get extra tax-free income')
+        : (isUSMarket ? 'W-2 reasonable salary, 15.3% FICA savings & Form 2553' : 'Separate legal PAN entity & foundational deed generator'),
     },
     {
       id: 'harvester',
-      label: isUSMarket ? 'Wash-Sale Harvester' : 'Tax-Loss Harvester',
+      label: isPlainEnglishMode
+        ? 'Tax-Loss Cash Refund Swaps'
+        : (isUSMarket ? 'Wash-Sale Harvester' : 'Tax-Loss Harvester'),
       icon: Scissors,
       badge: '+1.8% Alpha',
-      desc: isUSMarket ? 'IRS § 1091 compliant proxy swaps & $3,000 ordinary loss write-off' : 'Offset realized gains with paired proxy swaps before year-end',
+      desc: isPlainEnglishMode
+        ? 'Sell losing investments to get an immediate cash discount on your taxes, while keeping your market position'
+        : (isUSMarket ? 'IRS § 1091 compliant proxy swaps & $3,000 ordinary loss write-off' : 'Offset realized gains with paired proxy swaps before year-end'),
     },
     {
       id: 'forensic',
-      label: isUSMarket ? 'ERISA 401k & 12b-1 Audit' : 'Forensic Audit',
+      label: isPlainEnglishMode
+        ? 'Hidden Fee Hunter & Fine Shield'
+        : (isUSMarket ? 'ERISA 401k & 12b-1 Audit' : 'Forensic Audit'),
       icon: FileSearch,
-      desc: isUSMarket ? 'ERISA 408(b)(2) 401(k) fees, 12b-1 drag & subscriptions' : 'Regular vs Direct MF commission drain, expense ratio leakage',
+      desc: isPlainEnglishMode
+        ? (isUSMarket ? 'Uncover hidden Wall Street broker fees eating away your 401(k) and verify foreign assets' : 'Stop broker commission cuts on regular mutual funds and report foreign stocks safely')
+        : (isUSMarket ? 'ERISA 408(b)(2) 401(k) fees, 12b-1 drag & subscriptions' : 'Regular vs Direct MF commission drain, expense ratio leakage'),
     },
     {
       id: 'itr',
-      label: isUSMarket ? 'Federal & 50-State Tax' : 'Capital Gains & ITR',
+      label: isPlainEnglishMode
+        ? (isUSMarket ? '50-State Tax Calculator' : 'New vs Old Tax Regime Calculator')
+        : (isUSMarket ? 'Federal & 50-State Tax' : 'Capital Gains & ITR'),
       icon: Calculator,
-      desc: isUSMarket ? 'IRS 2026 Federal slabs, Standard vs Schedule A & state taxes' : 'Old vs New regime calculator & capital gains schedule',
+      desc: isPlainEnglishMode
+        ? (isUSMarket ? 'Calculate exact federal and state taxes across all 50 states' : 'See side-by-side whether the New Regime or Old Regime puts more money in your pocket')
+        : (isUSMarket ? 'IRS 2026 Federal slabs, Standard vs Schedule A & state taxes' : 'Old vs New regime calculator & capital gains schedule'),
     },
   ];
 
@@ -446,6 +472,13 @@ function TaxForensicStudioInner() {
             {currentTab === 'forensic' && (isUSMarket ? <USForensicAudit /> : <ForensicAudit />)}
             {currentTab === 'itr' && (isUSMarket ? <USTaxAssistant /> : <ITRAssistant />)}
           </div>
+
+          {/* Persistent Floating Tax GPS Co-Pilot Drawer */}
+          <TaxGPSCoPilotDrawer
+            currentTab={currentTab}
+            onSelectTab={setTab}
+            onOpenDropzone={() => setIsDropzoneOpen(true)}
+          />
         </>
       )}
     </div>

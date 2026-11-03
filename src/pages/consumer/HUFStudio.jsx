@@ -15,6 +15,7 @@ import { buildHUFDeedPDF, buildHUFBankResolutionPDF } from '../../utils/fiduciar
 import StickyActionDock from '../../components/common/StickyActionDock';
 import USSCorpStudio from './us/USSCorpStudio';
 import EntityWealthDivergenceChart from '../../components/tax/visualizations/EntityWealthDivergenceChart';
+import TaxTerm from '../../components/tax/TaxTerm';
 
 export default function HUFStudio() {
   const navigate = useNavigate();
@@ -224,7 +225,9 @@ export default function HUFStudio() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
             <span style={{ fontSize: '1.6rem' }}>🏛️</span>
-            <h1 className="text-h1" style={{ margin: 0 }}>Indian HUF (Hindu Undivided Family) Tax Studio</h1>
+            <h1 className="text-h1" style={{ margin: 0 }}>
+              <TaxTerm term="HUF">Indian HUF (Hindu Undivided Family)</TaxTerm> Tax Studio
+            </h1>
             <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
               Statutory Tax Shield
             </span>
@@ -235,7 +238,7 @@ export default function HUFStudio() {
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button onClick={downloadDeedPDF} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <button id="huf-deed-btn" onClick={downloadDeedPDF} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <Download size={14} /> Download HUF Deed (PDF)
           </button>
           <button onClick={downloadBankKitPDF} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -246,13 +249,13 @@ export default function HUFStudio() {
 
       {/* Top Value Proposition Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-        <div className="card" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), var(--surface))', border: '1px solid rgba(99,102,241,0.25)' }}>
+        <div id="huf-arbitrage-card" className="card" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), var(--surface))', border: '1px solid rgba(99,102,241,0.25)' }}>
           <div className="text-xs text-muted" style={{ textTransform: 'uppercase', marginBottom: 2 }}>Annual Tax Saved</div>
           <div style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'Space Grotesk', color: 'var(--green)' }}>
             {formatINR(arbitrageResult?.annualTaxSaved || 284600)}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>/year</span>
           </div>
           <div className="text-xs text-secondary" style={{ marginTop: 4 }}>
-            HUF Basic Slab + Sec 80C + Sec 112A Arbitrage
+            <TaxTerm term="HUF">HUF</TaxTerm> Basic Slab + Sec 80C + <TaxTerm term="SECTION_112A">Sec 112A</TaxTerm> Arbitrage
           </div>
         </div>
 
@@ -316,7 +319,9 @@ export default function HUFStudio() {
               {/* Karta */}
               <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius)', padding: '1rem', border: '1px solid var(--primary)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>KARTA (HEAD)</span>
+                  <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>
+                    <TaxTerm term="HUF">KARTA (HEAD)</TaxTerm>
+                  </span>
                   <span className="text-xs text-muted">Primary Signatory</span>
                 </div>
                 <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{profile?.karta?.name || 'Arjun Sharma'}</div>
@@ -405,7 +410,9 @@ export default function HUFStudio() {
       {activeTab === 'infusion' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div className="card">
-            <h3 className="text-h3">Section 64 Anti-Clubbing Capital Infusion Planner</h3>
+            <h3 className="text-h3">
+              <TaxTerm term="HUF">Section 64 Anti-Clubbing</TaxTerm> Capital Infusion Planner
+            </h3>
             <p className="text-xs text-secondary" style={{ marginBottom: '1.25rem' }}>
               Under Section 64(2) of the Income Tax Act, 1961, if an individual gifts self-acquired funds to their HUF, all income earned from those assets will be clubbed back into their personal tax return. FinAgent audits capital injections to keep you 100% shielded.
             </p>

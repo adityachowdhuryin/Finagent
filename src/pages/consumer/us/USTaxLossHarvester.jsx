@@ -16,6 +16,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { analyze } from '../../../services/geminiService';
 import StickyActionDock from '../../../components/common/StickyActionDock';
 import TaxHarvestingWaterfall from '../../../components/tax/visualizations/TaxHarvestingWaterfall';
+import TaxTerm from '../../../components/tax/TaxTerm';
 
 export default function USTaxLossHarvester() {
   const { state, dispatch } = useApp();
@@ -334,13 +335,15 @@ Return ONLY valid JSON with this exact structure:
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-            <span>🇺🇸</span> IRS CODE § 1091 COMPLIANT · FORM 1040 SCHEDULE 1 LINE 7
+            <span>🇺🇸</span>
+            <TaxTerm term="WASH_SALE">IRS CODE § 1091 COMPLIANT</TaxTerm>
+            <span>· FORM 1040 SCHEDULE 1 LINE 7</span>
           </div>
           <h1 className="text-h1" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span>🌾</span> IRS Wash-Sale Tax-Loss Harvester
           </h1>
           <p className="text-sm text-secondary mt-1">
-            Scan portfolio loss positions, write off \$3,000 in ordinary income, swap into non-identical proxy ETFs, and bank indefinite capital loss carryovers.
+            Scan portfolio loss positions, write off $3,000 in ordinary income, swap into non-identical proxy ETFs, and bank indefinite capital loss carryovers.
           </p>
         </div>
 
@@ -352,7 +355,7 @@ Return ONLY valid JSON with this exact structure:
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>until Dec 31 Tax Year-End</div>
           </div>
 
-          <button onClick={runScan} disabled={loading} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button id="harvest-scan-btn" onClick={runScan} disabled={loading} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             <span>Rescan Portfolio</span>
           </button>
@@ -532,7 +535,7 @@ Return ONLY valid JSON with this exact structure:
                 <button onClick={downloadHarvestPDF} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem' }}>
                   <FileText size={13} /> Export PDF Dossier
                 </button>
-                <button onClick={handleBatchExecute} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem' }}>
+                <button id="harvest-execute-btn" onClick={handleBatchExecute} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem' }}>
                   <Zap size={13} /> Batch Harvest Selected
                 </button>
               </div>

@@ -29,6 +29,8 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
     setIsTaxNavigatorOpen,
     activeRoadmap,
     userTaxPersona,
+    isPlainEnglishMode,
+    togglePlainEnglishMode,
   } = useTaxStudio();
 
   const [cpaModalOpen, setCpaModalOpen] = useState(false);
@@ -183,6 +185,29 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
             </div>
           )}
 
+          {/* Plain English Mode vs Institutional Mode Toggle */}
+          <button
+            type="button"
+            onClick={togglePlainEnglishMode}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.3rem 0.75rem',
+              borderRadius: 6,
+              background: isPlainEnglishMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+              border: isPlainEnglishMode ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: isPlainEnglishMode ? '#6ee7b7' : '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title={isPlainEnglishMode ? "Switch to Institutional CPA & Tax Code Mode" : "Switch to Plain English (ELI5) Mode"}
+          >
+            <span>{isPlainEnglishMode ? '🗣️ Plain English Mode' : '⚖️ Institutional Mode'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsTaxNavigatorOpen(true)}
@@ -307,7 +332,9 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 600 }}>Annual Tax Alpha</span>
+            <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 600 }}>
+              {isPlainEnglishMode ? 'Annual Tax Savings Found' : 'Annual Tax Alpha'}
+            </span>
             <TrendingUp size={14} color="#818cf8" />
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
@@ -315,7 +342,9 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
             <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94a3b8', marginLeft: '0.25rem' }}>/yr</span>
           </div>
           <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-            {isUS ? 'S-Corp FICA + PTET + Loss Harvesting' : 'HUF PAN + Loss Harvesting + 80CCD(2)'}
+            {isPlainEnglishMode
+              ? (isUS ? 'FICA Salary Split + Loss Write-offs' : 'Family Tax Shield + Loss Refunds')
+              : (isUS ? 'S-Corp FICA + PTET + Loss Harvesting' : 'HUF PAN + Loss Harvesting + 80CCD(2)')}
           </div>
         </div>
 
@@ -329,7 +358,9 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 600 }}>Fee Bleed Plugged</span>
+            <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 600 }}>
+              {isPlainEnglishMode ? 'Hidden Wall St. Fees Stopped' : 'Fee Bleed Plugged'}
+            </span>
             <ShieldAlert size={14} color="#f87171" />
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444', letterSpacing: '-0.02em' }}>
@@ -337,7 +368,9 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
             <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94a3b8', marginLeft: '0.25rem' }}>/yr</span>
           </div>
           <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-            {isUS ? 'ERISA 401(k) + 12b-1 Loads + Phantom Bleed' : 'Regular MF Commissions (1.15%) + Drain'}
+            {isPlainEnglishMode
+              ? (isUS ? 'Replaced High-Fee 401(k) Funds with Clean ETFs' : 'Switched to Direct Plans (0% Broker Cut)')
+              : (isUS ? 'ERISA 401(k) + 12b-1 Loads + Phantom Bleed' : 'Regular MF Commissions (1.15%) + Drain')}
           </div>
         </div>
 
@@ -351,14 +384,18 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#fde68a', fontWeight: 600 }}>Penalties Defended</span>
+            <span style={{ fontSize: '0.75rem', color: '#fde68a', fontWeight: 600 }}>
+              {isPlainEnglishMode ? 'IRS / Tax Fines Blocked' : 'Penalties Defended'}
+            </span>
             <ShieldCheck size={14} color="#fbbf24" />
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fbbf24', letterSpacing: '-0.02em' }}>
             {formatCurrency(statutoryPenaltiesDefended)}
           </div>
           <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-            {isUS ? 'FinCEN BOI ($591/day) + FBAR + Pro-Rata' : 'Black Money Act (₹10L) + Sec 234 Interest'}
+            {isPlainEnglishMode
+              ? (isUS ? 'Shielded from $591/day Fines & Interest Fines' : 'Shielded from ₹10L Foreign Asset Notice & Late Fees')
+              : (isUS ? 'FinCEN BOI ($591/day) + FBAR + Pro-Rata' : 'Black Money Act (₹10L) + Sec 234 Interest')}
           </div>
         </div>
 
@@ -372,7 +409,9 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700 }}>10-Yr Compounded Wealth</span>
+            <span style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700 }}>
+              {isPlainEnglishMode ? '10-Yr Reinvested Wealth Boost' : '10-Yr Compounded Wealth'}
+            </span>
             <Sparkles size={14} color="#34d399" />
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399', letterSpacing: '-0.02em' }}>
@@ -624,6 +663,29 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           >
             <SlidersHorizontal size={13} color="#818cf8" />
             <span>Side-by-Side What-If Sandbox</span>
+          </button>
+
+          {/* Plain English Mode vs Institutional Mode Toggle */}
+          <button
+            type="button"
+            onClick={togglePlainEnglishMode}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.3rem 0.75rem',
+              borderRadius: 6,
+              background: isPlainEnglishMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+              border: isPlainEnglishMode ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: isPlainEnglishMode ? '#6ee7b7' : '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title={isPlainEnglishMode ? "Switch to Institutional CPA & Tax Code Mode" : "Switch to Plain English (ELI5) Mode"}
+          >
+            <span>{isPlainEnglishMode ? '🗣️ Plain English Mode' : '⚖️ Institutional Mode'}</span>
           </button>
 
           <button

@@ -8,6 +8,7 @@ import {
   Bell, FileText, Info
 } from 'lucide-react';
 import { useTaxStudio } from '../../context/TaxStudioContext';
+import TaxTerm from './TaxTerm';
 
 export default function QuarterlySafeHarborSentinel() {
   const {
@@ -142,7 +143,11 @@ export default function QuarterlySafeHarborSentinel() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: 4 }}>
             <span style={{ fontSize: '1.5rem' }}>📅</span>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0 }}>
-              {isUS ? 'Year-Round Safe-Harbor Sentinel (IRS § 6654)' : 'Advance Tax Autopilot & Quarterly Sentinel (Sec 234C)'}
+              {isUS ? (
+                <>Year-Round <TaxTerm term="SAFE_HARBOR">Safe-Harbor</TaxTerm> Sentinel (IRS § 6654)</>
+              ) : (
+                <>Advance Tax Autopilot & Quarterly Sentinel (<TaxTerm term="SECTION_234C">Sec 234C</TaxTerm>)</>
+              )}
             </h2>
             <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', fontSize: '0.7rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 999 }}>
               YEAR-ROUND ENGINE
@@ -158,6 +163,7 @@ export default function QuarterlySafeHarborSentinel() {
         {/* Action Controls */}
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button
+            id="safe-harbor-ics-sync-btn"
             type="button"
             onClick={handleDownloadIcs}
             className="btn btn-secondary"
@@ -188,7 +194,7 @@ export default function QuarterlySafeHarborSentinel() {
       </div>
 
       {/* Scenario Controls & Metrics Summary Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div id="safe-harbor-calc-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: 8, border: '1px solid #334155' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', fontWeight: 600, textTransform: 'uppercase' }}>
             {isUS ? 'Prior-Year Tax Liability' : 'Estimated Net Tax Base'}
@@ -205,7 +211,7 @@ export default function QuarterlySafeHarborSentinel() {
           <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: 8, border: '1px solid #334155' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Safe Harbor Rule
+                <TaxTerm term="SAFE_HARBOR">Safe Harbor Rule</TaxTerm>
               </div>
               <span style={{ fontSize: '0.65rem', background: safeHarborMultiplier === 1.1 ? '#4338ca' : '#334155', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 4, fontWeight: 700 }}>
                 {safeHarborMultiplier === 1.1 ? '110% (High Earner)' : '100% (Standard)'}
@@ -258,7 +264,11 @@ export default function QuarterlySafeHarborSentinel() {
       {/* 4 Quarterly Milestones Interactive Cards */}
       <div>
         <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>
-          {isUS ? 'IRC § 6654 Quarterly Statutory Installment Tracker' : 'Income Tax Act Section 234C Advance Tax Schedule'}
+          {isUS ? (
+            <><TaxTerm term="SAFE_HARBOR">IRC § 6654</TaxTerm> Quarterly Statutory Installment Tracker</>
+          ) : (
+            <>Income Tax Act <TaxTerm term="SECTION_234C">Section 234C</TaxTerm> Advance Tax Schedule</>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>

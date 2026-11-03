@@ -203,6 +203,65 @@ export function TaxStudioProvider({ children }) {
     return null;
   });
 
+  // ── Plain English Mode & In-Tab Co-Pilot State ─────────────────────────────
+  const [isPlainEnglishMode, setIsPlainEnglishMode] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_tax_plain_english') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const togglePlainEnglishMode = useCallback(() => {
+    setIsPlainEnglishMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('finagent_tax_plain_english', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const [isCoPilotCollapsed, setIsCoPilotCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_copilot_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCoPilotCollapse = useCallback(() => {
+    setIsCoPilotCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('finagent_copilot_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const [spotlightTarget, setSpotlightTarget] = useState(null);
+
+  const triggerSpotlight = useCallback((elementId) => {
+    if (!elementId) return;
+    setSpotlightTarget(elementId);
+    try {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('tax-spotlight-active');
+        setTimeout(() => {
+          el.classList.remove('tax-spotlight-active');
+          setSpotlightTarget(null);
+        }, 2600);
+      } else {
+        setTimeout(() => setSpotlightTarget(null), 2000);
+      }
+    } catch {
+      setSpotlightTarget(null);
+    }
+  }, []);
+
   // ── Fiduciary CPA / CA Review State ────────────────────────────────────────
   const [cpaReview, setCpaReview] = useState({
     status: 'none', // 'none' | 'dispatching' | 'assigned' | 'certified'
@@ -577,6 +636,24 @@ export function TaxStudioProvider({ children }) {
     });
   }, []);
 
+  const advanceToNextRoadmapStep = useCallback((stepId, onSelectTab) => {
+    setActiveRoadmap((prev) => {
+      if (!prev) return null;
+      const updatedSteps = prev.steps.map((s) => s.id === stepId ? { ...s, completed: true } : s);
+      const currIdx = prev.steps.findIndex((s) => s.id === stepId);
+      if (currIdx !== -1 && currIdx < prev.steps.length - 1) {
+        const nextStep = prev.steps[currIdx + 1];
+        if (nextStep && nextStep.tab && onSelectTab) {
+          setTimeout(() => onSelectTab(nextStep.tab), 120);
+        }
+      }
+      return {
+        ...prev,
+        steps: updatedSteps,
+      };
+    });
+  }, []);
+
   const resetPersonaAndRoadmap = useCallback(() => {
     setUserTaxPersona(null);
     setActiveRoadmap(null);
@@ -766,7 +843,17 @@ export function TaxStudioProvider({ children }) {
     setPersonaAndGenerateRoadmap,
     toggleFocusMode,
     completeRoadmapStep,
+    advanceToNextRoadmapStep,
     resetPersonaAndRoadmap,
+    // Plain English Mode & In-Tab Co-Pilot
+    isPlainEnglishMode,
+    setIsPlainEnglishMode,
+    togglePlainEnglishMode,
+    isCoPilotCollapsed,
+    setIsCoPilotCollapsed,
+    toggleCoPilotCollapse,
+    spotlightTarget,
+    triggerSpotlight,
     // CPA Review
     cpaReview,
     dispatchToCpaCa,

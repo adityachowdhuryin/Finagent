@@ -15,12 +15,17 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useApp } from '../../../context/AppContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useTaxStudio } from '../../../context/TaxStudioContext';
+import TaxTerm from '../../../components/tax/TaxTerm';
 import StickyActionDock from '../../../components/common/StickyActionDock';
 import EntityWealthDivergenceChart from '../../../components/tax/visualizations/EntityWealthDivergenceChart';
 
 export default function USSCorpStudio() {
   const { state } = useApp();
   const { currentUser } = useAuth();
+  const taxStudio = useTaxStudio();
+  const isFocusModeActive = taxStudio?.isFocusModeActive ?? false;
+  const [showAdvancedCorporateTabs, setShowAdvancedCorporateTabs] = useState(false);
 
   const [activeTab, setActiveTab] = useState('salary'); // 'salary' | 'basis' | 'waterfall' | 'llc' | 'election'
   const [loading, setLoading] = useState(false);
@@ -363,37 +368,70 @@ export default function USSCorpStudio() {
         </div>
       </div>
 
-      {/* Sub-Navigation Tabs */}
-      <div style={{
-        display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)',
-        paddingBottom: '0.5rem', overflowX: 'auto'
-      }}>
-        {[
-          { id: 'salary', label: '1. Reasonable Salary & FICA Optimizer', icon: DollarSign },
-          { id: 'basis', label: '2. Form 7203 Stock & Debt Basis', icon: Scale },
-          { id: 'waterfall', label: '3. AAA & E&P Waterfall (IRC § 1368)', icon: Layers },
-          { id: 'llc', label: '4. Multi-Member LLC Agreement (§ 704b)', icon: Users },
-          { id: 'election', label: '5. Form 2553 Election & Resolution', icon: FileText },
-          { id: 'bank_kit', label: '6. EIN Form SS-4 & Bank Resolution Kit', icon: Landmark },
-          { id: 'fincen_boi', label: '7. FinCEN BOI Reporting Kit (CTA)', icon: ShieldAlert },
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+      {/* Sub-Navigation Tabs with Progressive Disclosure */}
+      <div>
+        <div style={{
+          display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)',
+          paddingBottom: '0.5rem', overflowX: 'auto'
+        }}>
+          {(isFocusModeActive && !showAdvancedCorporateTabs
+            ? [
+                { id: 'salary', label: '1. Reasonable Salary & FICA Optimizer', icon: DollarSign },
+                { id: 'election', label: '2. Form 2553 S-Corp Election Kit', icon: FileText },
+              ]
+            : [
+                { id: 'salary', label: '1. Reasonable Salary & FICA Optimizer', icon: DollarSign },
+                { id: 'basis', label: '2. Form 7203 Stock & Debt Basis', icon: Scale },
+                { id: 'waterfall', label: '3. AAA & E&P Waterfall (IRC § 1368)', icon: Layers },
+                { id: 'llc', label: '4. Multi-Member LLC Agreement (§ 704b)', icon: Users },
+                { id: 'election', label: '5. Form 2553 Election & Resolution', icon: FileText },
+                { id: 'bank_kit', label: '6. EIN Form SS-4 & Bank Resolution Kit', icon: Landmark },
+                { id: 'fincen_boi', label: '7. FinCEN BOI Reporting Kit (CTA)', icon: ShieldAlert },
+              ]
+          ).map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                  fontSize: '0.8125rem', whiteSpace: 'nowrap'
+                }}
+              >
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {isFocusModeActive && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.35rem', marginBottom: '0.25rem' }}>
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+              type="button"
+              onClick={() => setShowAdvancedCorporateTabs(prev => !prev)}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                fontSize: '0.8125rem', whiteSpace: 'nowrap'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.2rem 0.6rem',
+                borderRadius: 6,
+                background: showAdvancedCorporateTabs ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(168, 85, 247, 0.35)',
+                color: '#d8b4fe',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
-              <Icon size={14} />
-              <span>{tab.label}</span>
+              <span>{showAdvancedCorporateTabs ? '✓ Showing All 7 Corporate Tools (Click to Focus)' : '⚙️ Show Advanced Corporate Tools (Form 7203, AAA Waterfall, FinCEN)'}</span>
             </button>
-          );
-        })}
+          </div>
+        )}
       </div>
 
       {/* TAB 1: REASONABLE SALARY & FICA OPTIMIZER */}
@@ -442,9 +480,11 @@ export default function USSCorpStudio() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem' }}>
+              <div id="scorp-salary-slider" style={{ marginTop: '1rem', padding: '0.5rem', borderRadius: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                  <label className="text-xs text-muted">Certified W-2 Reasonable Salary</label>
+                  <label className="text-xs text-muted">
+                    <TaxTerm term="REASONABLE_SALARY">Certified W-2 Reasonable Salary</TaxTerm>
+                  </label>
                   <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>${w2Salary.toLocaleString()}</span>
                 </div>
                 <input
@@ -466,7 +506,9 @@ export default function USSCorpStudio() {
             {/* Augusta Rule (§ 280A(g)) */}
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <h3 className="text-h3" style={{ margin: 0 }}>Augusta Rule (IRC § 280A(g))</h3>
+                <h3 className="text-h3" style={{ margin: 0 }}>
+                  <TaxTerm term="AUGUSTA_RULE">Augusta Rule (IRC § 280A(g))</TaxTerm>
+                </h3>
                 <span className="badge badge-green">100% Tax-Free</span>
               </div>
               <p className="text-xs text-secondary" style={{ margin: '0 0 0.75rem' }}>
@@ -498,7 +540,7 @@ export default function USSCorpStudio() {
 
           {/* Results Summary Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="card" style={{ padding: '1.25rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.06), transparent)' }}>
+            <div id="scorp-savings-card" className="card" style={{ padding: '1.25rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.06), transparent)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 className="text-h3" style={{ margin: 0 }}>Tax Shield Acceleration</h3>
                 <span className="badge badge-green">ANNUAL SAVINGS</span>
@@ -515,15 +557,21 @@ export default function USSCorpStudio() {
                     <span style={{ fontWeight: 700, color: 'var(--green)' }}>${s.shareholderDistributions.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', fontSize: '0.875rem' }}>
-                    <span className="text-secondary">Annual Self-Employment (FICA) Saved</span>
+                    <span className="text-secondary">
+                      <TaxTerm term="FICA">Annual Self-Employment (FICA) Saved</TaxTerm>
+                    </span>
                     <span style={{ fontWeight: 800, color: 'var(--green)' }}>+${s.annualFICASaved.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', fontSize: '0.875rem' }}>
-                    <span className="text-secondary">Section 199A QBI 20% Income Tax Saved</span>
+                    <span className="text-secondary">
+                      <TaxTerm term="QBI">Section 199A QBI 20% Income Tax Saved</TaxTerm>
+                    </span>
                     <span style={{ fontWeight: 800, color: 'var(--green)' }}>+${s.qbiIncomeTaxSavings.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', fontSize: '0.875rem' }}>
-                    <span className="text-secondary">Augusta Rule Tax-Free Cash Out</span>
+                    <span className="text-secondary">
+                      <TaxTerm term="AUGUSTA_RULE">Augusta Rule Tax-Free Cash Out</TaxTerm>
+                    </span>
                     <span style={{ fontWeight: 800, color: 'var(--green)' }}>+${s.augustaTaxSaved.toLocaleString()}</span>
                   </div>
 
