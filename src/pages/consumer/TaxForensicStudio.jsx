@@ -57,6 +57,8 @@ function TaxForensicStudioInner() {
     toggleFocusMode,
     activeRoadmap,
     isPlainEnglishMode,
+    isCoPilotDismissed,
+    restoreCoPilot,
   } = useTaxStudio();
 
   const currentTab = searchParams.get('tab') || 'e-file';
@@ -322,6 +324,31 @@ function TaxForensicStudioInner() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {isCoPilotDismissed && activeRoadmap && (
+                  <button
+                    type="button"
+                    onClick={restoreCoPilot}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: 6,
+                      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25))',
+                      border: '1px solid rgba(168, 85, 247, 0.5)',
+                      color: '#e9d5ff',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 10px rgba(168, 85, 247, 0.2)',
+                    }}
+                    title="Re-open the floating Tax GPS Co-Pilot guide"
+                  >
+                    <Compass size={13} color="#c084fc" />
+                    <span>Show Tax GPS Guide</span>
+                  </button>
+                )}
+
                 {activeRoadmap && (
                   <button
                     type="button"
