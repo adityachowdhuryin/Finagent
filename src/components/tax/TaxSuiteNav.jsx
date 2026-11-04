@@ -1,11 +1,18 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { TrendingDown, DollarSign, Scissors, BookOpen, Briefcase, FileText } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function TaxSuiteNav() {
+  const location = useLocation();
   const { state } = useApp();
   const isUS = state?.activeMarket === 'US';
+
+  // Suppress TaxSuiteNav if already inside the all-in-one Tax & Forensic Studio (/app/tax)
+  // to avoid redundant secondary tab navigation bars.
+  if (location.pathname === '/app/tax') {
+    return null;
+  }
 
   const tabs = isUS ? [
     { to: '/app/wash-sale', label: 'Wash-Sale Harvester', icon: Scissors, badge: 'IRC 1091' },

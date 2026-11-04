@@ -147,6 +147,11 @@ export default function HubSubNav() {
     },
   ];
 
+  // Suppress HubSubNav on the unified Tax & Forensic Studio to prevent double tab bars
+  if (currentPath === '/app/tax') {
+    return null;
+  }
+
   // Find the active hub based on current URL path
   const activeHub = hubs.find(h =>
     h.matchPrefixes.some(prefix => currentPath === prefix || currentPath.startsWith(prefix + '/'))

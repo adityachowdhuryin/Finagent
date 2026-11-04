@@ -84,8 +84,9 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
             fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            maxWidth: 'min(380px, calc(100vw - 80px))',
           }}
-          title="Click to expand the Tax GPS Co-Pilot guide"
+          title="Click to expand the Tax GPS Step Guide"
         >
           <div
             style={{
@@ -95,11 +96,20 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             <Compass size={13} color="#fff" />
           </div>
-          <span>🧭 Tax GPS: {guidance.missionTitle}</span>
+          <span
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            Tax GPS: {guidance.missionTitle}
+          </span>
           <span
             style={{
               fontSize: '0.65rem',
@@ -107,11 +117,12 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
               borderRadius: 10,
               background: 'rgba(168, 85, 247, 0.3)',
               color: '#d8b4fe',
+              flexShrink: 0,
             }}
           >
             {completedCount}/{steps.length} Done
           </span>
-          <ChevronUp size={14} color="#cbd5e1" />
+          <ChevronUp size={14} color="#cbd5e1" style={{ flexShrink: 0 }} />
         </button>
         <button
           type="button"
@@ -187,7 +198,7 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
             </div>
             <div>
               <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span>Tax GPS Co-Pilot</span>
+                <span>Tax GPS Step Guide</span>
                 <span
                   style={{
                     fontSize: '0.625rem',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldCheck, Landmark, Scissors, FileSearch, Calculator, Layers,
   UploadCloud, SlidersHorizontal, Building2, User, Calendar, Compass, Sparkles
@@ -173,74 +173,88 @@ function TaxForensicStudioInner() {
         onClose={() => setIsTaxNavigatorOpen(false)}
       />
 
-      {/* Top Workspace Mode Switcher (Individual vs CPA Practice) */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          padding: '0.35rem 0.5rem',
-          background: 'rgba(0, 0, 0, 0.25)',
-          borderRadius: 8,
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <button
-            type="button"
-            onClick={() => setActiveWorkspaceMode('individual')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
-              borderRadius: 6,
-              fontSize: '0.75rem',
-              fontWeight: activeWorkspaceMode === 'individual' ? 700 : 500,
-              background: activeWorkspaceMode === 'individual' ? 'var(--primary, #4f46e5)' : 'transparent',
-              color: activeWorkspaceMode === 'individual' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <User size={13} />
-            <span>👤 Individual Investor & Taxpayer Terminal</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveWorkspaceMode('cpa_practice')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
-              borderRadius: 6,
-              fontSize: '0.75rem',
-              fontWeight: activeWorkspaceMode === 'cpa_practice' ? 700 : 500,
-              background: activeWorkspaceMode === 'cpa_practice' ? 'var(--primary, #4f46e5)' : 'transparent',
-              color: activeWorkspaceMode === 'cpa_practice' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <Building2 size={13} />
-            <span>🏛️ CPA & CA Practice Portal ($99/mo)</span>
-          </button>
+      {/* Universal Document Dropzone Modal */}
+      {isDropzoneOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1.5rem',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsDropzoneOpen(false);
+          }}
+        >
+          <div style={{ maxWidth: 880, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <UniversalDocumentDropzone
+              isOpen={isDropzoneOpen}
+              onClose={() => setIsDropzoneOpen(false)}
+            />
+          </div>
         </div>
+      )}
 
-        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-          {activeWorkspaceMode === 'cpa_practice'
-            ? 'Accountant Practice Suite • Batch Client Intake & 28-Rule Linter'
-            : 'Fiduciary Workpaper Engine • Cryptographic SHA-256 Proof'}
+      {/* Side-by-Side What-If Scenario Sandbox Modal */}
+      {isScenarioOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1.5rem',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsScenarioOpen(false);
+          }}
+        >
+          <div style={{ maxWidth: 1000, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <ScenarioComparisonSandbox
+              isOpen={isScenarioOpen}
+              onClose={() => setIsScenarioOpen(false)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Conditionally Render CPA Practice Portal or Individual Workspace */}
+      {/* Multi-Year Loss Carryforward Vault Modal */}
+      {isVaultOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            padding: '1.5rem',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsVaultOpen(false);
+          }}
+        >
+          <div style={{ maxWidth: 960, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <LossCarryforwardVault
+              isOpen={isVaultOpen}
+              onClose={() => setIsVaultOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally Render CPA Practice Portal if explicitly requested, otherwise Individual Workspace */}
       {activeWorkspaceMode === 'cpa_practice' ? (
         <CpaPracticePortal />
       ) : (
@@ -252,24 +266,6 @@ function TaxForensicStudioInner() {
           <TaxAlphaHeroBanner
             onOpenDropzone={() => setIsDropzoneOpen((prev) => !prev)}
             onOpenScenario={() => setIsScenarioOpen((prev) => !prev)}
-          />
-
-          {/* Universal Document Dropzone (Expandable) */}
-          <UniversalDocumentDropzone
-            isOpen={isDropzoneOpen}
-            onClose={() => setIsDropzoneOpen(false)}
-          />
-
-          {/* Side-by-Side What-If Scenario Sandbox (Expandable) */}
-          <ScenarioComparisonSandbox
-            isOpen={isScenarioOpen}
-            onClose={() => setIsScenarioOpen(false)}
-          />
-
-          {/* Multi-Year Loss Carryforward Vault (Expandable) */}
-          <LossCarryforwardVault
-            isOpen={isVaultOpen}
-            onClose={() => setIsVaultOpen(false)}
           />
 
           {/* Personalized AI Tax Action Roadmap Banner (Adaptive Focus Mode) */}
@@ -393,6 +389,28 @@ function TaxForensicStudioInner() {
                   <Layers size={13} color="#818cf8" />
                   <span>Loss Carryforward Vault</span>
                 </button>
+
+                <Link
+                  to="/cpa"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: 6,
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#94a3b8',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="CPAs, CAs & Wealth Advisors: Open the Multi-Client Batch Practice Suite"
+                >
+                  <Building2 size={13} color="#94a3b8" />
+                  <span>CPA Portal ➔</span>
+                </Link>
 
                 <span className="badge badge-green">
                   {isUSMarket ? 'US Internal Revenue Code' : 'Indian Income Tax Act 1961'}

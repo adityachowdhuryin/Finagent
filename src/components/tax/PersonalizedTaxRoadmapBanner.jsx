@@ -160,31 +160,10 @@ export default function PersonalizedTaxRoadmapBanner({ onSelectTab, onOpenDropzo
               fontWeight: 600,
               cursor: 'pointer',
             }}
+            title="Answer 3 quick questions to customize your profile"
           >
             <RefreshCw size={11} />
             <span>Retune Profile</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleFocusMode}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.3rem 0.7rem',
-              borderRadius: 6,
-              background: 'rgba(99, 102, 241, 0.2)',
-              border: '1px solid rgba(99, 102, 241, 0.45)',
-              color: '#c7d2fe',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <SlidersHorizontal size={12} />
-            <span>Switch to Full Cockpit</span>
           </button>
         </div>
       </div>

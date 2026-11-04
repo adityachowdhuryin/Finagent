@@ -252,10 +252,10 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
               boxShadow: '0 0 14px rgba(168, 85, 247, 0.25)',
               transition: 'all 0.15s ease',
             }}
-            title="Open AI Tax Navigator to simplify studio or change focus profile"
+            title="Answer 3 quick questions to personalize this studio to your situation"
           >
             <Compass size={13} color="#c084fc" />
-            <span>🧭 AI Tax Navigator</span>
+            <span>🧭 Personalize Tax Profile</span>
           </button>
 
           <div
@@ -689,75 +689,6 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           >
             <SlidersHorizontal size={13} color="#818cf8" />
             <span>Side-by-Side What-If Sandbox</span>
-          </button>
-
-          {/* Plain English Mode vs Institutional Mode Toggle */}
-          <button
-            type="button"
-            onClick={togglePlainEnglishMode}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.3rem 0.75rem',
-              borderRadius: 6,
-              background: isPlainEnglishMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-              border: isPlainEnglishMode ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              color: isPlainEnglishMode ? '#6ee7b7' : '#cbd5e1',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            title={isPlainEnglishMode ? "Switch to Institutional CPA & Tax Code Mode" : "Switch to Plain English (ELI5) Mode"}
-          >
-            <span>{isPlainEnglishMode ? '🗣️ Plain English Mode' : '⚖️ Institutional Mode'}</span>
-          </button>
-
-          {isCoPilotDismissed && activeRoadmap && (
-            <button
-              type="button"
-              onClick={restoreCoPilot}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.3rem 0.75rem',
-                borderRadius: 6,
-                background: 'rgba(168, 85, 247, 0.2)',
-                border: '1px solid rgba(168, 85, 247, 0.45)',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: '#d8b4fe',
-                cursor: 'pointer',
-              }}
-              title="Re-open the floating in-tab Tax GPS guide"
-            >
-              <Compass size={12} />
-              <span>Show Tax GPS Guide</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsTaxNavigatorOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.4rem 0.85rem',
-              borderRadius: 6,
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25))',
-              border: '1px solid rgba(168, 85, 247, 0.45)',
-              color: '#f3e8ff',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <Compass size={13} color="#c084fc" />
-            <span>🧭 AI Navigator</span>
           </button>
 
           <button

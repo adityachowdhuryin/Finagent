@@ -170,7 +170,7 @@ export default function AITaxNavigatorModal({ isOpen, onClose }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>
-                  AI Tax Navigator
+                  Personalize Your Tax Profile
                 </h2>
                 <span
                   style={{
@@ -183,7 +183,7 @@ export default function AITaxNavigatorModal({ isOpen, onClose }) {
                     border: '1px solid rgba(16, 185, 129, 0.35)',
                   }}
                 >
-                  TAX GPS
+                  PROFILE SETUP
                 </span>
               </div>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
