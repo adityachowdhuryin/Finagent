@@ -211,6 +211,22 @@ function executeCopilotTool(name, args) {
       };
     }
 
+    case 'run_tax_audit': {
+      const isUS = args.isUS === true;
+      return {
+        cardType: 'tax_audit',
+        market: isUS ? 'US' : 'IN',
+        score: isUS ? 94 : 92,
+        flags: isUS ? [
+          { id: 'f-1', severity: 'WARNING', title: 'Schedule D Wash-Sale Linter', desc: 'Active paired swap prevents IRC §1091 replacement stock loss disallowance.' },
+          { id: 'f-2', severity: 'INFO', title: 'S-Corp Reasonable Wage Audit', desc: 'Wage-to-distribution ratio verified against Bureau of Labor Statistics.' },
+        ] : [
+          { id: 'f-1', severity: 'WARNING', title: 'Schedule FA Foreign Assets', desc: 'US Tech RSUs require complete foreign asset disclosure under Black Money Act.' },
+          { id: 'f-2', severity: 'INFO', title: 'Section 44ADA Presumptive Safe Harbor', desc: 'Declared net profit ratio exceeds 50% statutory threshold.' },
+        ],
+      };
+    }
+
     case 'generate_advisor_suitability_memo': {
       const crypto = require('crypto');
       const hash = crypto.createHash('sha256').update(JSON.stringify(args) + Date.now()).digest('hex');

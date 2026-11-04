@@ -52,6 +52,12 @@ function TaxForensicStudioInner() {
     setIsCpaReviewModalOpen,
     isTaxNavigatorOpen,
     setIsTaxNavigatorOpen,
+    isDropzoneOpen,
+    setIsDropzoneOpen,
+    isScenarioOpen,
+    setIsScenarioOpen,
+    isVaultOpen,
+    setIsVaultOpen,
     userTaxPersona,
     isFocusModeActive,
     toggleFocusMode,
@@ -62,10 +68,6 @@ function TaxForensicStudioInner() {
   } = useTaxStudio();
 
   const currentTab = searchParams.get('tab') || 'e-file';
-
-  const [isDropzoneOpen, setIsDropzoneOpen] = useState(false);
-  const [isScenarioOpen, setIsScenarioOpen] = useState(false);
-  const [isVaultOpen, setIsVaultOpen] = useState(false);
 
   // Auto-launch AI Tax Navigator on initial visit if not previously seen
   useEffect(() => {
@@ -517,13 +519,6 @@ function TaxForensicStudioInner() {
             {currentTab === 'forensic' && (isUSMarket ? <USForensicAudit /> : <ForensicAudit />)}
             {currentTab === 'itr' && (isUSMarket ? <USTaxAssistant /> : <ITRAssistant />)}
           </div>
-
-          {/* Persistent Floating Tax GPS Co-Pilot Drawer */}
-          <TaxGPSCoPilotDrawer
-            currentTab={currentTab}
-            onSelectTab={setTab}
-            onOpenDropzone={() => setIsDropzoneOpen(true)}
-          />
         </>
       )}
     </div>
@@ -531,6 +526,10 @@ function TaxForensicStudioInner() {
 }
 
 export default function TaxForensicStudio() {
+  const existingContext = useTaxStudio();
+  if (existingContext) {
+    return <TaxForensicStudioInner />;
+  }
   return (
     <TaxStudioProvider>
       <TaxForensicStudioInner />

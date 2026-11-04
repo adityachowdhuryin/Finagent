@@ -215,7 +215,7 @@ router.post('/chat', async (req, res) => {
       fundA: 'Parag Parikh Flexi Cap Fund',
       fundB: 'HDFC Flexi Cap Fund',
     });
-  } else if (lowerMsg.includes('/tax') || lowerMsg.includes('115bac') || lowerMsg.includes('old vs new')) {
+  } else if (lowerMsg.includes('/tax') || lowerMsg.includes('115bac') || lowerMsg.includes('old vs new') || lowerMsg.includes('regime')) {
     detectedCard = executeCopilotTool('calculate_tax_breakdown', {
       salaryIncome: 1850000,
       stcg: 85000,
@@ -223,6 +223,8 @@ router.post('/chat', async (req, res) => {
       deductions80C: 150000,
       deductions80D: 25000,
     });
+  } else if (lowerMsg.includes('/audit') || lowerMsg.includes('audit my return') || lowerMsg.includes('scrutiny') || lowerMsg.includes('red flag')) {
+    detectedCard = executeCopilotTool('run_tax_audit', { isUS });
   } else if (lowerMsg.includes('/memo') || lowerMsg.includes('suitability')) {
     detectedCard = executeCopilotTool('generate_advisor_suitability_memo', isUS ? {
       clientName: portfolioContext.clientName || 'Alexander Wright',

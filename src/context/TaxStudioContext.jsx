@@ -130,8 +130,10 @@ export function TaxStudioProvider({ children }) {
     }
   ]);
 
-  // ── What-If Scenario State ─────────────────────────────────────────────────
+  // ── What-If Scenario, Dropzone & Vault Modal States ───────────────────────
   const [isScenarioOpen, setIsScenarioOpen] = useState(false);
+  const [isDropzoneOpen, setIsDropzoneOpen] = useState(false);
+  const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [activeScenarioPreset, setActiveScenarioPreset] = useState(
     activeMarket === 'US' ? 'RELOCATE_TX' : 'REGIME_OPTIMIZE'
   );
@@ -851,9 +853,13 @@ export function TaxStudioProvider({ children }) {
     ingestDocument,
     // Harvest Action
     executeLossHarvest,
-    // What-If Scenarios
+    // What-If Scenarios & Modal States
     isScenarioOpen,
     setIsScenarioOpen,
+    isDropzoneOpen,
+    setIsDropzoneOpen,
+    isVaultOpen,
+    setIsVaultOpen,
     activeScenarioPreset,
     setActiveScenarioPreset,
     scenarioOverrides,

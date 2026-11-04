@@ -11,6 +11,7 @@ import ErrorBoundary from '../../components/ui/ErrorBoundary';
 import AICopilotSidecar from '../../components/ai/AICopilotSidecar';
 import SentinelBanner from '../../components/common/SentinelBanner';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
+import { TaxStudioProvider } from '../../context/TaxStudioContext';
 
 export default function ConsumerApp() {
   usePageTracking();
@@ -43,31 +44,33 @@ export default function ConsumerApp() {
   }, []);
 
   return (
-    <div className="app-shell">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="main-content">
-        <TopBar
-          onMenuClick={() => setSidebarOpen(true)}
-          onSearchClick={() => setSearchOpen(true)}
+    <TaxStudioProvider>
+      <div className="app-shell">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="main-content">
+          <TopBar
+            onMenuClick={() => setSidebarOpen(true)}
+            onSearchClick={() => setSearchOpen(true)}
+          />
+          <HubSubNav />
+          <main className="page-content" style={{ paddingBottom: '3rem' }}>
+            <SentinelBanner />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+        </div>
+        <ErrorBoundary>
+          <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <AICopilotSidecar isOpen={copilotOpen} onToggle={() => setCopilotOpen(prev => !prev)} />
+        </ErrorBoundary>
+        <MobileBottomNav
+          onToggleCopilot={() => setCopilotOpen(prev => !prev)}
+          onOpenMenu={() => setSidebarOpen(true)}
         />
-        <HubSubNav />
-        <main className="page-content" style={{ paddingBottom: '3rem' }}>
-          <SentinelBanner />
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
       </div>
-      <ErrorBoundary>
-        <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      </ErrorBoundary>
-      <ErrorBoundary>
-        <AICopilotSidecar isOpen={copilotOpen} onToggle={() => setCopilotOpen(prev => !prev)} />
-      </ErrorBoundary>
-      <MobileBottomNav
-        onToggleCopilot={() => setCopilotOpen(prev => !prev)}
-        onOpenMenu={() => setSidebarOpen(true)}
-      />
-    </div>
+    </TaxStudioProvider>
   );
 }

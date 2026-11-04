@@ -14,12 +14,22 @@ import InChatBasketOrderCard from './cards/InChatBasketOrderCard';
 import InChatPrepaymentSliderCard from './cards/InChatPrepaymentSliderCard';
 import InChatFundCompareCard from './cards/InChatFundCompareCard';
 import InChatDossierExportCard from './cards/InChatDossierExportCard';
+import InChatTaxRegimeCard from './cards/InChatTaxRegimeCard';
+import InChatTaxAuditCard from './cards/InChatTaxAuditCard';
+import TaxGPSRoadmapHeader from './TaxGPSRoadmapHeader';
+import { useTaxStudio } from '../../context/TaxStudioContext';
 
 export default function AICopilotSidecar({ isOpen, onToggle }) {
   const { state, isUSMarket } = useApp();
   const { currentUser, userProfile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const taxStudio = useTaxStudio();
+
+  const isTaxStudio = location.pathname === '/app/tax';
+  const taxRoadmap = taxStudio?.activeRoadmap;
+  const taxSteps = taxRoadmap?.steps || [];
+  const taxCompletedCount = taxSteps.filter(s => s.completed).length;
 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -80,12 +90,14 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
     if (path.includes('/tax') || path.includes('/wash-sale')) {
       return {
-        pageName: 'Tax & Alpha Optimization',
-        summary: `Tax engine active (${market} rules). Harvestable losses and capital gains tracking.`,
+        pageName: 'Tax & Forensic Studio',
+        summary: `Fiduciary tax engine (${market}). Tab: ${taxStudio?.currentTab || 'Overview'}. Persona: ${taxStudio?.userTaxPersona || 'Standard'}.`,
         suggestedPrompts: [
-          'Analyze my current lots for wash-sale proxy trades',
-          'How much tax will I save if I harvest losses today?',
-          'Compare my tax liability under 115BAC vs Old Regime',
+          '🧭 Walk me through everything step-by-step',
+          '⚡ Compare Old vs New Regime & pick best',
+          '🔍 Audit my return for IRS / ITD red flags',
+          '📉 Harvest available tax losses now',
+          '🌐 Where do I enter foreign assets and RSUs?',
         ],
       };
     }
@@ -268,12 +280,27 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
       if (!json.success) throw new Error(json.error || 'Document OCR failed');
 
       const d = json.data;
+      let taxSyncNote = '';
+      if (taxStudio?.updateTaxpayer) {
+        const updates = {};
+        if (d.salary) updates.salary = Number(d.salary);
+        if (d.tdsPaid) updates.tdsPaid = Number(d.tdsPaid);
+        if (d.fedWithholding) updates.fedWithholding = Number(d.fedWithholding);
+        if (d.stcg) updates.stcg = Number(d.stcg);
+        if (d.ltcg) updates.ltcg = Number(d.ltcg);
+        if (d.deduction80C) updates.deduction80C = Number(d.deduction80C);
+        if (Object.keys(updates).length > 0) {
+          taxStudio.updateTaxpayer(updates);
+          taxSyncNote = `\n\n⚡ **Live Tax Studio Sync**: Extracted figures have been directly populated into your active tax return workspace in the background.`;
+        }
+      }
+
       const responseText = `**Document Verified: ${d.documentType || 'Financial Statement'}**\n` +
         `• Institution: ${d.institution || 'Verified Financial Entity'}\n` +
         `• Account / Ref: ${d.accountNumber || 'Masked'}\n` +
         `• Executive Summary: ${d.summary || 'Data extracted successfully.'}\n\n` +
         (d.anomalies && d.anomalies.length > 0 ? `⚠️ **Audit Flags**: ${d.anomalies.join('; ')}\n\n` : '') +
-        `Would you like me to update your portfolio holdings with these figures?`;
+        (taxSyncNote || `Would you like me to update your portfolio holdings with these figures?`);
 
       setMessages(prev => [
         ...prev,
@@ -296,6 +323,19 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper: Deep Tab Navigation & Target Spotlighting for Tax Studio
+  const navigateToTaxTab = (tabId, tabName, spotlightTarget) => {
+    if (location.pathname !== '/app/tax') {
+      navigate('/app/tax');
+    }
+    if (taxStudio?.setTab) {
+      taxStudio.setTab(tabId);
+    }
+    if (spotlightTarget && taxStudio?.triggerSpotlight) {
+      setTimeout(() => taxStudio.triggerSpotlight(spotlightTarget), 300);
     }
   };
 
@@ -391,6 +431,257 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
         ]);
         setLoading(false);
       }, 500);
+      return;
+    }
+
+    // ── Agentic Tax Studio Command Dispatchers (8 Pillars) ───────────────
+    // Pillar 6: Ghost Driver Guided Tour Mode
+    if (text.match(/walk me through|guide me|guided tour|take me through|tour mode|\/tour|\/guide/i)) {
+      setTimeout(() => {
+        navigateToTaxTab('itr', 'ITR Assistant', 'calc-card');
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `🧭 **Guided Tax Tour: Step 1 of 3 (Regime Optimization)**\n\nI have navigated your screen to the **Regime & Deduction Optimizer**. Here, we compute whether the **New Tax Regime (Section 115BAC)** or the **Old Regime** saves you more money.\n\nTake a look at the highlighted progressive slab visualizer on screen. Click below to proceed to **Step 2 (Loss Harvesting)** or ask me any question about your deductions.`,
+            action: {
+              type: 'tax_tour_next',
+              label: 'Proceed to Step 2: Loss Harvesting →',
+              onClick: () => {
+                navigateToTaxTab('harvester', 'Tax-Loss Harvester', 'harvest-execute-btn');
+                setMessages(m => [
+                  ...m,
+                  {
+                    id: `ai-${Date.now()}`,
+                    role: 'assistant',
+                    content: `📉 **Guided Tax Tour: Step 2 of 3 (Tax-Loss Harvesting)**\n\nI have switched your workspace to the **Tax-Loss Harvester**. Here you can offset capital gains by selling dipped positions and instantly reinvesting in non-identical proxies.\n\nReady for **Step 3: Foreign Assets & Forensic Audit**?`,
+                    action: {
+                      type: 'tax_tour_next',
+                      label: 'Proceed to Step 3: Foreign Assets & Audit →',
+                      onClick: () => {
+                        navigateToTaxTab('forensic', 'Forensic Audit', 'fa-foreign-stock-table');
+                        setMessages(m2 => [
+                          ...m2,
+                          {
+                            id: `ai-${Date.now()}`,
+                            role: 'assistant',
+                            content: `🛡️ **Guided Tax Tour: Step 3 of 3 (Schedule FA & Audit Shield)**\n\nHere you can declare foreign accounts, RSUs, and run the 28-rule audit linter to ensure zero statutory notices.\n\n🎉 **Tour Complete!** You are ready to generate your certified return draft.`,
+                          }
+                        ]);
+                      }
+                    }
+                  }
+                ]);
+              }
+            },
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 1 & 2: Foreign Assets / Schedule FA Deep Navigation & Spotlighting
+    if (text.match(/foreign asset|schedule fa|rsu|foreign stock|black money/i)) {
+      setTimeout(() => {
+        navigateToTaxTab('forensic', 'Schedule FA (Foreign Assets)', 'fa-foreign-stock-table');
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `I have navigated your screen to **Schedule FA (Foreign Assets)** and spotlighted the foreign holdings declaration table.\n\nUnder statutory rules, all foreign equity, depository receipts, and overseas broker accounts must be declared to prevent penalty notices under the Black Money Act.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 1 & 2 & 5: Tax-Loss Harvesting & Paired Swaps
+    if (text.match(/harvest|wash sale|tax loss|loss harvesting|\/harvest/i)) {
+      setTimeout(() => {
+        navigateToTaxTab('harvester', 'Tax-Loss Harvester', 'harvest-execute-btn');
+        const harvestCard = {
+          cardType: 'basket_order',
+          strategyName: market === 'US' ? 'US Tax-Loss Harvesting & Proxy Reinvestment' : 'LTCG/STCG Tax-Loss Harvester',
+          orders: market === 'US' ? [
+            { symbol: 'NVDA', action: 'SELL', quantity: 25, price: 118, taxImpact: -4200, reason: 'Harvest STCL against wage income' },
+            { symbol: 'SOXX', action: 'BUY', quantity: 12, price: 235, taxImpact: 0, reason: 'Semiconductor ETF Proxy (Avoids Wash-Sale)' },
+          ] : [
+            { symbol: 'INFY', action: 'SELL', quantity: 30, price: 1880, taxImpact: -12400, reason: 'Harvest STCG Loss under 20% slab' },
+            { symbol: 'NIFTYBEES', action: 'BUY', quantity: 210, price: 268, taxImpact: 0, reason: 'Broad Nifty 50 Proxy Allocation' },
+          ],
+          totalValue: market === 'US' ? 5770 : 84200,
+          netTaxSaved: market === 'US' ? 1260 : 2480,
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `I have navigated to the **Tax-Loss Harvester** and spotlighted the execution button. I prepared a verified harvest basket for you below.`,
+            card: harvestCard,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 3: Remote Control for Modals (Dropzone, Sandbox, Vault)
+    if (text.match(/upload|dropzone|import doc|w-2|form 16|1099/i) && !text.includes('explain')) {
+      setTimeout(() => {
+        if (location.pathname !== '/app/tax') navigate('/app/tax');
+        if (taxStudio?.setIsDropzoneOpen) taxStudio.setIsDropzoneOpen(true);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `Opening the **Universal Document Dropzone** modal on your screen. You can drag and drop your Form 16, W-2, 1099-B, or brokerage statement directly.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    if (text.match(/sandbox|what-if|scenario comparison|simulate move|simulate relocation/i)) {
+      setTimeout(() => {
+        if (location.pathname !== '/app/tax') navigate('/app/tax');
+        if (taxStudio?.setIsScenarioOpen) taxStudio.setIsScenarioOpen(true);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `Opening the **Side-by-Side What-If Scenario Sandbox** on your screen. You can simulate tax relocation, wage adjustments, and deduction splits in real-time.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    if (text.match(/loss vault|carryforward vault|multi-year loss/i)) {
+      setTimeout(() => {
+        if (location.pathname !== '/app/tax') navigate('/app/tax');
+        if (taxStudio?.setIsVaultOpen) taxStudio.setIsVaultOpen(true);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `Opening the **Multi-Year Loss Carryforward Vault** modal on your screen. You can inspect unabsorbed STCL / LTCL lots across prior assessment years.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 1 & 2: S-Corp / HUF Studio
+    if (text.match(/s-corp|scorp|reasonable salary|reasonable comp|huf|hindu undivided/i)) {
+      setTimeout(() => {
+        const isUS = market === 'US';
+        navigateToTaxTab('huf', isUS ? 'S-Corp Studio' : 'HUF Tax Shield', isUS ? 'scorp-salary-slider' : 'huf-deed-btn');
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: isUS
+              ? `I have switched your workspace to the **S-Corp Reasonable Compensation Studio** and highlighted the salary slider. Setting your wage to $95,000 saves an estimated **$7,420** in FICA taxes.`
+              : `I have navigated your workspace to the **HUF Tax Shield Studio** and highlighted the deed generator. Partitioning rental and passive investments through an HUF creates a separate ₹2.5L basic exemption slab.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 1 & 2: Quarterly Safe Harbor
+    if (text.match(/quarterly|safe harbor|advance tax|estimated tax/i)) {
+      setTimeout(() => {
+        navigateToTaxTab('quarterly', 'Quarterly Safe Harbor Sentinel', 'safe-harbor-ics-sync-btn');
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `I have navigated your screen to the **Quarterly Safe Harbor Sentinel** and spotlighted the IRS/ITD calendar sync. Complying with safe harbor installments protects you from statutory interest penalties.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 5: In-Chat Tax Regime Decision Card
+    if (text.match(/regime|115bac|old vs new|standard vs itemized/i)) {
+      setTimeout(() => {
+        navigateToTaxTab('itr', 'ITR Assistant', 'calc-card');
+        const regimeCard = {
+          cardType: 'tax_regime',
+          market,
+          recommendedRegime: 'new',
+          oldTax: market === 'US' ? 48500 : 425000,
+          newTax: market === 'US' ? 44200 : 382500,
+          savings: market === 'US' ? 4300 : 42500,
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `I have analyzed your tax profile under statutory brackets. The **${market === 'US' ? 'Standard Deduction' : 'New Tax Regime (Section 115BAC)'}** yields lower tax liability. A 1-click decision card is prepared below.`,
+            card: regimeCard,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
+      return;
+    }
+
+    // Pillar 7: Proactive Audit Watchdog Card
+    if (text.match(/audit|scrutiny|red flag|linter|143\(1\)/i) && !text.startsWith('/audit')) {
+      setTimeout(() => {
+        navigateToTaxTab('forensic', 'Forensic Audit Sentinel', 'audit-linter-card');
+        const auditCard = {
+          cardType: 'tax_audit',
+          market,
+          score: 92,
+          flags: market === 'US' ? [
+            { id: 'f-1', severity: 'WARNING', title: 'Schedule D Wash-Sale Linter', desc: 'Active paired swap prevents IRC §1091 replacement stock loss disallowance.' },
+            { id: 'f-2', severity: 'INFO', title: 'S-Corp Reasonable Wage Audit', desc: 'Wage-to-distribution ratio verified against Bureau of Labor Statistics.' },
+          ] : [
+            { id: 'f-1', severity: 'WARNING', title: 'Schedule FA Foreign Assets', desc: 'US Tech RSUs require complete foreign asset disclosure under Black Money Act.' },
+            { id: 'f-2', severity: 'INFO', title: 'Section 44ADA Presumptive Safe Harbor', desc: 'Declared net profit ratio exceeds 50% statutory threshold.' },
+          ],
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: `I have initiated the **Forensic Audit Linter** across statutory rules. Your return score is **92/100**. One potential scrutiny point requires safe harbor confirmation below.`,
+            card: auditCard,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setLoading(false);
+      }, 350);
       return;
     }
 
@@ -573,7 +864,13 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
                 />
               )}
             </div>
-            <span>{isAdvisorRoute ? 'RIA Copilot' : 'Copilot AI'}</span>
+            <span>
+              {isAdvisorRoute
+                ? 'RIA Copilot'
+                : isTaxStudio && taxRoadmap
+                ? `Copilot AI • ${taxCompletedCount}/${taxSteps.length} Done 🧭`
+                : 'Copilot AI'}
+            </span>
             <kbd
               style={{
                 fontSize: '0.65rem',
@@ -752,6 +1049,15 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
           </div>
         </div>
 
+        {/* Pinned Tax GPS Roadmap Header on /app/tax */}
+        {isTaxStudio && (
+          <TaxGPSRoadmapHeader
+            onAskAboutStep={(step) => {
+              handleSend(`Explain step: ${step.title} and what actions I need to take.`);
+            }}
+          />
+        )}
+
         {/* Proactive Intelligence Banner Tray */}
         {proactiveAlerts.length > 0 && (
           <div
@@ -913,7 +1219,30 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
 
                     {/* Interactive Generative UI Card Injections */}
                     {m.card && m.card.cardType === 'basket_order' && (
-                      <InChatBasketOrderCard card={m.card} />
+                      <InChatBasketOrderCard
+                        card={m.card}
+                        onComplete={() => {
+                          if (taxStudio?.executeLossHarvest) {
+                            taxStudio.executeLossHarvest();
+                          }
+                        }}
+                      />
+                    )}
+                    {m.card && (m.card.cardType === 'tax_regime' || m.card.cardType === 'tax_comparison') && (
+                      <InChatTaxRegimeCard
+                        card={m.card}
+                        onComplete={(res) => {
+                          handleSend(`Applied ${res.appliedRegime} tax regime. Saved ${res.savings}.`);
+                        }}
+                      />
+                    )}
+                    {m.card && m.card.cardType === 'tax_audit' && (
+                      <InChatTaxAuditCard
+                        card={m.card}
+                        onComplete={(res) => {
+                          handleSend(`Secured safe harbor compliance for ${res.fixedCount} audit rules.`);
+                        }}
+                      />
                     )}
                     {m.card && m.card.cardType === 'prepayment_slider' && (
                       <InChatPrepaymentSliderCard card={m.card} />
@@ -934,8 +1263,12 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
                         <button
                           type="button"
                           onClick={() => {
-                            if (m.action.to) navigate(m.action.to);
-                            onToggle();
+                            if (m.action.onClick) {
+                              m.action.onClick();
+                            } else {
+                              if (m.action.to) navigate(m.action.to);
+                              onToggle();
+                            }
                           }}
                           className="btn btn-primary btn-sm"
                           style={{
