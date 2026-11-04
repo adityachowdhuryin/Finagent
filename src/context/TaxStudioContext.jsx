@@ -240,6 +240,30 @@ export function TaxStudioProvider({ children }) {
     });
   }, []);
 
+  const [isCoPilotDismissed, setIsCoPilotDismissed] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_copilot_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const dismissCoPilot = useCallback(() => {
+    setIsCoPilotDismissed(true);
+    try {
+      localStorage.setItem('finagent_copilot_dismissed', 'true');
+    } catch {}
+  }, []);
+
+  const restoreCoPilot = useCallback(() => {
+    setIsCoPilotDismissed(false);
+    setIsCoPilotCollapsed(false);
+    try {
+      localStorage.setItem('finagent_copilot_dismissed', 'false');
+      localStorage.setItem('finagent_copilot_collapsed', 'false');
+    } catch {}
+  }, []);
+
   const [spotlightTarget, setSpotlightTarget] = useState(null);
 
   const triggerSpotlight = useCallback((elementId) => {
@@ -852,6 +876,9 @@ export function TaxStudioProvider({ children }) {
     isCoPilotCollapsed,
     setIsCoPilotCollapsed,
     toggleCoPilotCollapse,
+    isCoPilotDismissed,
+    dismissCoPilot,
+    restoreCoPilot,
     spotlightTarget,
     triggerSpotlight,
     // CPA Review

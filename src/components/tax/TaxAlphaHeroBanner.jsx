@@ -31,6 +31,8 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
     userTaxPersona,
     isPlainEnglishMode,
     togglePlainEnglishMode,
+    isCoPilotDismissed,
+    restoreCoPilot,
   } = useTaxStudio();
 
   const [cpaModalOpen, setCpaModalOpen] = useState(false);
@@ -207,6 +209,30 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           >
             <span>{isPlainEnglishMode ? '🗣️ Plain English Mode' : '⚖️ Institutional Mode'}</span>
           </button>
+
+          {isCoPilotDismissed && activeRoadmap && (
+            <button
+              type="button"
+              onClick={restoreCoPilot}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: 6,
+                background: 'rgba(168, 85, 247, 0.2)',
+                border: '1px solid rgba(168, 85, 247, 0.45)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#d8b4fe',
+                cursor: 'pointer',
+              }}
+              title="Re-open the floating in-tab Tax GPS guide"
+            >
+              <Compass size={12} />
+              <span>Show Tax GPS Guide</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -687,6 +713,30 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
           >
             <span>{isPlainEnglishMode ? '🗣️ Plain English Mode' : '⚖️ Institutional Mode'}</span>
           </button>
+
+          {isCoPilotDismissed && activeRoadmap && (
+            <button
+              type="button"
+              onClick={restoreCoPilot}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: 6,
+                background: 'rgba(168, 85, 247, 0.2)',
+                border: '1px solid rgba(168, 85, 247, 0.45)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#d8b4fe',
+                cursor: 'pointer',
+              }}
+              title="Re-open the floating in-tab Tax GPS guide"
+            >
+              <Compass size={12} />
+              <span>Show Tax GPS Guide</span>
+            </button>
+          )}
 
           <button
             type="button"

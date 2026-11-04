@@ -21,13 +21,15 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
     advanceToNextRoadmapStep,
     isCoPilotCollapsed,
     toggleCoPilotCollapse,
+    isCoPilotDismissed,
+    dismissCoPilot,
     setIsTaxNavigatorOpen,
   } = useTaxStudio();
 
   const [showExplanationModal, setShowExplanationModal] = useState(false);
 
-  // If no roadmap is active, return null
-  if (!activeRoadmap) return null;
+  // If no roadmap is active or user dismissed the floating guide, return null
+  if (!activeRoadmap || isCoPilotDismissed) return null;
 
   const guidance = getModuleFieldGuidance(userTaxPersona, currentTab, activeMarket);
   const steps = activeRoadmap.steps || [];
@@ -56,9 +58,12 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
       <div
         style={{
           position: 'fixed',
-          bottom: 24,
+          bottom: 84, // Stacks cleanly above the global Copilot AI button (bottom: 24, height: 44)
           right: 24,
-          zIndex: 1000,
+          zIndex: 89,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
         }}
       >
         <button
@@ -108,6 +113,27 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
           </span>
           <ChevronUp size={14} color="#cbd5e1" />
         </button>
+        <button
+          type="button"
+          onClick={dismissCoPilot}
+          title="Close Tax GPS Guide"
+          style={{
+            background: 'rgba(15, 23, 42, 0.96)',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            borderRadius: '50%',
+            width: 28,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#cbd5e1',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <X size={13} />
+        </button>
       </div>
     );
   }
@@ -119,7 +145,7 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
         className="card page-enter"
         style={{
           position: 'fixed',
-          bottom: 24,
+          bottom: 84, // Stacks cleanly above the global Copilot AI button
           right: 24,
           width: 360,
           maxWidth: 'calc(100vw - 32px)',
@@ -128,7 +154,7 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
           borderRadius: 14,
           boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(168, 85, 247, 0.25)',
           color: '#fff',
-          zIndex: 1000,
+          zIndex: 89,
           padding: '1rem',
           display: 'flex',
           flexDirection: 'column',
@@ -194,6 +220,21 @@ export default function TaxGPSCoPilotDrawer({ currentTab = 'e-file', onSelectTab
               title="Minimize Tax GPS Co-Pilot"
             >
               <ChevronDown size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={dismissCoPilot}
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: 'none',
+                borderRadius: 4,
+                color: '#cbd5e1',
+                padding: '0.25rem',
+                cursor: 'pointer',
+              }}
+              title="Close Tax GPS Guide"
+            >
+              <X size={14} />
             </button>
           </div>
         </div>

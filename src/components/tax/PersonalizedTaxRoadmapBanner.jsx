@@ -15,6 +15,8 @@ export default function PersonalizedTaxRoadmapBanner({ onSelectTab, onOpenDropzo
     toggleFocusMode,
     setIsTaxNavigatorOpen,
     completeRoadmapStep,
+    isCoPilotDismissed,
+    restoreCoPilot,
   } = useTaxStudio();
 
   if (!isFocusModeActive || !activeRoadmap) return null;
@@ -118,6 +120,30 @@ export default function PersonalizedTaxRoadmapBanner({ onSelectTab, onOpenDropzo
 
         {/* Right Action Switchers */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {isCoPilotDismissed && (
+            <button
+              type="button"
+              onClick={restoreCoPilot}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: 6,
+                background: 'rgba(168, 85, 247, 0.2)',
+                border: '1px solid rgba(168, 85, 247, 0.45)',
+                color: '#d8b4fe',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              title="Show floating in-tab Tax GPS guide"
+            >
+              <Compass size={11} />
+              <span>Show Tax GPS Guide</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setIsTaxNavigatorOpen(true)}
