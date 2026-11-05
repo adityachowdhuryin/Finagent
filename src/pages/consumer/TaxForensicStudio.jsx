@@ -75,12 +75,11 @@ function TaxForensicStudioInner() {
     setTab: ctxSetTab,
   } = useTaxStudio();
 
+  const currentTab = searchParams.get('tab') || ctxTab || 'e-file';
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const roadmapSteps = activeRoadmap?.steps || [];
   const currentStepIndex = roadmapSteps.findIndex(s => s.tab === currentTab);
   const activeStep = currentStepIndex !== -1 ? roadmapSteps[currentStepIndex] : roadmapSteps[0];
-
-  const currentTab = searchParams.get('tab') || ctxTab || 'e-file';
 
   const setTab = (newTab, newSubTab = null) => {
     setSearchParams(prev => {
