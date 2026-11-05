@@ -65,25 +65,44 @@ function TaxForensicStudioInner() {
     isPlainEnglishMode,
     isCoPilotDismissed,
     restoreCoPilot,
+    currentTab: ctxTab,
+    currentSubTab: ctxSubTab,
+    setTab: ctxSetTab,
   } = useTaxStudio();
 
-  const currentTab = searchParams.get('tab') || 'e-file';
+  const currentTab = searchParams.get('tab') || ctxTab || 'e-file';
+
+  const setTab = (newTab, newSubTab = null) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', newTab);
+      if (newSubTab) {
+        next.set('subTab', newSubTab);
+      } else {
+        next.delete('subTab');
+      }
+      return next;
+    });
+    if (ctxSetTab) {
+      ctxSetTab(newTab, newSubTab);
+    }
+  };
+
+  // Sync tab & subTab if ctxTab / ctxSubTab changes from Copilot
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    const urlSubTab = searchParams.get('subTab');
+    if ((ctxTab && ctxTab !== urlTab) || (ctxSubTab && ctxSubTab !== urlSubTab)) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        if (ctxTab) next.set('tab', ctxTab);
+        if (ctxSubTab) next.set('subTab', ctxSubTab);
+        return next;
+      });
+    }
+  }, [ctxTab, ctxSubTab, searchParams, setSearchParams]);
 
   // Auto-launch AI Tax Navigator on initial visit if not previously seen
-  useEffect(() => {
-    try {
-      const hasSeen = localStorage.getItem('finagent_tax_navigator_seen');
-      if (!hasSeen) {
-        setIsTaxNavigatorOpen(true);
-      }
-    } catch {
-      // ignore storage error
-    }
-  }, [setIsTaxNavigatorOpen]);
-
-  const setTab = (newTab) => {
-    setSearchParams({ tab: newTab });
-  };
 
   const tabs = [
     {

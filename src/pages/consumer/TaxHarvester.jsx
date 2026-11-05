@@ -411,7 +411,7 @@ Generate a numbered transaction sequence. Return ONLY valid JSON:
                 <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/app/ai-advisor', { state: { initialPrompt: 'Help me harvest capital losses to save tax before March 31.' } })}>
                   🤖 Ask AI for full analysis
                 </button>
-                <button className="btn btn-secondary" style={{ flex: 1 }}>
+                <button id="harvest-execute-btn" className="btn btn-secondary" style={{ flex: 1 }}>
                   <ExternalLink size={14} /> Execute on Zerodha
                 </button>
               </div>

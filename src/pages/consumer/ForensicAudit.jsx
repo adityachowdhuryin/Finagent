@@ -280,7 +280,7 @@ export default function ForensicAudit() {
       </div>
 
       {/* Upload Statement Box */}
-      <div className="card" style={{ padding: '1.25rem' }}>
+      <div className="card" id="forensic-audit-card" style={{ padding: '1.25rem' }}>
         <h3 className="text-h3" style={{ marginBottom: '0.25rem' }}>Scan New Bank Statement / E-Bill (PDF / CSV)</h3>
         <p className="text-xs text-secondary" style={{ marginBottom: '1rem' }}>
           Supports password-protected statements from HDFC, SBI, ICICI, Axis, and Zerodha ledger statements.
@@ -331,7 +331,7 @@ export default function ForensicAudit() {
           />
 
           {/* Executive Consolidated Leakage Banner */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          <div id="audit-linter-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             {/* Total Drag */}
             <div className="card" style={{ borderLeft: '4px solid var(--red)', background: 'linear-gradient(135deg, rgba(239,68,68,0.06), transparent)' }}>
               <div className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Annual Financial Drag</div>

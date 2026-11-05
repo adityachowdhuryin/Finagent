@@ -327,15 +327,16 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
   };
 
   // Helper: Deep Tab Navigation & Target Spotlighting for Tax Studio
-  const navigateToTaxTab = (tabId, tabName, spotlightTarget) => {
-    if (location.pathname !== '/app/tax') {
-      navigate('/app/tax');
-    }
+  const navigateToTaxTab = (tabId, subTabId = null, spotlightTarget = null) => {
+    const params = new URLSearchParams();
+    if (tabId) params.set('tab', tabId);
+    if (subTabId) params.set('subTab', subTabId);
+    navigate(`/app/tax?${params.toString()}`);
     if (taxStudio?.setTab) {
-      taxStudio.setTab(tabId);
+      taxStudio.setTab(tabId, subTabId);
     }
     if (spotlightTarget && taxStudio?.triggerSpotlight) {
-      setTimeout(() => taxStudio.triggerSpotlight(spotlightTarget), 300);
+      setTimeout(() => taxStudio.triggerSpotlight(spotlightTarget), 350);
     }
   };
 
@@ -438,7 +439,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     // Pillar 6: Ghost Driver Guided Tour Mode
     if (text.match(/walk me through|guide me|guided tour|take me through|tour mode|\/tour|\/guide/i)) {
       setTimeout(() => {
-        navigateToTaxTab('itr', 'ITR Assistant', 'calc-card');
+        navigateToTaxTab('itr', 'summary', 'calc-card');
         setMessages(prev => [
           ...prev,
           {
@@ -449,7 +450,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
               type: 'tax_tour_next',
               label: 'Proceed to Step 2: Loss Harvesting →',
               onClick: () => {
-                navigateToTaxTab('harvester', 'Tax-Loss Harvester', 'harvest-execute-btn');
+                navigateToTaxTab('harvester', null, 'harvest-execute-btn');
                 setMessages(m => [
                   ...m,
                   {
@@ -460,7 +461,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
                       type: 'tax_tour_next',
                       label: 'Proceed to Step 3: Foreign Assets & Audit →',
                       onClick: () => {
-                        navigateToTaxTab('forensic', 'Forensic Audit', 'fa-foreign-stock-table');
+                        navigateToTaxTab('itr', 'schedule-fa', 'fa-foreign-stock-table');
                         setMessages(m2 => [
                           ...m2,
                           {
@@ -484,9 +485,9 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 1 & 2: Foreign Assets / Schedule FA Deep Navigation & Spotlighting
-    if (text.match(/foreign asset|schedule fa|rsu|foreign stock|black money/i)) {
+    if (text.match(/foreign asset|schedule fa|rsu|foreign stock|black money|table a3|rule 115/i)) {
       setTimeout(() => {
-        navigateToTaxTab('forensic', 'Schedule FA (Foreign Assets)', 'fa-foreign-stock-table');
+        navigateToTaxTab('itr', 'schedule-fa', 'fa-foreign-stock-table');
         setMessages(prev => [
           ...prev,
           {
@@ -504,7 +505,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     // Pillar 1 & 2 & 5: Tax-Loss Harvesting & Paired Swaps
     if (text.match(/harvest|wash sale|tax loss|loss harvesting|\/harvest/i)) {
       setTimeout(() => {
-        navigateToTaxTab('harvester', 'Tax-Loss Harvester', 'harvest-execute-btn');
+        navigateToTaxTab('harvester', null, 'harvest-execute-btn');
         const harvestCard = {
           cardType: 'basket_order',
           strategyName: market === 'US' ? 'US Tax-Loss Harvesting & Proxy Reinvestment' : 'LTCG/STCG Tax-Loss Harvester',
@@ -534,7 +535,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 3: Remote Control for Modals (Dropzone, Sandbox, Vault)
-    if (text.match(/upload|dropzone|import doc|w-2|form 16|1099/i) && !text.includes('explain')) {
+    if (text.match(/upload|dropzone|import doc|w-2|form 16|1099|reconcile.*ais|tax credit/i) && !text.includes('explain')) {
       setTimeout(() => {
         if (location.pathname !== '/app/tax') navigate('/app/tax');
         if (taxStudio?.setIsDropzoneOpen) taxStudio.setIsDropzoneOpen(true);
@@ -552,7 +553,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
       return;
     }
 
-    if (text.match(/sandbox|what-if|scenario comparison|simulate move|simulate relocation/i)) {
+    if (text.match(/sandbox|what-if|scenario comparison|simulate move|simulate relocation|california to texas|austin|relocat/i)) {
       setTimeout(() => {
         if (location.pathname !== '/app/tax') navigate('/app/tax');
         if (taxStudio?.setIsScenarioOpen) taxStudio.setIsScenarioOpen(true);
@@ -570,7 +571,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
       return;
     }
 
-    if (text.match(/loss vault|carryforward vault|multi-year loss/i)) {
+    if (text.match(/loss vault|carryforward vault|multi-year loss|unabsorbed loss|prior year.*loss|unabsorbed.*2023/i)) {
       setTimeout(() => {
         if (location.pathname !== '/app/tax') navigate('/app/tax');
         if (taxStudio?.setIsVaultOpen) taxStudio.setIsVaultOpen(true);
@@ -589,10 +590,10 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 1 & 2: S-Corp / HUF Studio
-    if (text.match(/s-corp|scorp|reasonable salary|reasonable comp|huf|hindu undivided/i)) {
+    if (text.match(/s-corp|scorp|reasonable salary|reasonable comp|fica|huf|hindu undivided/i)) {
       setTimeout(() => {
         const isUS = market === 'US';
-        navigateToTaxTab('huf', isUS ? 'S-Corp Studio' : 'HUF Tax Shield', isUS ? 'scorp-salary-slider' : 'huf-deed-btn');
+        navigateToTaxTab('huf', null, isUS ? 'scorp-salary-slider' : 'huf-deed-btn');
         setMessages(prev => [
           ...prev,
           {
@@ -610,9 +611,9 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 1 & 2: Quarterly Safe Harbor
-    if (text.match(/quarterly|safe harbor|advance tax|estimated tax/i)) {
+    if (text.match(/quarterly|safe harbor|advance tax|estimated tax|234c|penalty schedule|penalty radar/i)) {
       setTimeout(() => {
-        navigateToTaxTab('quarterly', 'Quarterly Safe Harbor Sentinel', 'safe-harbor-ics-sync-btn');
+        navigateToTaxTab('quarterly', null, 'safe-harbor-ics-sync-btn');
         setMessages(prev => [
           ...prev,
           {
@@ -628,9 +629,9 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 5: In-Chat Tax Regime Decision Card
-    if (text.match(/regime|115bac|old vs new|standard vs itemized/i)) {
+    if (text.match(/regime|115bac|old vs new|standard vs itemized|80c|80ccd|deduction/i)) {
       setTimeout(() => {
-        navigateToTaxTab('itr', 'ITR Assistant', 'calc-card');
+        navigateToTaxTab('itr', 'summary', 'calc-card');
         const regimeCard = {
           cardType: 'tax_regime',
           market,
@@ -655,9 +656,9 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
     }
 
     // Pillar 7: Proactive Audit Watchdog Card
-    if (text.match(/audit|scrutiny|red flag|linter|143\(1\)/i) && !text.startsWith('/audit')) {
+    if (text.match(/audit|scrutiny|red flag|linter|143\(1\)|bank statement|hidden fee|expense ratio/i) && !text.startsWith('/audit')) {
       setTimeout(() => {
-        navigateToTaxTab('forensic', 'Forensic Audit Sentinel', 'audit-linter-card');
+        navigateToTaxTab('forensic', null, 'audit-linter-card');
         const auditCard = {
           cardType: 'tax_audit',
           market,

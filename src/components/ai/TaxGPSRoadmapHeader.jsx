@@ -34,7 +34,9 @@ export default function TaxGPSRoadmapHeader({ onAskAboutStep }) {
   const guidance = getModuleFieldGuidance(userTaxPersona, currentTab, activeMarket);
 
   const handleSpotlight = () => {
-    if (guidance?.spotlightTargetId) {
+    if (activeStep?.subTab === 'schedule-fa' || (currentTab === 'itr' && taxStudio?.currentSubTab === 'schedule-fa')) {
+      triggerSpotlight('fa-foreign-stock-table');
+    } else if (guidance?.spotlightTargetId) {
       triggerSpotlight(guidance.spotlightTargetId);
     }
   };
@@ -132,7 +134,7 @@ export default function TaxGPSRoadmapHeader({ onAskAboutStep }) {
                   key={step.id}
                   type="button"
                   onClick={() => {
-                    setTab(step.tab);
+                    setTab(step.tab, step.subTab);
                     if (onAskAboutStep) {
                       onAskAboutStep(step);
                     }
@@ -193,7 +195,7 @@ export default function TaxGPSRoadmapHeader({ onAskAboutStep }) {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              {guidance?.spotlightTargetId && (
+              {(guidance?.spotlightTargetId || activeStep?.subTab === 'schedule-fa') && (
                 <button
                   type="button"
                   onClick={handleSpotlight}

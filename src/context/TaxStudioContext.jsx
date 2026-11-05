@@ -266,26 +266,67 @@ export function TaxStudioProvider({ children }) {
     } catch {}
   }, []);
 
+  const [currentTab, setCurrentTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tab') || 'e-file';
+    }
+    return 'e-file';
+  });
+
+  const [currentSubTab, setCurrentSubTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('subTab') || null;
+    }
+    return null;
+  });
+
+  const setTab = useCallback((newTab, newSubTab = null) => {
+    setCurrentTab(newTab);
+    setCurrentSubTab(newSubTab);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', newTab);
+        if (newSubTab) {
+          url.searchParams.set('subTab', newSubTab);
+        } else {
+          url.searchParams.delete('subTab');
+        }
+        window.history.pushState({}, '', url.toString());
+        window.dispatchEvent(new Event('popstate'));
+      } catch {}
+    }
+  }, []);
+
   const [spotlightTarget, setSpotlightTarget] = useState(null);
 
   const triggerSpotlight = useCallback((elementId) => {
     if (!elementId) return;
     setSpotlightTarget(elementId);
-    try {
-      const el = document.getElementById(elementId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('tax-spotlight-active');
-        setTimeout(() => {
-          el.classList.remove('tax-spotlight-active');
+
+    const trySpotlight = (retries = 5) => {
+      try {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('tax-spotlight-active');
+          setTimeout(() => {
+            el.classList.remove('tax-spotlight-active');
+            setSpotlightTarget(null);
+          }, 2600);
+        } else if (retries > 0) {
+          setTimeout(() => trySpotlight(retries - 1), 200);
+        } else {
           setSpotlightTarget(null);
-        }, 2600);
-      } else {
-        setTimeout(() => setSpotlightTarget(null), 2000);
+        }
+      } catch {
+        setSpotlightTarget(null);
       }
-    } catch {
-      setSpotlightTarget(null);
-    }
+    };
+
+    trySpotlight();
   }, []);
 
   // ── Fiduciary CPA / CA Review State ────────────────────────────────────────
@@ -670,7 +711,7 @@ export function TaxStudioProvider({ children }) {
       if (currIdx !== -1 && currIdx < prev.steps.length - 1) {
         const nextStep = prev.steps[currIdx + 1];
         if (nextStep && nextStep.tab && onSelectTab) {
-          setTimeout(() => onSelectTab(nextStep.tab), 120);
+          setTimeout(() => onSelectTab(nextStep.tab, nextStep.subTab), 120);
         }
       }
       return {
@@ -837,6 +878,12 @@ export function TaxStudioProvider({ children }) {
 
   const value = {
     activeMarket,
+    // Tab & Navigation State
+    currentTab,
+    setCurrentTab,
+    currentSubTab,
+    setCurrentSubTab,
+    setTab,
     // Taxpayers
     taxpayer: activeMarket === 'US' ? usTaxpayer : inTaxpayer,
     inTaxpayer,

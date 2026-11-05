@@ -693,6 +693,7 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
 
           <button
             type="button"
+            id="dropzone-upload-btn"
             onClick={onOpenDropzone}
             style={{
               display: 'inline-flex',

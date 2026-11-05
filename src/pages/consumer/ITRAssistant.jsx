@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import TaxSuiteNav from '../../components/tax/TaxSuiteNav';
 import { jsPDF } from 'jspdf';
@@ -113,8 +114,28 @@ export default function ITRAssistant() {
     }
   }, [taxStudio?.inTaxpayer?.salary, taxStudio?.inTaxpayer?.taxRegime]);
 
-  // ── Top-level tab state ────────────────────────────────────────────────
-  const [taxTab, setTaxTab] = useState('summary');
+  // ── Top-level tab state synced with URL subTab & TaxStudioContext ─────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subTabFromUrl = searchParams.get('subTab') || taxStudio?.currentSubTab;
+  const [taxTab, setTaxTabState] = useState(subTabFromUrl || 'summary');
+
+  useEffect(() => {
+    if (subTabFromUrl && subTabFromUrl !== taxTab) {
+      setTaxTabState(subTabFromUrl);
+    }
+  }, [subTabFromUrl, taxTab]);
+
+  const setTaxTab = (key) => {
+    setTaxTabState(key);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('subTab', key);
+      return next;
+    });
+    if (taxStudio?.setCurrentSubTab) {
+      taxStudio.setCurrentSubTab(key);
+    }
+  };
 
   // ── Dynamic Deductions Input State ─────────────────────────────────────
   const [deductionsInput, setDeductionsInput] = useState(() => {
@@ -1528,17 +1549,19 @@ export default function ITRAssistant() {
       {taxTab === 'summary' && (
         <>
           {/* Interactive Section 115BAC Progressive Slab Visualizer */}
-          <TaxBracketStepVisualizer
-            market="IN"
-            taxableIncome={regime === 'old' ? oldRegimeTaxable : newRegimeTaxable}
-            slabTax={regime === 'old' ? oldRegimeTax : newRegimeTax}
-            surcharge={surchargeData?.surcharge?.netSurchargePayable || 0}
-            marginalReliefSaved={surchargeData?.surcharge?.marginalRelief || 0}
-            cess={surchargeData?.cess || Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) * 0.04)}
-            totalTax={regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)}
-            effectiveRate={(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) > 0 ? Number((((regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)) / (regime === 'old' ? oldRegimeTaxable : newRegimeTaxable)) * 100).toFixed(2)) : 0}
-            regime={regime}
-          />
+          <div id="calc-card">
+            <TaxBracketStepVisualizer
+              market="IN"
+              taxableIncome={regime === 'old' ? oldRegimeTaxable : newRegimeTaxable}
+              slabTax={regime === 'old' ? oldRegimeTax : newRegimeTax}
+              surcharge={surchargeData?.surcharge?.netSurchargePayable || 0}
+              marginalReliefSaved={surchargeData?.surcharge?.marginalRelief || 0}
+              cess={surchargeData?.cess || Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) * 0.04)}
+              totalTax={regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)}
+              effectiveRate={(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) > 0 ? Number((((regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)) / (regime === 'old' ? oldRegimeTaxable : newRegimeTaxable)) * 100).toFixed(2)) : 0}
+              regime={regime}
+            />
+          </div>
 
           {/* KPI Row */}
           <div style={styles.kpiRow}>
@@ -1745,7 +1768,7 @@ export default function ITRAssistant() {
           </div>
 
           {/* Old vs New Regime Comparison */}
-          <div style={styles.section}>
+          <div style={styles.section} id="itr-regime-calc-btn">
             <div style={styles.sectionTitle}>⚖️ Old vs New Regime</div>
             <div style={{ ...styles.card, background: 'linear-gradient(135deg, rgba(99,102,241,0.06), transparent)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -2412,7 +2435,7 @@ export default function ITRAssistant() {
           </div>
 
           {/* Table A3: Foreign Equity & Debt Interest (US RSUs / ESPP) */}
-          <div className="card">
+          <div className="card" id="fa-foreign-stock-table">
             <h3 className="text-h3" style={{ marginBottom: 14 }}>
               Table A3: Foreign Equity & Debt Interest (US RSUs, ESPP & Brokerage Stocks)
             </h3>
