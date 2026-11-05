@@ -137,6 +137,8 @@ export default function ITRAssistant() {
     }
   };
 
+  const [showVisualizerDetails, setShowVisualizerDetails] = useState(false);
+
   // ── Dynamic Deductions Input State ─────────────────────────────────────
   const [deductionsInput, setDeductionsInput] = useState(() => {
     const elssInvestedInit = (holdings.mutualFunds || [])
@@ -1521,21 +1523,22 @@ export default function ITRAssistant() {
         </div>
       </div>
 
-      {/* ── Top-level Tab Switcher ─────────────────────────────────────────── */}
+      {/* ── Top-level Tab Switcher (Segmented Control) ─────────────────────── */}
       <div style={{
-        display: 'flex', gap: 0, borderRadius: 'var(--radius-sm)', overflow: 'hidden',
-        border: '1px solid var(--glass-border)', width: 'fit-content', marginBottom: 28, flexWrap: 'wrap',
+        display: 'flex', gap: 4, borderRadius: 24, padding: 3,
+        background: 'var(--surface-raised)', border: '1px solid var(--glass-border)',
+        width: 'fit-content', marginBottom: 20, flexWrap: 'wrap',
       }}>
         {TAX_TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setTaxTab(t.key)}
             style={{
-              padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+              padding: '6px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none',
+              borderRadius: 20,
               background: taxTab === t.key ? 'var(--primary)' : 'transparent',
               color: taxTab === t.key ? '#fff' : 'var(--text-secondary)',
-              transition: 'background 0.2s, color 0.2s',
-              borderRight: '1px solid var(--glass-border)',
+              transition: 'all 0.15s ease',
             }}
           >
             {t.label}
@@ -1550,17 +1553,80 @@ export default function ITRAssistant() {
         <>
           {/* Interactive Section 115BAC Progressive Slab Visualizer */}
           <div id="calc-card">
-            <TaxBracketStepVisualizer
-              market="IN"
-              taxableIncome={regime === 'old' ? oldRegimeTaxable : newRegimeTaxable}
-              slabTax={regime === 'old' ? oldRegimeTax : newRegimeTax}
-              surcharge={surchargeData?.surcharge?.netSurchargePayable || 0}
-              marginalReliefSaved={surchargeData?.surcharge?.marginalRelief || 0}
-              cess={surchargeData?.cess || Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) * 0.04)}
-              totalTax={regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)}
-              effectiveRate={(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) > 0 ? Number((((regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)) / (regime === 'old' ? oldRegimeTaxable : newRegimeTaxable)) * 100).toFixed(2)) : 0}
-              regime={regime}
-            />
+            {taxStudio?.isZenMode && !showVisualizerDetails ? (
+              <div
+                style={{
+                  padding: '0.85rem 1.15rem',
+                  borderRadius: 'var(--radius)',
+                  background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.04))',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                  marginBottom: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.65rem',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>⚖️</span> Section 115BAC Progressive Slab Calculation
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Taxable Income: <strong>₹{(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable).toLocaleString('en-IN')}</strong> · Effective Rate: <strong>{(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) > 0 ? (((regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)) / (regime === 'old' ? oldRegimeTaxable : newRegimeTaxable)) * 100).toFixed(1) : 0}%</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowVisualizerDetails(true)}
+                  style={{
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: 6,
+                    background: 'rgba(99,102,241,0.15)',
+                    border: '1px solid rgba(99,102,241,0.35)',
+                    color: 'var(--primary)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  View Progressive Slab Chart ▾
+                </button>
+              </div>
+            ) : (
+              <>
+                <TaxBracketStepVisualizer
+                  market="IN"
+                  taxableIncome={regime === 'old' ? oldRegimeTaxable : newRegimeTaxable}
+                  slabTax={regime === 'old' ? oldRegimeTax : newRegimeTax}
+                  surcharge={surchargeData?.surcharge?.netSurchargePayable || 0}
+                  marginalReliefSaved={surchargeData?.surcharge?.marginalRelief || 0}
+                  cess={surchargeData?.cess || Math.round((regime === 'old' ? oldRegimeTax : newRegimeTax) * 0.04)}
+                  totalTax={regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)}
+                  effectiveRate={(regime === 'old' ? oldRegimeTaxable : newRegimeTaxable) > 0 ? Number((((regime === 'old' ? oldRegimeTax : (surchargeData?.finalTotalTax || newRegimeTax)) / (regime === 'old' ? oldRegimeTaxable : newRegimeTaxable)) * 100).toFixed(2)) : 0}
+                  regime={regime}
+                />
+                {taxStudio?.isZenMode && (
+                  <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 14 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowVisualizerDetails(false)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      ▴ Collapse Slab Chart (Zen Mode)
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* KPI Row */}

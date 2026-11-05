@@ -214,6 +214,25 @@ export function TaxStudioProvider({ children }) {
     }
   });
 
+  // ── Zen Mode (Radical De-Clutter & Calm Progressive Disclosure) ───────────
+  const [isZenMode, setIsZenMode] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_tax_zen_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleZenMode = useCallback(() => {
+    setIsZenMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('finagent_tax_zen_mode', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   const togglePlainEnglishMode = useCallback(() => {
     setIsPlainEnglishMode((prev) => {
       const next = !prev;
@@ -926,6 +945,10 @@ export function TaxStudioProvider({ children }) {
     isPlainEnglishMode,
     setIsPlainEnglishMode,
     togglePlainEnglishMode,
+    // Zen Mode (Progressive Disclosure)
+    isZenMode,
+    setIsZenMode,
+    toggleZenMode,
     isCoPilotCollapsed,
     setIsCoPilotCollapsed,
     toggleCoPilotCollapse,

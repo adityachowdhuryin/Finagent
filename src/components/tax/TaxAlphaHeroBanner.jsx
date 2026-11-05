@@ -3,7 +3,7 @@ import {
   TrendingUp, ShieldAlert, ShieldCheck, Sparkles, SlidersHorizontal,
   UploadCloud, UserCheck, ArrowRight, CheckCircle2, DollarSign,
   AlertTriangle, Lock, Award, Clock, Database, FileText, Download,
-  Compass
+  Compass, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useTaxStudio } from '../../context/TaxStudioContext';
 import { buildInstitutionalTaxBinderPDF } from '../../utils/institutionalTaxBinderPdf';
@@ -86,18 +86,37 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
     }, 700);
   };
 
+  const [isExpanded, setIsExpanded] = useState(() => {
+    try {
+      return localStorage.getItem('finagent_tax_hero_expanded') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleExpanded = () => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('finagent_tax_hero_expanded', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   return (
     <div
       className="card"
       style={{
-        padding: '1.25rem 1.5rem',
+        padding: isExpanded ? '1.25rem 1.5rem' : '0.65rem 1.25rem',
         background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98))',
         border: '1px solid rgba(99, 102, 241, 0.35)',
         borderRadius: 'var(--radius-lg, 12px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.36), 0 0 20px rgba(99, 102, 241, 0.15)',
+        boxShadow: isExpanded ? '0 8px 32px rgba(0, 0, 0, 0.36), 0 0 20px rgba(99, 102, 241, 0.15)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
         color: '#fff',
         position: 'relative',
         overflow: 'hidden',
+        transition: 'all 0.25s ease',
       }}
     >
       {/* Background Glow Accent */}
@@ -114,10 +133,93 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
         }}
       />
 
-      {/* Top Bar: Title & Fiduciary SHA Seal */}
-      <div
-        style={{
-          display: 'flex',
+      {!isExpanded ? (
+        /* ── Compact Executive Alpha Ribbon (Default) ── */
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                padding: '0.35rem',
+                borderRadius: 7,
+                background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Sparkles size={14} color="#fff" />
+            </div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.02em', textTransform: 'uppercase', color: '#e0e7ff' }}>
+              Tax Alpha & Wealth Shield
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 6, background: 'rgba(99, 102, 241, 0.2)', color: '#c7d2fe', border: '1px solid rgba(99, 102, 241, 0.4)' }}>
+                ⚡ {formatCurrency(totalTaxAlpha)} Alpha/yr
+              </span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 6, background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
+                🛡️ {formatCurrency(totalFeeLeakage)} Fee Drag Stopped
+              </span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 6, background: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.35)' }}>
+                📈 +{formatCurrency(tenYearWealthDelta)} 10-Yr Compounded
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              id="dropzone-upload-btn"
+              onClick={onOpenDropzone}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 6,
+                background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
+                border: 'none',
+                color: '#fff',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.4)',
+              }}
+            >
+              <UploadCloud size={12} />
+              <span>Universal Dropzone</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleExpanded}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 6,
+                background: 'rgba(99, 102, 241, 0.2)',
+                border: '1px solid rgba(99, 102, 241, 0.45)',
+                color: '#e0e7ff',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>View Full Diagnostics</span>
+              <ChevronDown size={12} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ── Full Expanded Diagnostics Cockpit ── */
+        <>
+          {/* Top Bar: Title & Fiduciary SHA Seal */}
+          <div
+            style={{
+              display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
@@ -713,8 +815,31 @@ export default function TaxAlphaHeroBanner({ onOpenDropzone, onOpenScenario, onO
             <UploadCloud size={13} />
             <span>Universal Document Dropzone</span>
           </button>
+
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              borderRadius: 6,
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              color: '#fff',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <ChevronUp size={13} />
+            <span>Collapse Alpha Details</span>
+          </button>
         </div>
       </div>
+    </>
+  )}
 
       {/* CPA / CA Review Modal */}
       {cpaModalOpen && (

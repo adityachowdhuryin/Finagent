@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldCheck, Landmark, Scissors, FileSearch, Calculator, Layers,
-  UploadCloud, SlidersHorizontal, Building2, User, Calendar, Compass, Sparkles
+  UploadCloud, SlidersHorizontal, Building2, User, Calendar, Compass, Sparkles,
+  ChevronDown, ChevronUp, ArrowRight, Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { TaxStudioProvider, useTaxStudio } from '../../context/TaxStudioContext';
@@ -65,10 +66,19 @@ function TaxForensicStudioInner() {
     isPlainEnglishMode,
     isCoPilotDismissed,
     restoreCoPilot,
+    isZenMode,
+    toggleZenMode,
+    triggerSpotlight,
+    advanceToNextRoadmapStep,
     currentTab: ctxTab,
     currentSubTab: ctxSubTab,
     setTab: ctxSetTab,
   } = useTaxStudio();
+
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const roadmapSteps = activeRoadmap?.steps || [];
+  const currentStepIndex = roadmapSteps.findIndex(s => s.tab === currentTab);
+  const activeStep = currentStepIndex !== -1 ? roadmapSteps[currentStepIndex] : roadmapSteps[0];
 
   const currentTab = searchParams.get('tab') || ctxTab || 'e-file';
 
@@ -280,22 +290,13 @@ function TaxForensicStudioInner() {
         <CpaPracticePortal />
       ) : (
         <>
-          {/* Zero-Knowledge Privacy Vault Header Bar */}
-          <ZeroKnowledgePrivacyVault />
-
-          {/* Executive Tax Alpha & Wealth Shield Hero Banner */}
+          {/* Executive Tax Alpha & Wealth Shield Hero Banner (Compact 48px Ribbon by default) */}
           <TaxAlphaHeroBanner
-            onOpenDropzone={() => setIsDropzoneOpen((prev) => !prev)}
-            onOpenScenario={() => setIsScenarioOpen((prev) => !prev)}
-          />
-
-          {/* Personalized AI Tax Action Roadmap Banner (Adaptive Focus Mode) */}
-          <PersonalizedTaxRoadmapBanner
-            onSelectTab={setTab}
             onOpenDropzone={() => setIsDropzoneOpen(true)}
+            onOpenScenario={() => setIsScenarioOpen(true)}
           />
 
-          {/* Studio Header & Tab Switcher */}
+          {/* Studio Header Command Bar & Tab Switcher */}
           <div
             className="card"
             style={{
@@ -307,19 +308,28 @@ function TaxForensicStudioInner() {
               transition: 'all 0.25s ease',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {/* Command Bar Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.65rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <h1 className="text-h2" style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <h1 className="text-h2" style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     <span>🛡️</span> Tax & Forensic Studio
                   </h1>
-                  {isFocusModeActive && activeRoadmap && (
+                  <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem' }}>
+                    {isUSMarket ? 'US Internal Revenue Code' : 'Indian Income Tax Act 1961'}
+                  </span>
+                  {isZenMode && (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.15rem 0.45rem', borderRadius: 10, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)' }}>
+                      ☯ ZEN MODE
+                    </span>
+                  )}
+                  {isFocusModeActive && activeRoadmap && !isZenMode && (
                     <span
                       style={{
-                        fontSize: '0.6875rem',
+                        fontSize: '0.65rem',
                         fontWeight: 800,
-                        padding: '0.15rem 0.55rem',
-                        borderRadius: 12,
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: 10,
                         background: 'rgba(168, 85, 247, 0.25)',
                         color: '#d8b4fe',
                         border: '1px solid rgba(168, 85, 247, 0.5)',
@@ -329,115 +339,283 @@ function TaxForensicStudioInner() {
                       }}
                     >
                       <Sparkles size={11} color="#c084fc" />
-                      ADAPTIVE FOCUS ACTIVE
+                      FOCUS ACTIVE
                     </span>
                   )}
                 </div>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  {isFocusModeActive && activeRoadmap
-                    ? `Showing streamlined tools prioritized for: ${activeRoadmap.title}`
-                    : 'Unified statutory filing, tax-loss alpha harvesting, HUF creation, and forensic fee audit.'}
-                </p>
+                {!isZenMode && (
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                    Unified statutory filing, tax-loss alpha harvesting, HUF creation, and forensic fee audit.
+                  </p>
+                )}
               </div>
 
+              {/* Action Strip: Zen Mode Toggle + Tools Menu + Primary Dropzone */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {isCoPilotDismissed && activeRoadmap && (
-                  <button
-                    type="button"
-                    onClick={restoreCoPilot}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.3rem 0.65rem',
-                      borderRadius: 6,
-                      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25))',
-                      border: '1px solid rgba(168, 85, 247, 0.5)',
-                      color: '#e9d5ff',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 10px rgba(168, 85, 247, 0.2)',
-                    }}
-                    title="Re-open the floating Tax GPS Co-Pilot guide"
-                  >
-                    <Compass size={13} color="#c084fc" />
-                    <span>Show Tax GPS Guide</span>
-                  </button>
-                )}
+                {/* Zen Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={toggleZenMode}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.35rem 0.7rem',
+                    borderRadius: 6,
+                    background: isZenMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                    border: isZenMode ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255, 255, 255, 0.12)',
+                    color: isZenMode ? '#6ee7b7' : 'var(--text-secondary)',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title={isZenMode ? "Disable Zen Mode to see full diagnostic calculations" : "Enable Zen Mode for calm, streamlined focus"}
+                >
+                  <span>{isZenMode ? '☯ Zen Mode: ON' : '☯ Zen Mode'}</span>
+                </button>
 
-                {activeRoadmap && (
+                {/* Tools & Modals Dropdown */}
+                <div style={{ position: 'relative' }}>
                   <button
                     type="button"
-                    onClick={toggleFocusMode}
+                    onClick={() => setShowToolsMenu(prev => !prev)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      padding: '0.3rem 0.65rem',
+                      padding: '0.35rem 0.7rem',
                       borderRadius: 6,
-                      background: isFocusModeActive ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-                      border: isFocusModeActive ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid rgba(255, 255, 255, 0.12)',
-                      color: isFocusModeActive ? '#d8b4fe' : 'var(--text-secondary)',
+                      background: showToolsMenu ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: 'var(--text-secondary)',
                       fontSize: '0.75rem',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
                     }}
-                    title={isFocusModeActive ? 'Switch to unconstrained Full Cockpit' : 'Enable streamlined Focus Mode'}
                   >
-                    <span>{isFocusModeActive ? '🎛️ Full Cockpit' : '🎯 Focus Mode'}</span>
+                    <SlidersHorizontal size={13} color="#818cf8" />
+                    <span>Tools & Exports</span>
+                    <ChevronDown size={12} />
                   </button>
-                )}
 
+                  {showToolsMenu && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: '100%',
+                        marginTop: 4,
+                        width: 250,
+                        background: '#0f172a',
+                        border: '1px solid rgba(99, 102, 241, 0.35)',
+                        borderRadius: 8,
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.6)',
+                        padding: '0.4rem',
+                        zIndex: 100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.2rem',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { setIsScenarioOpen(true); setShowToolsMenu(false); }}
+                        style={{
+                          textAlign: 'left',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: 5,
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#cbd5e1',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <SlidersHorizontal size={13} color="#818cf8" />
+                        <span>Side-by-Side What-If Sandbox</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsVaultOpen(true); setShowToolsMenu(false); }}
+                        style={{
+                          textAlign: 'left',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: 5,
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#cbd5e1',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <Layers size={13} color="#818cf8" />
+                        <span>Loss Carryforward Vault</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsTaxNavigatorOpen(true); setShowToolsMenu(false); }}
+                        style={{
+                          textAlign: 'left',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: 5,
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#cbd5e1',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <Compass size={13} color="#c084fc" />
+                        <span>Personalize Tax Profile</span>
+                      </button>
+                      <Link
+                        to="/cpa"
+                        onClick={() => setShowToolsMenu(false)}
+                        style={{
+                          textAlign: 'left',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: 5,
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#cbd5e1',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <Building2 size={13} color="#34d399" />
+                        <span>CPA / CA Practice Suite ➔</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary Universal Dropzone Button */}
                 <button
                   type="button"
-                  onClick={() => setIsVaultOpen((prev) => !prev)}
+                  id="dropzone-upload-btn"
+                  onClick={() => setIsDropzoneOpen(true)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.35rem',
-                    padding: '0.3rem 0.65rem',
+                    padding: '0.35rem 0.75rem',
                     borderRadius: 6,
-                    background: isVaultOpen ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    color: isVaultOpen ? '#a5b4fc' : 'var(--text-secondary)',
+                    background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
+                    border: 'none',
+                    color: '#fff',
                     fontSize: '0.75rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(79, 70, 229, 0.4)',
                   }}
                 >
-                  <Layers size={13} color="#818cf8" />
-                  <span>Loss Carryforward Vault</span>
+                  <UploadCloud size={13} />
+                  <span>Upload Statement</span>
                 </button>
-
-                <Link
-                  to="/cpa"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: 6,
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#94a3b8',
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    textDecoration: 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                  title="CPAs, CAs & Wealth Advisors: Open the Multi-Client Batch Practice Suite"
-                >
-                  <Building2 size={13} color="#94a3b8" />
-                  <span>CPA Portal ➔</span>
-                </Link>
-
-                <span className="badge badge-green">
-                  {isUSMarket ? 'US Internal Revenue Code' : 'Indian Income Tax Act 1961'}
-                </span>
               </div>
             </div>
+
+            {/* Sleek 1-Line Tax GPS Step Ribbon (When roadmap is active) */}
+            {activeRoadmap && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: 7,
+                  background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.6), rgba(15, 23, 42, 0.8))',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
+                  marginBottom: '0.75rem',
+                  flexWrap: 'wrap',
+                  gap: '0.4rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0 }}>
+                  <div
+                    style={{
+                      padding: '0.15rem',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Compass size={11} color="#fff" />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#e9d5ff' }}>
+                    Tax GPS: {activeRoadmap.title}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                    (Step {currentStepIndex + 1} of {roadmapSteps.length}: <strong style={{ color: '#fff' }}>{activeStep?.title}</strong>)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeStep?.subTab === 'schedule-fa') {
+                        triggerSpotlight?.('fa-foreign-stock-table');
+                      } else {
+                        triggerSpotlight?.('calc-card');
+                      }
+                    }}
+                    style={{
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: 4,
+                      background: 'rgba(168, 85, 247, 0.2)',
+                      border: '1px solid rgba(168, 85, 247, 0.4)',
+                      color: '#e9d5ff',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Show Me Where
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeStep) {
+                        advanceToNextRoadmapStep(activeStep.id, setTab);
+                      }
+                    }}
+                    style={{
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: 4,
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      color: '#6ee7b7',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                    }}
+                  >
+                    <span>Advance</span>
+                    <ArrowRight size={10} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Tab Strip */}
             <div
