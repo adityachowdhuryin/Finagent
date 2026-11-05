@@ -1,0 +1,140 @@
+{
+  "endpoints": [
+    {
+      "path": "/api/ai/chat",
+      "method": "POST",
+      "category": "ai",
+      "description": "Primary conversational copilot and agentic execution router with LLM fallback and tool calling.",
+      "parameters": {
+        "messages": "Array of {role, content} objects representing chat history.",
+        "portfolioContext": "Object containing netWorth, holdingsSummary, activePage, isAdvisor, riskProfile, market.",
+        "stream": "Boolean flag for SSE streaming."
+      },
+      "capabilities": ["chat", "execute_tools", "ui_navigation", "screen_inspection"]
+    },
+    {
+      "path": "/api/tax/compute-lots",
+      "method": "POST",
+      "category": "tax_in",
+      "description": "Calculates capital gains tax lots under Indian Budget 2024 rules (LTCG 12.5% >1.25L, STCG 20%).",
+      "parameters": {
+        "trades": "Array of trade transactions with buy/sell date, symbol, price, quantity."
+      },
+      "capabilities": ["compute_capital_gains", "budget_2024_rates", "grandfathering_112a"]
+    },
+    {
+      "path": "/api/tax/schedule-fa",
+      "method": "POST",
+      "category": "tax_in",
+      "description": "Processes foreign assets (foreign equity, RSUs, bank accounts) under Schedule FA, Rule 115 SBI TT rates, and Black Money Act audit.",
+      "parameters": {
+        "foreignHoldings": "Array of overseas holdings with foreign currency values, acquisition date, country code."
+      },
+      "capabilities": ["schedule_fa_validation", "rule_115_conversion", "black_money_audit"]
+    },
+    {
+      "path": "/api/tax/parse-document",
+      "method": "POST",
+      "category": "tax_in",
+      "description": "Document vision OCR extraction for Form 16, Form 26AS, AIS/TIS, W-2, 1099-B statements.",
+      "parameters": {
+        "documentText": "Raw extracted or OCR text of the tax document."
+      },
+      "capabilities": ["ocr_extraction", "form_16_parsing", "ais_discrepancy_check"]
+    },
+    {
+      "path": "/api/harvesting/scan",
+      "method": "POST",
+      "category": "harvesting",
+      "description": "Scans portfolio for tax-loss harvesting lots and generates non-identical paired proxy swaps.",
+      "parameters": {
+        "portfolio": "Holdings array with currentPrice, avgBuyPrice, quantity, holdingPeriodDays."
+      },
+      "capabilities": ["scan_harvest_opportunities", "calculate_tax_savings", "generate_proxy_baskets"]
+    },
+    {
+      "path": "/api/us-tax/calculate-federal-and-state",
+      "method": "POST",
+      "category": "tax_us",
+      "description": "Computes US Federal income tax, 50-State tax, FICA, NIIT (3.8%), and Schedule D capital gains netting.",
+      "parameters": {
+        "w2Income": "W-2 gross wages",
+        "stateCode": "US state 2-letter postal code (e.g., CA, NY, TX, FL)",
+        "filingStatus": "Single, MFJ, MFS, HOH",
+        "capitalGains": "Object with shortTerm and longTerm gains/losses"
+      },
+      "capabilities": ["us_federal_slabs", "state_income_tax", "fica_niit", "schedule_d_netting"]
+    },
+    {
+      "path": "/api/us-wash-sale/harvest",
+      "method": "POST",
+      "category": "tax_us",
+      "description": "Executes US tax-loss harvesting with strict IRC § 1091 30-day wash-sale avoidance using paired ETF proxies.",
+      "parameters": {
+        "lots": "Array of loss lots",
+        "substituteTicker": "Non-substantially identical ETF proxy ticker"
+      },
+      "capabilities": ["irc_1091_compliance", "etf_proxy_substitution", "ordinary_income_3000_offset"]
+    },
+    {
+      "path": "/api/us-scorp/optimize",
+      "method": "POST",
+      "category": "tax_us",
+      "description": "Calculates S-Corporation reasonable W-2 salary vs K-1 distribution split, IRC § 199A QBI deduction, and FICA tax savings.",
+      "parameters": {
+        "netBusinessProfit": "Annual net business revenue minus expenses",
+        "industry": "Industry code/name for BLS RCReports wage benchmarking",
+        "ownerHours": "Owner weekly hours dedicated to management vs technical work"
+      },
+      "capabilities": ["scorp_salary_optimization", "qbi_199a_deduction", "fica_savings_calculator"]
+    },
+    {
+      "path": "/api/e-file/transmit",
+      "method": "POST",
+      "category": "efile",
+      "description": "Direct transmission to CBDT e-Filing 2.0 or IRS MeF gateway with cryptographic SHA-256 integrity digest.",
+      "parameters": {
+        "taxReturnPayload": "Normalized tax return JSON",
+        "market": "IN or US",
+        "pinCode": "E-filing authorization verification code"
+      },
+      "capabilities": ["cbdt_transmission", "irs_mef_transmission", "cryptographic_notarization"]
+    },
+    {
+      "path": "/api/broker-router/place-order",
+      "method": "POST",
+      "category": "broker",
+      "description": "Submits execution orders to connected brokerages (Zerodha Kite Connect in India, Alpaca in US).",
+      "parameters": {
+        "orders": "Array of {symbol, action, quantity, price, orderType}",
+        "market": "IN or US"
+      },
+      "capabilities": ["broker_order_routing", "zerodha_clearing", "alpaca_clearing"]
+    },
+    {
+      "path": "/api/huf/create-deed",
+      "method": "POST",
+      "category": "huf",
+      "description": "Generates a legally enforceable Hindu Undivided Family (HUF) deed and gift declaration for separate PAN creation.",
+      "parameters": {
+        "kartaName": "Full name of Karta",
+        "coparceners": "List of coparceners and members",
+        "initialCorpus": "Initial ancestral gift amount"
+      },
+      "capabilities": ["huf_deed_drafting", "pan_application_prep", "section_64_compliance"]
+    },
+    {
+      "path": "/api/loan/audit-rate",
+      "method": "POST",
+      "category": "loan",
+      "description": "Audits home loan interest rate against current RBI repo-linked benchmark and drafts rate-reset negotiation letter.",
+      "parameters": {
+        "bankName": "Lender name",
+        "currentRate": "Current loan interest rate in %",
+        "principal": "Outstanding loan balance",
+        "tenureMonths": "Remaining loan duration"
+      },
+      "capabilities": ["repo_spread_audit", "prepayment_simulation", "draft_bank_negotiation_letter"]
+    }
+  ]
+}

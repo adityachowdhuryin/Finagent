@@ -714,6 +714,24 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
       const reply = data?.reply ||
         `Based on your portfolio state and market context, executing this action optimizes your risk-adjusted after-tax yield. A verified action ticket has been prepared below.`;
 
+      // Execute RAG-driven direct UI navigation or modal trigger
+      if (data?.action) {
+        if (data.action.action === 'navigate') {
+          if (data.action.route?.includes('/tax') || data.action.tab) {
+            navigateToTaxTab(data.action.tab, data.action.subTab, data.action.spotlightTarget);
+          } else if (data.action.route) {
+            navigate(data.action.route);
+            if (data.action.spotlightTarget && taxStudio?.triggerSpotlight) {
+              setTimeout(() => taxStudio.triggerSpotlight(data.action.spotlightTarget), 350);
+            }
+          }
+        } else if (data.action.action === 'open_modal') {
+          if (data.action.modalId === 'dropzone') taxStudio?.setIsDropzoneOpen?.(true);
+          else if (data.action.modalId === 'what_if_sandbox') taxStudio?.setIsScenarioOpen?.(true);
+          else if (data.action.modalId === 'vault') taxStudio?.setIsVaultOpen?.(true);
+        }
+      }
+
       setMessages(prev => [
         ...prev,
         {
@@ -721,6 +739,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
           role: 'assistant',
           content: reply,
           card: data?.card,
+          citations: data?.citations,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -1284,6 +1303,48 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
                           <span>{m.action.label}</span>
                           <ArrowRight size={12} />
                         </button>
+                      </div>
+                    )}
+
+                    {/* Verified Statutory & Knowledge Citations */}
+                    {m.citations && m.citations.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: '0.75rem',
+                          paddingTop: '0.5rem',
+                          borderTop: '1px solid var(--glass-border)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.35rem',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Shield size={12} style={{ color: 'var(--green)' }} />
+                          <span>Verified Statutory Knowledge Citations:</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {m.citations.map((c, idx) => (
+                            <span
+                              key={idx}
+                              title={c.citation || c.title}
+                              style={{
+                                fontSize: '0.68rem',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                color: 'var(--green)',
+                                border: '1px solid rgba(16, 185, 129, 0.25)',
+                                padding: '2px 8px',
+                                borderRadius: 6,
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <span>⚖️</span>
+                              <span>{c.citation ? c.citation.split('(')[0].trim() : c.title}</span>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

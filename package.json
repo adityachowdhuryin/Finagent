@@ -8,6 +8,7 @@
     "dev:ui": "vite",
     "dev:server": "node server/index.js",
     "build": "vite build",
+    "index:knowledge": "node scripts/indexSystemKnowledge.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

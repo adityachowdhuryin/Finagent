@@ -1,0 +1,127 @@
+{
+  "statutes": [
+    {
+      "id": "in_115bac_regime",
+      "country": "IN",
+      "category": "income_tax",
+      "title": "Section 115BAC: New Tax Regime (Default Regime)",
+      "legalCitation": "Income-tax Act, 1961, Section 115BAC (Finance Act, 2024)",
+      "summary": "The New Tax Regime is the default regime from FY 2023-24 / AY 2024-25 onwards. For salaried individuals, standard deduction is ₹75,000 under Budget 2024. Slabs: Up to ₹3L: Nil; ₹3L–₹7L: 5%; ₹7L–₹10L: 10%; ₹10L–₹12L: 15%; ₹12L–₹15L: 20%; Above ₹15L: 30%. Rebate under Section 87A makes taxable income up to ₹7,000,000 completely tax-free.",
+      "keyRules": [
+        "Standard Deduction for salaried taxpayers is ₹75,000 (Budget 2024 revised).",
+        "Section 87A tax rebate: Nil tax liability if total taxable income <= ₹7,00,000.",
+        "Foregoes Chapter VI-A deductions (80C, 80D, 80E, 80TTA) and Section 24(b) self-occupied home loan interest.",
+        "NPS employer contribution under Section 80CCD(2) remains fully deductible up to 14% of salary for central/state govt and private sector (Budget 2024).",
+        "Family pension standard deduction is increased to ₹25,000."
+      ],
+      "triggers": ["115bac", "new regime", "standard deduction 75000", "87a rebate", "slabs"]
+    },
+    {
+      "id": "in_capital_gains_budget_2024",
+      "country": "IN",
+      "category": "capital_gains",
+      "title": "Budget 2024 Rationalized Capital Gains Framework",
+      "legalCitation": "Income-tax Act, 1961, Sections 111A, 112, 112A (Effective July 23, 2024)",
+      "summary": "Budget 2024 unified the capital gains regime across listed and unlisted assets. For listed equities and equity mutual funds held for > 12 months, Long-Term Capital Gains (LTCG) are taxed at 12.5% on gains exceeding the ₹1.25 Lakh exemption limit per financial year. Short-Term Capital Gains (STCG) on equity held <= 12 months are taxed at 20% under Section 111A.",
+      "keyRules": [
+        "LTCG on listed equity/equity mutual funds: 12.5% for gains exceeding ₹1.25 Lakh (increased from ₹1.0 Lakh).",
+        "STCG on listed equity: 20% (increased from 15% effective July 23, 2024).",
+        "Unlisted equity/foreign equity holding period for long-term: 24 months, taxed at 12.5% without indexation.",
+        "Debt mutual funds (>65% debt) purchased after April 1, 2023: Taxed at slab rates as short-term capital gains regardless of holding period (Section 50AA).",
+        "Gold, real estate, and unlisted bonds: Long-term holding period is 24 months, taxed at 12.5% (indexation grandfathering option available for real estate acquired before July 23, 2024)."
+      ],
+      "triggers": ["budget 2024", "ltcg 12.5%", "stcg 20%", "1.25 lakh exemption", "112a", "111a", "capital gains"]
+    },
+    {
+      "id": "in_schedule_fa_black_money",
+      "country": "IN",
+      "category": "foreign_assets",
+      "title": "Schedule FA & Black Money (Undisclosed Foreign Income and Assets) Act, 2015",
+      "legalCitation": "ITR-2/ITR-3 Schedule FA; Black Money Act 2015 Sections 43 & 50",
+      "summary": "Any resident and ordinarily resident (ROR) individual holding foreign equity shares, vested RSUs, ESOPs, foreign bank accounts, depository accounts, or financial interests abroad must declare them in Schedule FA of ITR-2 or ITR-3. Non-disclosure or inaccurate disclosure attracts a mandatory penalty of ₹10,00,000 (₹10 Lakh) per financial year under Section 43, plus prosecution potential.",
+      "keyRules": [
+        "Table A1: Foreign depository accounts (overseas bank/checking accounts).",
+        "Table A2: Foreign custodian accounts (overseas brokerage accounts e.g. Charles Schwab, Morgan Stanley, E*TRADE, Fidelity).",
+        "Table A3: Foreign equity and debt interest held (including vested Google, Microsoft, Amazon, Meta RSUs and employee stock purchase plans).",
+        "Valuation must be converted to INR using State Bank of India (SBI) Telegraphic Transfer (TT) Buying Rate as of the last day of the foreign account's accounting period (Rule 115).",
+        "Budget 2024 de-minimis relief: Non-declaration penalty does not apply to non-real estate foreign movable assets where aggregate peak value does not exceed ₹20 Lakh during the previous year."
+      ],
+      "triggers": ["schedule fa", "black money act", "10 lakh penalty", "rsu", "esop", "foreign stock", "table a3", "rule 115", "sbi tt rate"]
+    },
+    {
+      "id": "in_huf_tax_arbitrage",
+      "country": "IN",
+      "category": "family_tax",
+      "title": "Hindu Undivided Family (HUF) Separate Tax Entity & Section 64 Anti-Clubbing",
+      "legalCitation": "Income-tax Act, 1961, Section 2(31), Section 64(2)",
+      "summary": "An HUF is recognized as a separate legal and tax person with its own PAN, basic exemption limit (₹3 Lakh under 115BAC), Section 80C deductions (under Old Regime), and separate ₹1.25 Lakh LTCG exemption. However, under Section 64(2), income arising from an individual transferring self-acquired property directly to the HUF without adequate consideration is clubbed back to the individual.",
+      "keyRules": [
+        "HUF enjoys an independent basic tax exemption and independent progressive tax slabs.",
+        "Separate ₹1.25 Lakh annual tax-free LTCG threshold on equity investments.",
+        "To avoid Section 64(2) clubbing, HUF capital corpus must be created via ancestral property, inheritance, will bequest, or gifts from non-coparcener relatives/strangers within Section 56(2)(x) limits.",
+        "Profits earned from business conducted by the HUF or compounding of ancestral corpus belong solely to the HUF and are not clubbed."
+      ],
+      "triggers": ["huf", "hindu undivided family", "separate pan", "section 64", "clubbing", "karta", "coparcener"]
+    },
+    {
+      "id": "us_wash_sale_irc_1091",
+      "country": "US",
+      "category": "tax_loss_harvesting",
+      "title": "IRS IRC § 1091: 30-Day Wash-Sale Rule & Non-Identical Proxy Swaps",
+      "legalCitation": "Internal Revenue Code (IRC) Section 1091",
+      "summary": "The IRS Wash-Sale rule disallows a loss deduction on the sale of stock or securities if the taxpayer acquires 'substantially identical' stock or securities (or enters into a contract or option to acquire) within a 61-day window: 30 days before the sale, the day of sale, or 30 days after the sale. The disallowed loss is added to the cost basis of the newly purchased shares.",
+      "keyRules": [
+        "61-day window: 30 days prior, trade date, and 30 days after.",
+        "Applies across all taxable accounts and IRAs owned by the taxpayer and spouse (selling at a loss in taxable and buying in Roth IRA triggers permanent loss forfeiture).",
+        "Permitted Proxy Swaps: Selling VOO (Vanguard S&P 500) and buying IVV (iShares S&P 500) may be scrutinized; best practice is cross-index pairing (e.g. S&P 500 VOO -> Russell 1000 VONE, or Total US Market VTI -> S&P 500 VOO, or Semiconductor NVDA -> SOXX ETF).",
+        "Up to $3,000 of net capital losses can offset ordinary income each year, with indefinite carryforward for excess losses."
+      ],
+      "triggers": ["wash sale", "irc 1091", "30 day rule", "proxy swap", "substantially identical", "3000 offset"]
+    },
+    {
+      "id": "us_scorp_reasonable_compensation",
+      "country": "US",
+      "category": "business_tax",
+      "title": "IRS S-Corporation Reasonable Compensation vs K-1 Distribution Optimization",
+      "legalCitation": "IRC Section 1366, Revenue Ruling 74-44; IRC Section 199A",
+      "summary": "S-Corporation shareholder-employees must pay themselves a 'reasonable salary' subject to 15.3% FICA self-employment taxes (Social Security 12.4% up to wage base $176,100 + Medicare 2.9% + 0.9% Additional Medicare over $200k/$250k). Remaining business net profits can be distributed as Schedule K-1 distributions, which are completely exempt from FICA self-employment taxes.",
+      "keyRules": [
+        "Reasonable salary must be benchmarked using RCReports / Bureau of Labor Statistics (BLS) market data for the owner's duties.",
+        "K-1 non-wage distributions save 15.3% on FICA self-employment taxes.",
+        "IRC § 199A Qualified Business Income (QBI) deduction grants up to a 20% deduction on qualified pass-through income for non-SSTB businesses (or below phase-out thresholds: $191,950 Single / $383,900 MFJ in 2024-2026).",
+        "W-2 wages paid to the owner expand the 199A QBI wage limit (50% of W-2 wages or 25% of W-2 wages + 2.5% UBIA)."
+      ],
+      "triggers": ["s-corp", "reasonable salary", "k-1 distribution", "fica savings", "199a qbi", "self employment tax"]
+    },
+    {
+      "id": "us_cross_border_fbar_fatca",
+      "country": "US",
+      "category": "cross_border",
+      "title": "US-India Cross-Border Compliance: FBAR (FinCEN 114) & FATCA (Form 8938)",
+      "legalCitation": "31 U.S.C. § 5314 (FBAR); 26 U.S.C. § 6038D (FATCA Form 8938)",
+      "summary": "US Persons (citizens, Green Card holders, and tax residents under Substantial Presence Test) with Indian financial accounts (NRE, NRO, PPF, mutual funds, demat accounts) must file FinCEN Report 114 (FBAR) if aggregate peak balance across all foreign accounts exceeds $10,000 at any time during the calendar year. Form 8938 is required with Form 1040 if foreign assets exceed $50k-$100k (Single) or $100k-$200k (MFJ).",
+      "keyRules": [
+        "FBAR deadline: April 15, with automatic extension to October 15.",
+        "Non-willful FBAR penalty: Up to $15,611 per violation (inflation-adjusted); willful penalty is the greater of $100,000 or 50% of account balance.",
+        "Indian Mutual Funds are classified as Passive Foreign Investment Companies (PFICs) under IRC § 1291/1296, requiring Form 8621 and punitive tax unless QEF/Mark-to-Market election is made.",
+        "DTAA (Double Tax Avoidance Agreement) Article 25 Foreign Tax Credit (Form 1116) prevents double taxation on Indian capital gains/TDS."
+      ],
+      "triggers": ["fbar", "fincen 114", "fatca", "form 8938", "pfic", "form 8621", "nre", "nro", "cross border"]
+    },
+    {
+      "id": "compliance_sebi_sec_fiduciary",
+      "country": "BOTH",
+      "category": "compliance",
+      "title": "SEBI RIA & SEC Fiduciary Governance Protocols",
+      "legalCitation": "SEBI (Investment Advisers) Regulations, 2010; SEC Advisers Act of 1940 Rule 204-2",
+      "summary": "Registered Investment Advisers operate under strict legal fiduciary standards to act solely in the client's best interest. SEBI RIAs (Registration INA000014523) are prohibited from receiving broker commissions or kickbacks on direct mutual funds. SEC RIAs (Advisers Act Rule 204-2) must maintain immutable audit trails of all client recommendations, suitability reports, and Form CRS disclosures.",
+      "keyRules": [
+        "Fiduciary Standard: Recommendation must prioritize client after-tax net returns, not intermediary commission.",
+        "Direct Plan Mandate: Advisers must migrate clients from high-expense Regular mutual funds (1-1.5% commission trail) to Direct plans.",
+        "Suitability Assessment: Formal risk profiling and asset allocation drift audit required before executing trades.",
+        "Immutable Audit Trail: All recommendations and chat consultations cryptographically signed and archived."
+      ],
+      "triggers": ["sebi", "ria", "fiduciary", "sec", "rule 204-2", "direct vs regular", "suitability"]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { COPILOT_TOOL_DECLARATIONS, executeCopilotTool } = require('../services/copilotTools');
+const { hybridRetriever } = require('../services/hybridRetriever');
 
 // Native fetch fallback
 const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
@@ -136,6 +137,30 @@ router.post('/chat', async (req, res) => {
   // Last user query text
   const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
+  // Query Hybrid Graph-RAG Engine
+  let knowledgeContextSnippet = '';
+  let ragNavAction = null;
+  let verifiedCitations = [];
+
+  try {
+    const ragResult = await hybridRetriever.retrieve(lastUserMsg, 3);
+    if (ragResult) {
+      knowledgeContextSnippet = hybridRetriever.formatContextPrompt(ragResult);
+      ragNavAction = ragResult.directNavigation;
+      if (ragResult.topHits && ragResult.topHits.length > 0) {
+        verifiedCitations = ragResult.topHits.map(h => ({
+          id: h.doc.id,
+          title: h.doc.title,
+          citation: h.doc.metadata?.legalCitation || null,
+          category: h.doc.category,
+          score: Number(h.score.toFixed(4)),
+        }));
+      }
+    }
+  } catch (ragErr) {
+    console.warn('[HybridRetriever Warning]', ragErr.message);
+  }
+
   // Check for live news keywords
   let liveNewsSnippet = '';
   if (/(\bnews\b|\bwhy did\b|\brbi\b|\bfed\b|\bearnings\b|\bdrop\b|\brally\b|\bfell\b|\bmarket today\b)/i.test(lastUserMsg)) {
@@ -248,7 +273,7 @@ router.post('/chat', async (req, res) => {
     role: m.role === 'user' ? 'user' : 'model',
     parts: [{
       text: i === 0 && m.role === 'user'
-        ? `${activeSystemPrompt}${contextStr}${liveNewsSnippet}\n\nUser question: ${m.content}`
+        ? `${activeSystemPrompt}${contextStr}${knowledgeContextSnippet}${liveNewsSnippet}\n\nUser question: ${m.content}`
         : m.content
     }],
   }));
@@ -324,6 +349,8 @@ router.post('/chat', async (req, res) => {
       success: true,
       reply,
       card: detectedCard,
+      action: ragNavAction,
+      citations: verifiedCitations,
     });
 
   } catch (err) {

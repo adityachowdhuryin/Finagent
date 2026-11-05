@@ -1,0 +1,219 @@
+{
+  "screens": [
+    {
+      "id": "tax_studio",
+      "name": "Tax & Forensic Studio",
+      "route": "/app/tax",
+      "market": "BOTH",
+      "description": "Comprehensive fiduciary tax filing, optimization, capital loss harvesting, and statutory audit engine for India and US.",
+      "tabs": [
+        {
+          "id": "overview",
+          "name": "Executive Alpha Ribbon & Overview",
+          "queryParam": "tab=overview",
+          "description": "At-a-glance summary of net tax liability, potential savings, effective tax rate, and Tax GPS roadmap.",
+          "spotlightTarget": "tax-executive-ribbon",
+          "capabilities": ["view_summary", "check_effective_rate", "track_gps_progress"]
+        },
+        {
+          "id": "itr",
+          "name": "Regime Optimizer & Statutory Schedules",
+          "queryParam": "tab=itr",
+          "description": "Deep comparison of New Tax Regime (Section 115BAC) vs Old Regime, plus statutory schedules including Schedule FA.",
+          "spotlightTarget": "calc-card",
+          "subTabs": [
+            {
+              "id": "summary",
+              "name": "Regime Comparison Breakdown",
+              "queryParam": "tab=itr&subTab=summary",
+              "spotlightTarget": "regime-comparison-table",
+              "capabilities": ["compare_regimes", "calculate_115bac", "optimize_80c_80d"]
+            },
+            {
+              "id": "schedule-fa",
+              "name": "Schedule FA (Foreign Assets)",
+              "queryParam": "tab=itr&subTab=schedule-fa",
+              "spotlightTarget": "fa-foreign-stock-table",
+              "capabilities": ["declare_foreign_equity", "declare_esop_rsu", "foreign_bank_accounts", "rule_115_conversion", "table_a3_reporting"]
+            },
+            {
+              "id": "advance-tax",
+              "name": "Advance Tax & Section 234 Flight Control",
+              "queryParam": "tab=itr&subTab=advance-tax",
+              "spotlightTarget": "advance-tax-flight-control",
+              "capabilities": ["compute_234c_interest", "quarterly_advance_tax_deadlines", "tds_credit_tracking"]
+            }
+          ]
+        },
+        {
+          "id": "harvester",
+          "name": "Tax-Loss Harvester & Proxy Swaps",
+          "queryParam": "tab=harvester",
+          "description": "Year-round algorithmic capital gains loss-harvesting and non-identical paired proxy ETF reallocations.",
+          "spotlightTarget": "harvest-execute-btn",
+          "capabilities": ["harvest_stcl", "harvest_ltcl", "wash_sale_avoidance", "proxy_swaps", "stcg_20_percent_offset"]
+        },
+        {
+          "id": "quarterly",
+          "name": "Quarterly Estimated Taxes (US IRC § 6654 & IN Advance Tax)",
+          "queryParam": "tab=quarterly",
+          "description": "Safe-harbor 110%/100% calculation, annualized installment method, and statutory filing calendars.",
+          "spotlightTarget": "quarterly-safe-harbor-card",
+          "capabilities": ["safe_harbor_sync", "irs_1040es_vouchers", "form_2210_penalty_shield"]
+        },
+        {
+          "id": "huf",
+          "name": "Indian HUF (Hindu Undivided Family) Studio",
+          "queryParam": "tab=huf",
+          "description": "Separate PAN tax entity creation, ancestral capital infusion, Section 64 anti-clubbing compliance, and arbitrage simulator.",
+          "spotlightTarget": "huf-deed-generator",
+          "capabilities": ["huf_deed_creation", "ancestral_capital_infusion", "section_64_clubbing_audit", "huf_tax_arbitrage"]
+        },
+        {
+          "id": "forensic",
+          "name": "Forensic AI Bank & AIS Auditor",
+          "queryParam": "tab=forensic",
+          "description": "28-rule automated tax audit linter, AIS/TIS discrepancy reconciliation, and IRS/ITD notice risk shielding.",
+          "spotlightTarget": "forensic-audit-linter",
+          "capabilities": ["run_audit_linter", "reconcile_ais_tis", "detect_tax_red_flags", "generate_cpa_audit_pack"]
+        },
+        {
+          "id": "e-file",
+          "name": "Direct Government E-Filing Rails",
+          "queryParam": "tab=e-file",
+          "description": "Direct JSON/XML schema transmission to CBDT e-Filing 2.0 or IRS MeF gateway with SHA-256 integrity seal.",
+          "spotlightTarget": "direct-efile-gateway",
+          "capabilities": ["compile_json_schema", "transmit_cbdt", "generate_fbar_fincen114", "notarize_return"]
+        }
+      ],
+      "modals": [
+        {
+          "id": "dropzone",
+          "name": "Document Dropzone & Vision OCR",
+          "triggerState": "isDropzoneOpen",
+          "description": "Drag-and-drop ingestion for Form 16, Form 26AS, AIS/TIS, W-2, 1099-B, or broker P&L PDFs with instant data extraction."
+        },
+        {
+          "id": "what_if_sandbox",
+          "name": "What-If Scenario Sandbox",
+          "triggerState": "isScenarioOpen",
+          "description": "Simulate tax impacts of moving to low-tax states (Texas/Florida/Dubai), selling ESOPs, or changing regimes."
+        },
+        {
+          "id": "vault",
+          "name": "Loss Carryforward & Proof Vault",
+          "triggerState": "isVaultOpen",
+          "description": "Multi-year 8-year loss carryforward ledger, statutory notice defenses, and cryptographic archive."
+        }
+      ]
+    },
+    {
+      "id": "investments",
+      "name": "Investments & Portfolio Holdings",
+      "route": "/app/portfolio",
+      "market": "BOTH",
+      "description": "Multi-asset portfolio tracker across equities, mutual funds, US stocks, fixed income, gold, and alternative assets.",
+      "tabs": [
+        {
+          "id": "all",
+          "name": "All Holdings",
+          "queryParam": "tab=all",
+          "spotlightTarget": "holdings-table",
+          "capabilities": ["view_holdings", "track_unrealized_gains", "view_asset_allocation"]
+        },
+        {
+          "id": "equities",
+          "name": "Equities & Stocks",
+          "queryParam": "tab=equities",
+          "spotlightTarget": "equity-breakdown-card",
+          "capabilities": ["filter_equities", "check_stock_concentration", "pnl_attribution"]
+        },
+        {
+          "id": "mutual_funds",
+          "name": "Mutual Funds & ETFs",
+          "queryParam": "tab=funds",
+          "spotlightTarget": "funds-breakdown-card",
+          "capabilities": ["detect_regular_plans", "commission_leak_audit", "fund_overlap_xray"]
+        }
+      ]
+    },
+    {
+      "id": "loan_negotiator",
+      "name": "Loan & Debt Negotiator",
+      "route": "/app/loan",
+      "market": "BOTH",
+      "description": "Home loan, mortgage refinancing, repo-linked spread arbitrage, and prepayment interest reduction optimizer.",
+      "tabs": [
+        {
+          "id": "calculator",
+          "name": "Amortisation & Prepayment",
+          "queryParam": "tab=calc",
+          "spotlightTarget": "loan-prepayment-slider",
+          "capabilities": ["simulate_prepayment", "calculate_interest_saved", "tenure_reduction"]
+        },
+        {
+          "id": "letter",
+          "name": "Rate Reset Negotiation Letter",
+          "queryParam": "tab=letter",
+          "spotlightTarget": "generate-negotiation-letter-btn",
+          "capabilities": ["generate_bank_letter", "benchmark_repo_spread", "cbr_score_leverage"]
+        }
+      ]
+    },
+    {
+      "id": "family_council",
+      "name": "Family Office Council",
+      "route": "/app/council",
+      "market": "BOTH",
+      "description": "Multi-agent wealth committee debate arena (Alpha vs Citadel vs Tax & Legal Advisors).",
+      "tabs": [
+        {
+          "id": "debate",
+          "name": "Live Debate Arena",
+          "queryParam": "tab=debate",
+          "spotlightTarget": "council-debate-arena",
+          "capabilities": ["trigger_council_debate", "compare_opinions", "synthesize_verdict"]
+        }
+      ]
+    },
+    {
+      "id": "digital_will",
+      "name": "Digital Will & Succession Studio",
+      "route": "/app/will",
+      "market": "BOTH",
+      "description": "Estate planning, nominee audits, revocable living trust drafting, and statutory will generation.",
+      "tabs": [
+        {
+          "id": "beneficiaries",
+          "name": "Asset & Nominee Allocation",
+          "queryParam": "tab=alloc",
+          "spotlightTarget": "will-beneficiary-tree",
+          "capabilities": ["allocate_nominees", "identify_orphaned_assets", "draft_will_clauses"]
+        }
+      ]
+    },
+    {
+      "id": "advisor_admin",
+      "name": "SEBI RIA Institutional Advisory Portal",
+      "route": "/advisor",
+      "market": "BOTH",
+      "description": "Institutional wealth practice management, SEBI Rule 204-2 / RIA 2020 compliance, client onboarding, and dispatch ledger.",
+      "tabs": [
+        {
+          "id": "clients",
+          "name": "Client Roster",
+          "queryParam": "tab=clients",
+          "spotlightTarget": "advisor-client-roster",
+          "capabilities": ["view_client_aum", "audit_ips_drift", "generate_suitability_memo"]
+        },
+        {
+          "id": "audit",
+          "name": "SEBI Compliance & Inspection Vault",
+          "queryParam": "tab=audit",
+          "spotlightTarget": "sebi-audit-vault",
+          "capabilities": ["export_sebi_dossier", "verify_ria_signature", "log_fiduciary_actions"]
+        }
+      ]
+    }
+  ]
+}

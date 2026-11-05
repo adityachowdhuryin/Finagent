@@ -6,6 +6,33 @@
  */
 const COPILOT_TOOL_DECLARATIONS = [
   {
+    name: 'navigate_ui',
+    description: 'Navigates the user screen to a specific route, tab, sub-tab, and triggers an animated spotlight on the target element.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        route: { type: 'STRING', description: 'Destination route e.g. /app/tax, /app/portfolio, /app/loan' },
+        tab: { type: 'STRING', description: 'Active tab e.g. itr, harvester, quarterly, huf, forensic' },
+        subTab: { type: 'STRING', description: 'Active sub-tab e.g. schedule-fa, summary, advance-tax' },
+        spotlightTarget: { type: 'STRING', description: 'DOM element ID or data-copilot-target to spotlight e.g. fa-foreign-stock-table, harvest-execute-btn' },
+        explanation: { type: 'STRING', description: 'Plain English explanation of where the user is being guided' },
+      },
+      required: ['route'],
+    },
+  },
+  {
+    name: 'open_action_modal',
+    description: 'Remotely opens an action modal on the screen (e.g. document dropzone for Form 16/W-2, what-if sandbox, or loss vault).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        modalName: { type: 'STRING', enum: ['dropzone', 'what_if_sandbox', 'vault'], description: 'Name of modal' },
+        reason: { type: 'STRING', description: 'Reason for opening modal' },
+      },
+      required: ['modalName'],
+    },
+  },
+  {
     name: 'draft_basket_order',
     description: 'Generates an interactive multi-leg order ticket for rebalancing, tax-loss harvesting, or portfolio adjustments for human review and execution.',
     parameters: {
@@ -99,6 +126,27 @@ const COPILOT_TOOL_DECLARATIONS = [
  */
 function executeCopilotTool(name, args) {
   switch (name) {
+    case 'navigate_ui': {
+      return {
+        cardType: 'ui_navigation',
+        action: 'navigate',
+        route: args.route || '/app/tax',
+        tab: args.tab || null,
+        subTab: args.subTab || null,
+        spotlightTarget: args.spotlightTarget || null,
+        explanation: args.explanation || 'Navigated your screen to the requested module.',
+      };
+    }
+
+    case 'open_action_modal': {
+      return {
+        cardType: 'ui_modal',
+        action: 'open_modal',
+        modalId: args.modalName,
+        reason: args.reason || 'Opened requested modal tool.',
+      };
+    }
+
     case 'draft_basket_order': {
       const orders = args.orders || [];
       const totalValue = args.totalValue || orders.reduce((s, o) => s + (o.quantity * o.price), 0);
