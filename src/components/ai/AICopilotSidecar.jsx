@@ -916,7 +916,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
             inset: 0,
             background: 'rgba(0, 0, 0, 0.4)',
             backdropFilter: 'blur(1px)',
-            zIndex: 94,
+            zIndex: 10000,
             cursor: 'pointer',
           }}
           title="Click anywhere to close Copilot"
@@ -932,12 +932,15 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
           bottom: 0,
           width: 440,
           maxWidth: '100vw',
+          height: '100vh',
+          maxHeight: '100vh',
           background: 'var(--surface-raised)',
           borderLeft: '1px solid var(--glass-border)',
           boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.5)',
-          zIndex: 95,
+          zIndex: 10001,
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
@@ -982,6 +985,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
             alignItems: 'center',
             justifyContent: 'space-between',
             background: 'var(--surface)',
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -1176,12 +1180,15 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
         {/* Message Thread Area */}
         <div
           style={{
-            flex: 1,
+            flex: '1 1 0%',
+            minHeight: 0,
             overflowY: 'auto',
             padding: '1rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.85rem',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
           }}
         >
           {messages.map((m) => {
@@ -1445,6 +1452,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
             display: 'flex',
             flexDirection: 'column',
             gap: '0.3rem',
+            flexShrink: 0,
           }}
         >
           <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -1496,6 +1504,7 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
             padding: '0.75rem 1rem',
             borderTop: '1px solid var(--glass-border)',
             background: 'var(--surface-raised)',
+            flexShrink: 0,
           }}
         >
           <form
