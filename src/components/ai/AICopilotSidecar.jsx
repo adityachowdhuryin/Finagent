@@ -1029,12 +1029,32 @@ export default function AICopilotSidecar({ isOpen, onToggle }) {
             <button
               type="button"
               onClick={handleInspectScreen}
-              className="btn btn-ghost btn-sm"
               title="Inspect Current Screen Context"
-              style={{ padding: '4px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                color: '#a5b4fc',
+                cursor: 'pointer',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 8,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)';
+                e.currentTarget.style.borderColor = '#818cf8';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+              }}
             >
-              <Eye size={13} />
-              <span>Inspect</span>
+              <Eye size={14} style={{ color: '#818cf8' }} />
+              <span>Inspect Screen</span>
             </button>
             <button
               type="button"
